@@ -22,7 +22,7 @@ const classes = computed(() =>
       'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80': props.variant === 'secondary',
       'hover:bg-accent hover:text-accent-foreground': props.variant === 'ghost',
       'text-primary underline-offset-4 hover:underline': props.variant === 'link',
-      'bg-lime-500 text-gray-900 shadow hover:bg-lime-600': props.variant === 'success',
+      'bg-lime-500 text-gray-900 shadow hover:bg-lime-600 dark:bg-lime-500 dark:text-gray-900 dark:hover:bg-lime-400': props.variant === 'success',
       'h-9 px-4 py-2': props.size === 'default',
       'h-8 rounded-md px-3 text-xs': props.size === 'sm',
       'h-10 rounded-md px-8': props.size === 'lg',

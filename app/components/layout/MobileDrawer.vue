@@ -25,8 +25,8 @@ const route = useRoute()
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-  { icon: CheckSquare, label: 'Tasks', href: '/dashboard/tasks', badge: '12+' },
-  { icon: Calendar, label: 'Calendar', href: '/dashboard/calendar' },
+  { icon: CheckSquare, label: 'Tasks', href: '/tasks', badge: '12+' },
+  { icon: Calendar, label: 'Calendar', href: '/calendar' },
   { icon: BarChart3, label: 'Analytics', href: '/dashboard/analytics' },
   { icon: Users, label: 'Team', href: '/dashboard/team' },
 ]

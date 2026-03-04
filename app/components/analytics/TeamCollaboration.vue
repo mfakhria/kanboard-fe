@@ -5,9 +5,9 @@ const analyticsStore = useAnalyticsStore()
 const members = computed(() => analyticsStore.teamMembers)
 
 const statusStyles: Record<string, { bg: string; text: string; label: string }> = {
-  completed: { bg: 'bg-lime-50', text: 'text-lime-600', label: 'Completed' },
-  in_progress: { bg: 'bg-amber-50', text: 'text-amber-600', label: 'In Progress' },
-  pending: { bg: 'bg-orange-50', text: 'text-orange-600', label: 'Pending' },
+  completed: { bg: 'bg-lime-50 dark:bg-lime-900/30', text: 'text-lime-600 dark:text-lime-400', label: 'Completed' },
+  in_progress: { bg: 'bg-amber-50 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400', label: 'In Progress' },
+  pending: { bg: 'bg-orange-50 dark:bg-orange-900/30', text: 'text-orange-600 dark:text-orange-400', label: 'Pending' },
 }
 
 const avatarColors = ['bg-red-400', 'bg-blue-400', 'bg-purple-400', 'bg-amber-400', 'bg-lime-400']
@@ -18,7 +18,7 @@ const avatarColors = ['bg-red-400', 'bg-blue-400', 'bg-purple-400', 'bg-amber-40
     <UiCardHeader class="pb-3">
       <div class="flex items-center justify-between">
         <UiCardTitle class="text-base">Team Collaboration</UiCardTitle>
-        <button class="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition">
+        <button class="inline-flex items-center gap-1 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
           <Plus class="h-3 w-3" />
           Add Member
         </button>
@@ -34,9 +34,9 @@ const avatarColors = ['bg-red-400', 'bg-blue-400', 'bg-purple-400', 'bg-amber-40
           {{ member.name.charAt(0) }}
         </div>
         <div class="flex-1 min-w-0">
-          <p class="text-sm font-semibold text-gray-900">{{ member.name }}</p>
-          <p class="text-xs text-gray-500 truncate">
-            Working on <span class="font-medium text-gray-700">{{ member.task }}</span>
+          <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ member.name }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+            Working on <span class="font-medium text-gray-700 dark:text-gray-300">{{ member.task }}</span>
           </p>
         </div>
         <span

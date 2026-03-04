@@ -50,14 +50,10 @@ const statsCards = computed(() => [
 </script>
 
 <template>
-  <div>
+  <LayoutPageContainer>
     <!-- Page Header -->
-    <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white lg:text-3xl">Dashboard</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Plan, prioritize, and accomplish your tasks with ease.</p>
-      </div>
-      <div class="flex gap-3">
+    <LayoutPageHeader title="Dashboard" subtitle="Plan, prioritize, and accomplish your tasks with ease.">
+      <template #actions>
         <UiButton variant="success" class="gap-2">
           <Plus class="h-4 w-4" />
           Add Project
@@ -66,11 +62,11 @@ const statsCards = computed(() => [
           <Upload class="h-4 w-4" />
           Import Data
         </UiButton>
-      </div>
-    </div>
+      </template>
+    </LayoutPageHeader>
 
     <!-- Stats Cards -->
-    <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <div
         v-for="(stat, index) in statsCards"
         :key="index"
@@ -123,7 +119,7 @@ const statsCards = computed(() => [
     </div>
 
     <!-- Bottom Grid -->
-    <div class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
       <!-- Team Collaboration -->
       <div class="xl:col-span-1">
         <AnalyticsTeamCollaboration />
@@ -139,5 +135,5 @@ const statsCards = computed(() => [
         <AnalyticsTimeTracker />
       </div>
     </div>
-  </div>
+  </LayoutPageContainer>
 </template>

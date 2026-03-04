@@ -20,11 +20,8 @@ const projects = computed(() => projectStore.projectsByWorkspace(workspaceId.val
 </script>
 
 <template>
-  <div>
-    <div class="mb-6">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ workspace?.name || 'Workspace' }}</h1>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ workspace?.description || 'Manage your workspace projects' }}</p>
-    </div>
+  <LayoutPageContainer>
+    <LayoutPageHeader :title="workspace?.name || 'Workspace'" :subtitle="workspace?.description || 'Manage your workspace projects'" />
 
     <!-- Projects Grid -->
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -49,5 +46,5 @@ const projects = computed(() => projectStore.projectsByWorkspace(workspaceId.val
         </div>
       </NuxtLink>
     </div>
-  </div>
+  </LayoutPageContainer>
 </template>
