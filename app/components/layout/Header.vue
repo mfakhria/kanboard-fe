@@ -1,35 +1,26 @@
 <script setup lang="ts">
 import { Search, Mail, Bell, Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-vue-next'
 
+const { sidebarCollapsed, toggleCollapse, toggleMobileDrawer } = useLayoutState()
+
 const authStore = useAuthStore()
-
-const props = withDefaults(defineProps<{
-  sidebarCollapsed?: boolean
-}>(), {
-  sidebarCollapsed: false,
-})
-
-const emit = defineEmits<{
-  toggleSidebar: []
-  toggleCollapse: []
-}>()
 
 const searchQuery = ref('')
 </script>
 
 <template>
-  <header class="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-white dark:bg-gray-900 px-4 lg:px-8">
+  <header class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 lg:px-8">
     <!-- Left section: toggle + search -->
     <div class="flex items-center gap-2 flex-1">
       <!-- Mobile menu button -->
-      <button class="lg:hidden rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800" @click="emit('toggleSidebar')">
+      <button class="lg:hidden rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800" @click="toggleMobileDrawer">
         <Menu class="h-5 w-5 text-gray-600 dark:text-gray-400" />
       </button>
 
       <!-- Desktop sidebar toggle -->
       <button
         class="hidden lg:flex rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-        @click="emit('toggleCollapse')"
+        @click="toggleCollapse"
         :title="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
       >
         <PanelLeftOpen v-if="sidebarCollapsed" class="h-5 w-5 text-gray-500 dark:text-gray-400" />

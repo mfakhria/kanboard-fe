@@ -11,15 +11,7 @@ import {
   ChevronsLeft,
 } from 'lucide-vue-next'
 
-const props = withDefaults(defineProps<{
-  collapsed?: boolean
-}>(), {
-  collapsed: false,
-})
-
-const emit = defineEmits<{
-  'update:collapsed': [value: boolean]
-}>()
+const { sidebarCollapsed: collapsed, toggleCollapse } = useLayoutState()
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -47,16 +39,12 @@ const handleLogout = async () => {
   await authStore.logout()
   router.push('/auth/login')
 }
-
-const toggleCollapse = () => {
-  emit('update:collapsed', !props.collapsed)
-}
 </script>
 
 <template>
   <aside
     :class="[
-      'fixed left-0 top-0 z-40 hidden h-screen flex-col border-r bg-white dark:bg-gray-900 lg:flex transition-all duration-300',
+      'fixed left-0 top-0 z-40 hidden h-screen flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 lg:flex transition-all duration-300',
       collapsed ? 'w-[68px]' : 'w-[240px]',
     ]"
   >

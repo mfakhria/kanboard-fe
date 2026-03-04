@@ -11,10 +11,10 @@ export const authApi = {
   },
 
   refresh(refreshToken: string) {
-    return api.post<{ accessToken: string }>('/auth/refresh', { refreshToken })
+    return api.post<AuthResponse>('/auth/refresh', { refreshToken })
   },
 
-  me() {
-    return api.get('/auth/me')
+  getProfile() {
+    return api.get<AuthResponse['user']>('/auth/profile')
   },
 }

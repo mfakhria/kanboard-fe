@@ -8,23 +8,35 @@ const api = axios.create({
   },
 })
 
+/** Read a cookie value by name (client-side only helper for axios interceptors) */
+function getCookie(name: string): string | null {
+  if (!import.meta.client) return null
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))
+  return match ? decodeURIComponent(match[1] ?? '') : null
+}
+
 // Request interceptor - attach JWT
 api.interceptors.request.use(
   (config) => {
-    if (import.meta.client) {
-      const token = localStorage.getItem('access_token')
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`
-      }
+    const token = getCookie('access_token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
     }
     return config
   },
   (error) => Promise.reject(error)
 )
 
-// Response interceptor - handle errors & refresh
+// Response interceptor – unwrap {statusCode, message, data} envelope & handle 401 refresh
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Backend wraps all responses in { statusCode, message, data }
+    // Unwrap so callers receive the inner `data` directly via response.data
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      response.data = response.data.data
+    }
+    return response
+  },
   async (error) => {
     const originalRequest = error.config
 
@@ -32,20 +44,28 @@ api.interceptors.response.use(
       originalRequest._retry = true
 
       try {
-        const refreshToken = localStorage.getItem('refresh_token')
-        if (refreshToken) {
+        const refreshTokenValue = getCookie('refresh_token')
+        if (refreshTokenValue) {
           const { data } = await axios.post(
             `${api.defaults.baseURL}/auth/refresh`,
-            { refreshToken }
+            { refreshToken: refreshTokenValue }
           )
-          localStorage.setItem('access_token', data.accessToken)
-          originalRequest.headers.Authorization = `Bearer ${data.accessToken}`
+          // The response from refresh is also wrapped in the envelope
+          const tokens = data?.data ?? data
+          // Persist new tokens via cookies
+          if (import.meta.client) {
+            const maxAge = 60 * 60 * 24 * 7
+            document.cookie = `access_token=${encodeURIComponent(tokens.accessToken)};path=/;max-age=${maxAge};samesite=lax`
+            document.cookie = `refresh_token=${encodeURIComponent(tokens.refreshToken)};path=/;max-age=${maxAge};samesite=lax`
+          }
+          originalRequest.headers.Authorization = `Bearer ${tokens.accessToken}`
           return api(originalRequest)
         }
       } catch {
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
+        // Clear cookies and redirect to login
         if (import.meta.client) {
+          document.cookie = 'access_token=;path=/;max-age=0'
+          document.cookie = 'refresh_token=;path=/;max-age=0'
           window.location.href = '/auth/login'
         }
       }

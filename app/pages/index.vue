@@ -6,14 +6,12 @@ definePageMeta({
 
 const authStore = useAuthStore()
 
-onMounted(() => {
-  authStore.initAuth()
-  if (authStore.isAuthenticated) {
-    navigateTo('/dashboard')
-  } else {
-    navigateTo('/auth/login')
-  }
-})
+// Cookie-based auth works on SSR — redirect immediately
+if (authStore.isAuthenticated) {
+  navigateTo('/dashboard', { replace: true })
+} else {
+  navigateTo('/auth/login', { replace: true })
+}
 </script>
 
 <template>

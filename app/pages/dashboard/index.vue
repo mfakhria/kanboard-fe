@@ -10,10 +10,12 @@ const analyticsStore = useAnalyticsStore()
 const workspaceStore = useWorkspaceStore()
 
 onMounted(async () => {
+  // Fetch workspaces first so other stores can use activeWorkspace
+  await workspaceStore.fetchWorkspaces()
+  // Then fetch projects and analytics in parallel
   await Promise.all([
     projectStore.fetchProjects(),
     analyticsStore.fetchAnalytics(),
-    workspaceStore.fetchWorkspaces(),
   ])
 })
 

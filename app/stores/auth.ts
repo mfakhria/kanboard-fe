@@ -1,99 +1,95 @@
 import { defineStore } from 'pinia'
-import type { AuthState, User, LoginPayload, RegisterPayload } from '~/features/auth/types'
+import { authApi } from '~/features/auth/services/auth.api'
+import type { User, LoginPayload, RegisterPayload } from '~/features/auth/types'
 
-// Mock user data
-const mockUser: User = {
-  id: '1',
-  name: 'Totok Michael',
-  email: 'tmichael20@mail.com',
-  avatar: '/images/avatar.jpg',
-  role: 'admin',
-  createdAt: '2024-01-01T00:00:00Z',
-}
+export const useAuthStore = defineStore('auth', () => {
+  // Use cookies instead of localStorage so SSR middleware can read auth state
+  const accessToken = useCookie<string | null>('access_token', {
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+    path: '/',
+    sameSite: 'lax',
+  })
+  const refreshToken = useCookie<string | null>('refresh_token', {
+    maxAge: 60 * 60 * 24 * 7,
+    path: '/',
+    sameSite: 'lax',
+  })
 
-export const useAuthStore = defineStore('auth', {
-  state: (): AuthState => ({
-    user: null,
-    accessToken: null,
-    refreshToken: null,
-    isAuthenticated: false,
-    isLoading: false,
-  }),
+  const user = ref<User | null>(null)
+  const isLoading = ref(false)
 
-  getters: {
-    currentUser: (state) => state.user,
-    isLoggedIn: (state) => state.isAuthenticated,
-  },
+  // Reactive: true whenever the cookie token exists
+  const isAuthenticated = computed(() => !!accessToken.value)
+  const currentUser = computed(() => user.value)
+  const isLoggedIn = computed(() => isAuthenticated.value)
 
-  actions: {
-    async login(payload: LoginPayload) {
-      this.isLoading = true
+  /** Restore user object from token (works on both SSR and client) */
+  async function initAuth() {
+    if (accessToken.value && !user.value) {
       try {
-        // Mock login - simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        this.user = mockUser
-        this.accessToken = 'mock-access-token'
-        this.refreshToken = 'mock-refresh-token'
-        this.isAuthenticated = true
-
-        if (import.meta.client) {
-          localStorage.setItem('access_token', this.accessToken)
-          localStorage.setItem('refresh_token', this.refreshToken)
-        }
-
-        return { success: true }
-      } catch (error) {
-        return { success: false, error }
-      } finally {
-        this.isLoading = false
+        const { data } = await authApi.getProfile()
+        user.value = data as User
+      } catch {
+        // Token invalid – clear
+        accessToken.value = null
+        refreshToken.value = null
       }
-    },
+    }
+  }
 
-    async register(payload: RegisterPayload) {
-      this.isLoading = true
-      try {
-        // Mock register
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        this.user = { ...mockUser, name: payload.name, email: payload.email }
-        this.accessToken = 'mock-access-token'
-        this.refreshToken = 'mock-refresh-token'
-        this.isAuthenticated = true
+  async function login(payload: LoginPayload) {
+    isLoading.value = true
+    try {
+      const { data } = await authApi.login(payload)
+      const res = data as any
+      user.value = res.user
+      accessToken.value = res.accessToken
+      refreshToken.value = res.refreshToken
 
-        if (import.meta.client) {
-          localStorage.setItem('access_token', this.accessToken)
-          localStorage.setItem('refresh_token', this.refreshToken)
-        }
+      return { success: true }
+    } catch (error: any) {
+      const message = error?.response?.data?.message || 'Invalid email or password'
+      return { success: false, error: message }
+    } finally {
+      isLoading.value = false
+    }
+  }
 
-        return { success: true }
-      } catch (error) {
-        return { success: false, error }
-      } finally {
-        this.isLoading = false
-      }
-    },
+  async function register(payload: RegisterPayload) {
+    isLoading.value = true
+    try {
+      const { data } = await authApi.register(payload)
+      const res = data as any
+      user.value = res.user
+      accessToken.value = res.accessToken
+      refreshToken.value = res.refreshToken
 
-    async logout() {
-      this.user = null
-      this.accessToken = null
-      this.refreshToken = null
-      this.isAuthenticated = false
+      return { success: true }
+    } catch (error: any) {
+      const message = error?.response?.data?.message || 'Registration failed'
+      return { success: false, error: message }
+    } finally {
+      isLoading.value = false
+    }
+  }
 
-      if (import.meta.client) {
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
-      }
-    },
+  async function logout() {
+    user.value = null
+    accessToken.value = null
+    refreshToken.value = null
+  }
 
-    async initAuth() {
-      if (import.meta.client) {
-        const token = localStorage.getItem('access_token')
-        if (token) {
-          this.accessToken = token
-          this.refreshToken = localStorage.getItem('refresh_token')
-          this.user = mockUser
-          this.isAuthenticated = true
-        }
-      }
-    },
-  },
+  return {
+    user,
+    accessToken,
+    refreshToken,
+    isLoading,
+    isAuthenticated,
+    currentUser,
+    isLoggedIn,
+    initAuth,
+    login,
+    register,
+    logout,
+  }
 })

@@ -27,7 +27,7 @@ const handleLogin = async () => {
     if (result.success) {
       router.push('/dashboard')
     } else {
-      error.value = 'Invalid email or password'
+      error.value = (result.error as string) || 'Invalid email or password'
     }
   } catch (e) {
     error.value = 'Something went wrong. Please try again.'

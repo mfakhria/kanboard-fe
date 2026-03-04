@@ -10,8 +10,7 @@ const projectStore = useProjectStore()
 const projectId = computed(() => route.params.id as string)
 
 onMounted(async () => {
-  await projectStore.fetchProjects()
-  projectStore.setCurrentProject(projectId.value)
+  await projectStore.fetchProjectById(projectId.value)
   await kanbanStore.fetchBoard(projectId.value)
 })
 

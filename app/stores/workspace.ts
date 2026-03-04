@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { workspaceApi } from '~/features/workspace/services/workspace.api'
 import type { Workspace, WorkspaceMember } from '~/features/workspace/types'
 
 interface WorkspaceState {
@@ -6,60 +7,6 @@ interface WorkspaceState {
   currentWorkspace: Workspace | null
   isLoading: boolean
 }
-
-// Mock workspace data
-const mockWorkspaces: Workspace[] = [
-  {
-    id: '1',
-    name: 'Kanboard Team',
-    description: 'Main product workspace',
-    ownerId: '1',
-    members: [
-      {
-        id: '1',
-        userId: '1',
-        workspaceId: '1',
-        role: 'owner',
-        user: { id: '1', name: 'Totok Michael', email: 'tmichael20@mail.com', avatar: '/images/avatar.jpg' },
-        joinedAt: '2024-01-01T00:00:00Z',
-      },
-      {
-        id: '2',
-        userId: '2',
-        workspaceId: '1',
-        role: 'member',
-        user: { id: '2', name: 'Alexandra Deff', email: 'alex@mail.com' },
-        joinedAt: '2024-01-15T00:00:00Z',
-      },
-      {
-        id: '3',
-        userId: '3',
-        workspaceId: '1',
-        role: 'member',
-        user: { id: '3', name: 'Edwin Adenike', email: 'edwin@mail.com' },
-        joinedAt: '2024-02-01T00:00:00Z',
-      },
-      {
-        id: '4',
-        userId: '4',
-        workspaceId: '1',
-        role: 'member',
-        user: { id: '4', name: 'Isaac Oluwatemilorun', email: 'isaac@mail.com' },
-        joinedAt: '2024-02-15T00:00:00Z',
-      },
-      {
-        id: '5',
-        userId: '5',
-        workspaceId: '1',
-        role: 'member',
-        user: { id: '5', name: 'David Oshodi', email: 'david@mail.com' },
-        joinedAt: '2024-03-01T00:00:00Z',
-      },
-    ],
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-06-01T00:00:00Z',
-  },
-]
 
 export const useWorkspaceStore = defineStore('workspace', {
   state: (): WorkspaceState => ({
@@ -78,28 +25,68 @@ export const useWorkspaceStore = defineStore('workspace', {
     async fetchWorkspaces() {
       this.isLoading = true
       try {
-        await new Promise(resolve => setTimeout(resolve, 500))
-        this.workspaces = mockWorkspaces
+        const { data } = await workspaceApi.list()
+        this.workspaces = data as Workspace[]
         if (!this.currentWorkspace && this.workspaces.length > 0) {
           this.currentWorkspace = this.workspaces[0] ?? null
         }
+      } catch (error) {
+        console.error('Failed to fetch workspaces:', error)
+      } finally {
+        this.isLoading = false
+      }
+    },
+
+    async fetchWorkspaceById(id: string) {
+      this.isLoading = true
+      try {
+        const { data } = await workspaceApi.get(id)
+        this.currentWorkspace = data as Workspace
+        // Update in list too
+        const idx = this.workspaces.findIndex(w => w.id === id)
+        if (idx !== -1) this.workspaces[idx] = data as Workspace
+        else this.workspaces.push(data as Workspace)
+      } catch (error) {
+        console.error('Failed to fetch workspace:', error)
       } finally {
         this.isLoading = false
       }
     },
 
     async createWorkspace(payload: { name: string; description?: string }) {
-      const newWorkspace: Workspace = {
-        id: String(Date.now()),
-        name: payload.name,
-        description: payload.description,
-        ownerId: '1',
-        members: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+      try {
+        const { data } = await workspaceApi.create(payload)
+        const workspace = data as Workspace
+        this.workspaces.push(workspace)
+        return workspace
+      } catch (error) {
+        console.error('Failed to create workspace:', error)
+        throw error
       }
-      this.workspaces.push(newWorkspace)
-      return newWorkspace
+    },
+
+    async inviteMember(workspaceId: string, payload: { email: string; role?: 'admin' | 'member' | 'viewer' }) {
+      try {
+        await workspaceApi.inviteMember(workspaceId, { email: payload.email, role: payload.role || 'member' })
+        // Re-fetch workspace to get updated members
+        await this.fetchWorkspaceById(workspaceId)
+      } catch (error) {
+        console.error('Failed to invite member:', error)
+        throw error
+      }
+    },
+
+    async deleteWorkspace(id: string) {
+      try {
+        await workspaceApi.delete(id)
+        this.workspaces = this.workspaces.filter(w => w.id !== id)
+        if (this.currentWorkspace?.id === id) {
+          this.currentWorkspace = this.workspaces[0] ?? null
+        }
+      } catch (error) {
+        console.error('Failed to delete workspace:', error)
+        throw error
+      }
     },
 
     setCurrentWorkspace(workspaceId: string) {

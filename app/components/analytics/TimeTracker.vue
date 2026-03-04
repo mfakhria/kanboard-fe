@@ -28,11 +28,6 @@ onBeforeUnmount(() => {
 
 <template>
   <UiCard class="h-full overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-950 text-white border-gray-800">
-    <!-- Decorative lines -->
-    <div class="absolute inset-0 opacity-10">
-      <div v-for="i in 8" :key="i" class="absolute h-full w-px bg-lime-400" :style="{ left: `${i * 12}%` }" />
-    </div>
-
     <UiCardHeader class="relative pb-2">
       <UiCardTitle class="text-base text-lime-300">Time Tracker</UiCardTitle>
     </UiCardHeader>

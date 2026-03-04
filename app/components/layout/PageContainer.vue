@@ -15,7 +15,7 @@ withDefaults(defineProps<{
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-[1600px]" :class="[flush ? '' : 'space-y-6']">
+  <div class="w-full" :class="[flush ? '' : 'space-y-6']">
     <slot />
   </div>
 </template>

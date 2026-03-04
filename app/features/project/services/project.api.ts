@@ -3,7 +3,7 @@ import type { Project, CreateProjectPayload, UpdateProjectPayload } from '~/feat
 
 export const projectApi = {
   list(workspaceId: string) {
-    return api.get<Project[]>(`/workspaces/${workspaceId}/projects`)
+    return api.get<Project[]>('/projects', { params: { workspaceId } })
   },
 
   get(id: string) {

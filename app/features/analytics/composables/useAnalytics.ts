@@ -1,8 +1,12 @@
 export const useAnalytics = () => {
   const analyticsStore = useAnalyticsStore()
 
-  const loadAnalytics = async () => {
-    await analyticsStore.fetchAnalytics()
+  const loadAnalytics = async (workspaceId?: string) => {
+    await analyticsStore.fetchAnalytics(workspaceId)
+  }
+
+  const loadProjectStats = async (projectId: string) => {
+    await analyticsStore.fetchProjectStats(projectId)
   }
 
   return {
@@ -16,6 +20,7 @@ export const useAnalytics = () => {
     completionRate: computed(() => analyticsStore.completionRate),
     isLoading: computed(() => analyticsStore.isLoading),
     loadAnalytics,
+    loadProjectStats,
     toggleTimeTracker: analyticsStore.toggleTimeTracker,
     resetTimeTracker: analyticsStore.resetTimeTracker,
   }

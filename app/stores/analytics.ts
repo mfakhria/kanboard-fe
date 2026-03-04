@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { analyticsApi } from '~/features/analytics/services/analytics.api'
 import type {
   DashboardStats,
   WeeklyProductivity,
@@ -23,90 +24,32 @@ interface AnalyticsState {
 export const useAnalyticsStore = defineStore('analytics', {
   state: (): AnalyticsState => ({
     stats: {
-      totalProjects: 24,
-      endedProjects: 10,
-      runningProjects: 12,
-      pendingProjects: 2,
-      totalProjectsChange: 12,
-      endedProjectsChange: 8,
-      runningProjectsChange: 5,
+      totalProjects: 0,
+      endedProjects: 0,
+      runningProjects: 0,
+      pendingProjects: 0,
+      totalProjectsChange: 0,
+      endedProjectsChange: 0,
+      runningProjectsChange: 0,
     },
     weeklyProductivity: {
       labels: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
-      data: [20, 45, 60, 78, 55, 40, 30],
+      data: [0, 0, 0, 0, 0, 0, 0],
     },
     projectProgress: {
-      completed: 41,
-      inProgress: 35,
-      pending: 24,
-      total: 100,
+      completed: 0,
+      inProgress: 0,
+      pending: 0,
+      total: 0,
     },
-    recentActivities: [
-      {
-        id: '1',
-        type: 'task_completed',
-        description: 'Completed "Github Project Repository"',
-        user: { name: 'Alexandra Deff' },
-        timestamp: '2024-11-20T10:30:00Z',
-      },
-      {
-        id: '2',
-        type: 'task_moved',
-        description: 'Moved "API Endpoints" to In Progress',
-        user: { name: 'Edwin Adenike' },
-        timestamp: '2024-11-20T09:15:00Z',
-      },
-      {
-        id: '3',
-        type: 'comment_added',
-        description: 'Added comment on "Search and Filter"',
-        user: { name: 'Isaac Oluwatemilorun' },
-        timestamp: '2024-11-20T08:45:00Z',
-      },
-    ],
-    teamMembers: [
-      {
-        id: '1',
-        name: 'Alexandra Deff',
-        avatar: '',
-        task: 'Github Project Repository',
-        status: 'completed',
-      },
-      {
-        id: '2',
-        name: 'Edwin Adenike',
-        avatar: '',
-        task: 'Integrate User Authentication System',
-        status: 'in_progress',
-      },
-      {
-        id: '3',
-        name: 'Isaac Oluwatemilorun',
-        avatar: '',
-        task: 'Develop Search and Filter Functionality',
-        status: 'pending',
-      },
-      {
-        id: '4',
-        name: 'David Oshodi',
-        avatar: '',
-        task: 'Responsive Layout for Homepage',
-        status: 'in_progress',
-      },
-    ],
-    reminders: [
-      {
-        id: '1',
-        title: 'Meeting with Arc Company',
-        time: '02.00 pm - 04.00 pm',
-        type: 'meeting',
-      },
-    ],
+    recentActivities: [],
+    teamMembers: [],
+    reminders: [],
     timeTracker: {
-      isRunning: true,
-      elapsed: 5048, // seconds (01:24:08)
-      taskId: 'task-4',
-      taskName: 'API endpoint development',
+      isRunning: false,
+      elapsed: 0,
+      taskId: undefined,
+      taskName: undefined,
     },
     isLoading: false,
   }),
@@ -116,13 +59,87 @@ export const useAnalyticsStore = defineStore('analytics', {
   },
 
   actions: {
-    async fetchAnalytics() {
+    async fetchAnalytics(workspaceId?: string) {
       this.isLoading = true
       try {
-        await new Promise(resolve => setTimeout(resolve, 500))
-        // Data already in state as mock
+        const wsId = workspaceId || useWorkspaceStore().activeWorkspace?.id
+        if (!wsId) return
+
+        // Fetch workspace stats and weekly summary in parallel
+        const [wsStatsRes, weeklyRes] = await Promise.all([
+          analyticsApi.getWorkspaceStats(wsId),
+          analyticsApi.getWeeklySummary(wsId),
+        ])
+
+        const wsStats = wsStatsRes.data as any
+        const weekly = weeklyRes.data as any
+
+        // Map backend workspace stats → dashboard stats
+        this.stats = {
+          totalProjects: wsStats.totalProjects ?? 0,
+          endedProjects: wsStats.completedProjects ?? 0,
+          runningProjects: wsStats.activeProjects ?? 0,
+          pendingProjects: wsStats.archivedProjects ?? 0,
+          totalProjectsChange: 0,
+          endedProjectsChange: 0,
+          runningProjectsChange: 0,
+        }
+
+        // Map weekly daily stats → chart data
+        if (weekly.dailyStats && Array.isArray(weekly.dailyStats)) {
+          const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+          this.weeklyProductivity = {
+            labels: weekly.dailyStats.map((d: any) => {
+              const date = new Date(d.date)
+              return dayLabels[date.getDay()] ?? ''
+            }),
+            data: weekly.dailyStats.map((d: any) => d.completed ?? 0),
+          }
+        }
+
+        // Map project progress from total workspace stats
+        const total = this.stats.totalProjects || 1
+        this.projectProgress = {
+          completed: Math.round((this.stats.endedProjects / total) * 100),
+          inProgress: Math.round((this.stats.runningProjects / total) * 100),
+          pending: Math.round(((total - this.stats.endedProjects - this.stats.runningProjects) / total) * 100),
+          total: 100,
+        }
+
+        // Map recent activities
+        if (weekly.recentActivities && Array.isArray(weekly.recentActivities)) {
+          this.recentActivities = weekly.recentActivities.map((a: any) => ({
+            id: a.id,
+            type: a.action?.toLowerCase() ?? 'task_created',
+            description: a.description ?? `${a.action} on ${a.entityType}`,
+            user: {
+              name: a.user?.name ?? 'Unknown',
+              avatar: a.user?.avatar,
+            },
+            timestamp: a.createdAt,
+          }))
+        }
+      } catch (error) {
+        console.error('Failed to fetch analytics:', error)
       } finally {
         this.isLoading = false
+      }
+    },
+
+    async fetchProjectStats(projectId: string) {
+      try {
+        const { data } = await analyticsApi.getProjectStats(projectId)
+        const stats = data as any
+        if (stats) {
+          this.projectProgress = {
+            completed: stats.completionRate ?? 0,
+            inProgress: Math.round(((stats.totalTasks - stats.completedTasks) / (stats.totalTasks || 1)) * 100),
+            pending: Math.round((stats.overdueTasks / (stats.totalTasks || 1)) * 100),
+            total: 100,
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch project stats:', error)
       }
     },
 

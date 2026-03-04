@@ -1,16 +1,15 @@
 import api from '~/utils/api'
-import type { DashboardStats, WeeklyProductivity, ProjectProgress } from '~/features/analytics/types'
 
 export const analyticsApi = {
-  getStats() {
-    return api.get<DashboardStats>('/analytics/stats')
+  getWorkspaceStats(workspaceId: string) {
+    return api.get(`/analytics/workspace/${workspaceId}`)
   },
 
-  getWeeklyProductivity() {
-    return api.get<WeeklyProductivity>('/analytics/weekly')
+  getProjectStats(projectId: string) {
+    return api.get(`/analytics/project/${projectId}`)
   },
 
-  getProjectProgress() {
-    return api.get<ProjectProgress>('/analytics/progress')
+  getWeeklySummary(workspaceId: string) {
+    return api.get('/analytics/weekly', { params: { workspaceId } })
   },
 }

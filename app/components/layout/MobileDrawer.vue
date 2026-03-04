@@ -11,13 +11,7 @@ import {
   X,
 } from 'lucide-vue-next'
 
-const props = defineProps<{
-  open: boolean
-}>()
-
-const emit = defineEmits<{
-  'update:open': [value: boolean]
-}>()
+const { mobileDrawerOpen, toggleMobileDrawer } = useLayoutState()
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -41,14 +35,18 @@ const isActive = (href: string) => {
   return route.path.startsWith(href)
 }
 
+const closeDrawer = () => {
+  mobileDrawerOpen.value = false
+}
+
 const navigateTo = (href: string) => {
   router.push(href)
-  emit('update:open', false)
+  closeDrawer()
 }
 
 const handleLogout = async () => {
   await authStore.logout()
-  emit('update:open', false)
+  closeDrawer()
   router.push('/auth/login')
 }
 </script>
@@ -65,9 +63,9 @@ const handleLogout = async () => {
       leave-to-class="opacity-0"
     >
       <div
-        v-if="open"
+        v-if="mobileDrawerOpen"
         class="fixed inset-0 z-50 bg-black/50 lg:hidden"
-        @click="emit('update:open', false)"
+        @click="closeDrawer"
       />
     </Transition>
 
@@ -81,7 +79,7 @@ const handleLogout = async () => {
       leave-to-class="-translate-x-full"
     >
       <aside
-        v-if="open"
+        v-if="mobileDrawerOpen"
         class="fixed left-0 top-0 z-50 h-screen w-[280px] bg-white dark:bg-gray-900 shadow-xl lg:hidden"
       >
         <div class="flex items-center justify-between px-6 py-5">
@@ -94,7 +92,7 @@ const handleLogout = async () => {
             </div>
             <span class="text-xl font-bold text-gray-900 dark:text-white">Kanboard</span>
           </div>
-          <button class="rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-800" @click="emit('update:open', false)">
+          <button class="rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-800" @click="closeDrawer">
             <X class="h-5 w-5 text-gray-500 dark:text-gray-400" />
           </button>
         </div>

@@ -10,9 +10,8 @@ const projectStore = useProjectStore()
 const workspaceId = computed(() => route.params.id as string)
 
 onMounted(async () => {
-  await workspaceStore.fetchWorkspaces()
-  workspaceStore.setCurrentWorkspace(workspaceId.value)
-  await projectStore.fetchProjects()
+  await workspaceStore.fetchWorkspaceById(workspaceId.value)
+  await projectStore.fetchProjects(workspaceId.value)
 })
 
 const workspace = computed(() => workspaceStore.activeWorkspace)

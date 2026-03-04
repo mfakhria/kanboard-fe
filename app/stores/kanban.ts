@@ -1,182 +1,10 @@
 import { defineStore } from 'pinia'
+import { kanbanApi } from '~/features/kanban/services/task.api'
 import type { Board, Column, Task, CreateTaskPayload, MoveTaskPayload } from '~/features/kanban/types'
 
 interface KanbanState {
   board: Board | null
   isLoading: boolean
-}
-
-// Mock kanban data
-const mockBoard: Board = {
-  id: '1',
-  projectId: '1',
-  name: 'Development Board',
-  columns: [
-    {
-      id: 'col-1',
-      boardId: '1',
-      title: 'To Do',
-      position: 0,
-      color: '#6b7280',
-      tasks: [
-        {
-          id: 'task-1',
-          columnId: 'col-1',
-          title: 'Design system setup',
-          description: 'Set up the base design system with tokens and components',
-          position: 0,
-          priority: 'high',
-          status: 'todo',
-          dueDate: '2024-12-01',
-          assignees: [{ id: '1', name: 'Totok Michael', avatar: '/images/avatar.jpg' }],
-          labels: ['design', 'setup'],
-          commentsCount: 3,
-          attachmentsCount: 1,
-          createdAt: '2024-11-01T00:00:00Z',
-          updatedAt: '2024-11-01T00:00:00Z',
-        },
-        {
-          id: 'task-2',
-          columnId: 'col-1',
-          title: 'User authentication flow',
-          description: 'Implement login, register, and password reset',
-          position: 1,
-          priority: 'urgent',
-          status: 'todo',
-          dueDate: '2024-12-05',
-          assignees: [{ id: '3', name: 'Edwin Adenike' }],
-          labels: ['auth', 'backend'],
-          commentsCount: 5,
-          attachmentsCount: 0,
-          createdAt: '2024-11-02T00:00:00Z',
-          updatedAt: '2024-11-02T00:00:00Z',
-        },
-        {
-          id: 'task-3',
-          columnId: 'col-1',
-          title: 'Database schema design',
-          description: 'Design and implement the Prisma schema',
-          position: 2,
-          priority: 'medium',
-          status: 'todo',
-          assignees: [],
-          labels: ['database'],
-          commentsCount: 1,
-          attachmentsCount: 2,
-          createdAt: '2024-11-03T00:00:00Z',
-          updatedAt: '2024-11-03T00:00:00Z',
-        },
-      ],
-    },
-    {
-      id: 'col-2',
-      boardId: '1',
-      title: 'In Progress',
-      position: 1,
-      color: '#3b82f6',
-      tasks: [
-        {
-          id: 'task-4',
-          columnId: 'col-2',
-          title: 'API endpoint development',
-          description: 'Build REST API endpoints for CRUD operations',
-          position: 0,
-          priority: 'high',
-          status: 'in_progress',
-          dueDate: '2024-11-28',
-          assignees: [
-            { id: '2', name: 'Alexandra Deff' },
-            { id: '3', name: 'Edwin Adenike' },
-          ],
-          labels: ['api', 'backend'],
-          commentsCount: 8,
-          attachmentsCount: 3,
-          createdAt: '2024-11-05T00:00:00Z',
-          updatedAt: '2024-11-15T00:00:00Z',
-        },
-        {
-          id: 'task-5',
-          columnId: 'col-2',
-          title: 'Responsive layout for homepage',
-          description: 'Make the homepage fully responsive',
-          position: 1,
-          priority: 'medium',
-          status: 'in_progress',
-          dueDate: '2024-11-30',
-          assignees: [{ id: '5', name: 'David Oshodi' }],
-          labels: ['frontend', 'responsive'],
-          commentsCount: 2,
-          attachmentsCount: 0,
-          createdAt: '2024-11-06T00:00:00Z',
-          updatedAt: '2024-11-16T00:00:00Z',
-        },
-      ],
-    },
-    {
-      id: 'col-3',
-      boardId: '1',
-      title: 'Review',
-      position: 2,
-      color: '#f59e0b',
-      tasks: [
-        {
-          id: 'task-6',
-          columnId: 'col-3',
-          title: 'Search and filter functionality',
-          description: 'Implement search with filter capabilities',
-          position: 0,
-          priority: 'medium',
-          status: 'review',
-          dueDate: '2024-11-25',
-          assignees: [{ id: '4', name: 'Isaac Oluwatemilorun' }],
-          labels: ['feature', 'frontend'],
-          commentsCount: 4,
-          attachmentsCount: 1,
-          createdAt: '2024-11-07T00:00:00Z',
-          updatedAt: '2024-11-17T00:00:00Z',
-        },
-      ],
-    },
-    {
-      id: 'col-4',
-      boardId: '1',
-      title: 'Done',
-      position: 3,
-      color: '#16a34a',
-      tasks: [
-        {
-          id: 'task-7',
-          columnId: 'col-4',
-          title: 'Github project repository',
-          description: 'Set up project repo with CI/CD',
-          position: 0,
-          priority: 'low',
-          status: 'done',
-          assignees: [{ id: '2', name: 'Alexandra Deff' }],
-          labels: ['devops'],
-          commentsCount: 6,
-          attachmentsCount: 2,
-          createdAt: '2024-11-01T00:00:00Z',
-          updatedAt: '2024-11-20T00:00:00Z',
-        },
-        {
-          id: 'task-8',
-          columnId: 'col-4',
-          title: 'Project setup and configuration',
-          description: 'Initial project scaffolding',
-          position: 1,
-          priority: 'low',
-          status: 'done',
-          assignees: [{ id: '1', name: 'Totok Michael' }],
-          labels: ['setup'],
-          commentsCount: 2,
-          attachmentsCount: 0,
-          createdAt: '2024-10-25T00:00:00Z',
-          updatedAt: '2024-11-18T00:00:00Z',
-        },
-      ],
-    },
-  ],
 }
 
 export const useKanbanStore = defineStore('kanban', {
@@ -197,91 +25,166 @@ export const useKanbanStore = defineStore('kanban', {
     async fetchBoard(projectId: string) {
       this.isLoading = true
       try {
-        await new Promise(resolve => setTimeout(resolve, 500))
-        this.board = { ...mockBoard, projectId }
+        const { data } = await kanbanApi.getBoard(projectId)
+        // Backend returns board(s) – may be array or single object
+        const raw = data as any
+        if (Array.isArray(raw)) {
+          // GET /boards?projectId returns an array; take first
+          this.board = raw.length > 0 ? this.normalizeBoard(raw[0]) : null
+        } else {
+          this.board = this.normalizeBoard(raw)
+        }
+      } catch (error) {
+        console.error('Failed to fetch board:', error)
       } finally {
         this.isLoading = false
       }
     },
 
-    addColumn(title: string) {
-      if (!this.board) return
-      const newColumn: Column = {
-        id: `col-${Date.now()}`,
-        boardId: this.board.id,
-        title,
-        position: this.board.columns.length,
-        tasks: [],
+    /** Normalise backend board shape to match frontend Board type */
+    normalizeBoard(raw: any): Board {
+      return {
+        id: raw.id,
+        projectId: raw.projectId,
+        name: raw.name,
+        columns: (raw.columns ?? [])
+          .sort((a: any, b: any) => a.position - b.position)
+          .map((col: any) => ({
+            id: col.id,
+            boardId: col.boardId,
+            title: col.name ?? col.title,
+            position: col.position,
+            color: col.color,
+            tasks: (col.tasks ?? [])
+              .sort((a: any, b: any) => a.position - b.position)
+              .map((t: any) => this.normalizeTask(t)),
+          })),
       }
-      this.board.columns.push(newColumn)
     },
 
-    updateColumn(columnId: string, title: string) {
+    normalizeTask(t: any): Task {
+      return {
+        id: t.id,
+        columnId: t.columnId,
+        title: t.title,
+        description: t.description ?? '',
+        position: t.position,
+        priority: t.priority?.toLowerCase() ?? 'medium',
+        status: t.status ?? 'todo',
+        dueDate: t.dueDate,
+        assignees: t.assignee
+          ? [{ id: t.assignee.id, name: t.assignee.name, avatar: t.assignee.avatar }]
+          : [],
+        labels: (t.labels ?? []).map((l: any) => (typeof l === 'string' ? l : l.name ?? l.label)),
+        commentsCount: t._count?.comments ?? t.commentsCount ?? 0,
+        attachmentsCount: t.attachmentsCount ?? 0,
+        createdAt: t.createdAt,
+        updatedAt: t.updatedAt,
+      }
+    },
+
+    async addColumn(title: string) {
       if (!this.board) return
-      const col = this.board.columns.find(c => c.id === columnId)
-      if (col) col.title = title
+      try {
+        const { data } = await kanbanApi.createColumn({
+          boardId: this.board.id,
+          title,
+          position: this.board.columns.length,
+        })
+        const col = data as any
+        const newColumn: Column = {
+          id: col.id,
+          boardId: col.boardId,
+          title: col.name ?? col.title ?? title,
+          position: col.position,
+          color: col.color,
+          tasks: [],
+        }
+        this.board.columns.push(newColumn)
+      } catch (error) {
+        console.error('Failed to add column:', error)
+      }
     },
 
-    deleteColumn(columnId: string) {
+    async updateColumn(columnId: string, title: string) {
       if (!this.board) return
-      this.board.columns = this.board.columns.filter(c => c.id !== columnId)
+      try {
+        await kanbanApi.updateColumn(columnId, { title })
+        const col = this.board.columns.find(c => c.id === columnId)
+        if (col) col.title = title
+      } catch (error) {
+        console.error('Failed to update column:', error)
+      }
     },
 
-    addTask(columnId: string, payload: CreateTaskPayload) {
+    async deleteColumn(columnId: string) {
+      if (!this.board) return
+      try {
+        await kanbanApi.deleteColumn(columnId)
+        this.board.columns = this.board.columns.filter(c => c.id !== columnId)
+      } catch (error) {
+        console.error('Failed to delete column:', error)
+      }
+    },
+
+    async addTask(columnId: string, payload: CreateTaskPayload) {
       if (!this.board) return
       const column = this.board.columns.find(c => c.id === columnId)
       if (!column) return
 
-      const newTask: Task = {
-        id: `task-${Date.now()}`,
-        columnId,
-        title: payload.title,
-        description: payload.description,
-        position: column.tasks.length,
-        priority: payload.priority || 'medium',
-        status: 'todo',
-        dueDate: payload.dueDate,
-        assignees: [],
-        labels: payload.labels || [],
-        commentsCount: 0,
-        attachmentsCount: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+      try {
+        const { data } = await kanbanApi.createTask({
+          ...payload,
+          columnId,
+        })
+        const t = data as any
+        column.tasks.push(this.normalizeTask(t))
+      } catch (error) {
+        console.error('Failed to add task:', error)
       }
-      column.tasks.push(newTask)
     },
 
-    updateTask(taskId: string, updates: Partial<Task>) {
+    async updateTask(taskId: string, updates: Partial<Task>) {
       if (!this.board) return
-      for (const col of this.board.columns) {
-        const task = col.tasks.find(t => t.id === taskId)
-        if (task) {
-          Object.assign(task, updates, { updatedAt: new Date().toISOString() })
-          break
+      try {
+        const { data } = await kanbanApi.updateTask(taskId, updates)
+        const updated = data as any
+        for (const col of this.board.columns) {
+          const idx = col.tasks.findIndex(t => t.id === taskId)
+          if (idx !== -1) {
+            col.tasks[idx] = this.normalizeTask(updated)
+            break
+          }
         }
+      } catch (error) {
+        console.error('Failed to update task:', error)
       }
     },
 
-    deleteTask(taskId: string) {
+    async deleteTask(taskId: string) {
       if (!this.board) return
-      for (const col of this.board.columns) {
-        const idx = col.tasks.findIndex(t => t.id === taskId)
-        if (idx !== -1) {
-          col.tasks.splice(idx, 1)
-          // Reorder
-          col.tasks.forEach((t, i) => (t.position = i))
-          break
+      try {
+        await kanbanApi.deleteTask(taskId)
+        for (const col of this.board.columns) {
+          const idx = col.tasks.findIndex(t => t.id === taskId)
+          if (idx !== -1) {
+            col.tasks.splice(idx, 1)
+            col.tasks.forEach((t, i) => (t.position = i))
+            break
+          }
         }
+      } catch (error) {
+        console.error('Failed to delete task:', error)
       }
     },
 
-    moveTask(payload: MoveTaskPayload) {
+    async moveTask(payload: MoveTaskPayload) {
       if (!this.board) return
 
+      // Optimistic update
       let task: Task | undefined
       let sourceColumn: Column | undefined
 
-      // Find and remove from source
       for (const col of this.board.columns) {
         const idx = col.tasks.findIndex(t => t.id === payload.taskId)
         if (idx !== -1) {
@@ -293,7 +196,6 @@ export const useKanbanStore = defineStore('kanban', {
 
       if (!task) return
 
-      // Add to target
       const targetColumn = this.board.columns.find(c => c.id === payload.targetColumnId)
       if (!targetColumn) return
 
@@ -301,14 +203,35 @@ export const useKanbanStore = defineStore('kanban', {
       task.position = payload.targetPosition
       targetColumn.tasks.splice(payload.targetPosition, 0, task)
 
-      // Reorder both columns
       sourceColumn?.tasks.forEach((t, i) => (t.position = i))
       targetColumn.tasks.forEach((t, i) => (t.position = i))
+
+      try {
+        await kanbanApi.moveTask(payload)
+      } catch (error) {
+        console.error('Failed to move task, reverting:', error)
+        // Revert by re-fetching the board
+        if (this.board) {
+          await this.fetchBoard(this.board.projectId)
+        }
+      }
     },
 
-    reorderColumns(newOrder: Column[]) {
+    async reorderColumns(newOrder: Column[]) {
       if (!this.board) return
+      // Optimistic update
       this.board.columns = newOrder.map((col, i) => ({ ...col, position: i }))
+
+      try {
+        await kanbanApi.reorderColumns(
+          newOrder.map((col, i) => ({ id: col.id, position: i }))
+        )
+      } catch (error) {
+        console.error('Failed to reorder columns:', error)
+        if (this.board) {
+          await this.fetchBoard(this.board.projectId)
+        }
+      }
     },
   },
 })

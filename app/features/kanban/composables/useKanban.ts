@@ -5,16 +5,16 @@ export const useKanban = () => {
     await kanbanStore.fetchBoard(projectId)
   }
 
-  const addColumn = (title: string) => {
-    kanbanStore.addColumn(title)
+  const addColumn = async (title: string) => {
+    await kanbanStore.addColumn(title)
   }
 
-  const addTask = (columnId: string, title: string) => {
-    kanbanStore.addTask(columnId, { columnId, title })
+  const addTask = async (columnId: string, title: string) => {
+    await kanbanStore.addTask(columnId, { columnId, title })
   }
 
-  const moveTask = (taskId: string, targetColumnId: string, targetPosition: number) => {
-    kanbanStore.moveTask({ taskId, targetColumnId, targetPosition })
+  const moveTask = async (taskId: string, targetColumnId: string, targetPosition: number) => {
+    await kanbanStore.moveTask({ taskId, targetColumnId, targetPosition })
   }
 
   return {
@@ -26,5 +26,10 @@ export const useKanban = () => {
     addColumn,
     addTask,
     moveTask,
+    updateColumn: kanbanStore.updateColumn,
+    deleteColumn: kanbanStore.deleteColumn,
+    updateTask: kanbanStore.updateTask,
+    deleteTask: kanbanStore.deleteTask,
+    reorderColumns: kanbanStore.reorderColumns,
   }
 }
