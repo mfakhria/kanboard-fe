@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowUpRight, Plus, Upload } from 'lucide-vue-next'
+import { ArrowUpRight, Upload } from 'lucide-vue-next'
 
 definePageMeta({
   layout: 'dashboard',
@@ -56,10 +56,6 @@ const statsCards = computed(() => [
     <!-- Page Header -->
     <LayoutPageHeader title="Dashboard" subtitle="Plan, prioritize, and accomplish your tasks with ease.">
       <template #actions>
-        <UiButton variant="success" class="gap-2">
-          <Plus class="h-4 w-4" />
-          Add Project
-        </UiButton>
         <UiButton variant="outline" class="gap-2">
           <Upload class="h-4 w-4" />
           Import Data

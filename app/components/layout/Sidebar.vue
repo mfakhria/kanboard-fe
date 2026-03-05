@@ -5,6 +5,7 @@ import {
   Calendar,
   BarChart3,
   Users,
+  FolderKanban,
   Settings,
   HelpCircle,
   LogOut,
@@ -19,6 +20,7 @@ const route = useRoute()
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
+  { icon: FolderKanban, label: 'Projects', href: '/project' },
   { icon: CheckSquare, label: 'Tasks', href: '/tasks', badge: '12+' },
   { icon: Calendar, label: 'Calendar', href: '/calendar' },
   { icon: BarChart3, label: 'Analytics', href: '/dashboard/analytics' },

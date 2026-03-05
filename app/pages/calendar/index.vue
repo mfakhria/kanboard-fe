@@ -100,9 +100,16 @@ interface CalendarEvent {
 
 const events = ref<CalendarEvent[]>([
   {
-    id: '1', title: 'Design Sprint Review', type: 'project',
-    date: new Date(2026, 5, 25), startHour: 8, startMinute: 0, endHour: 9, endMinute: 30,
-    color: 'border-l-lime-500', bgColor: 'bg-[#478FC8]/10 dark:bg-[#478FC8]/15',
+    id: '1',
+    title: 'Design Sprint Review',
+    type: 'project',
+    date: new Date(2026, 5, 25),
+    startHour: 8,
+    startMinute: 0,
+    endHour: 9,
+    endMinute: 30,
+    color: 'border-l-[#478FC8]',
+    bgColor: 'bg-[#478FC8]/10 dark:bg-[#478FC8]/15',
   },
   {
     id: '2', title: 'Project Work', type: 'project',
@@ -120,9 +127,16 @@ const events = ref<CalendarEvent[]>([
     color: 'border-l-red-500', bgColor: 'bg-red-500/10 dark:bg-red-500/15',
   },
   {
-    id: '5', title: 'Group Discussion', type: 'meeting',
-    date: new Date(2026, 5, 25), startHour: 10, startMinute: 0, endHour: 10, endMinute: 30,
-    color: 'border-l-lime-500', bgColor: 'bg-[#478FC8]/10 dark:bg-[#478FC8]/15',
+    id: '5',
+    title: 'Group Discussion',
+    type: 'meeting',
+    date: new Date(2026, 5, 25),
+    startHour: 10,
+    startMinute: 0,
+    endHour: 10,
+    endMinute: 30,
+    color: 'border-l-[#478FC8]',
+    bgColor: 'bg-[#478FC8]/10 dark:bg-[#478FC8]/15',
   },
   {
     id: '6', title: 'Weekly Meeting', type: 'meeting',
