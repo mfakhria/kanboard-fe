@@ -21,17 +21,17 @@ const pendingDash = computed(() => (progress.value.pending / 100) * circumferenc
           <svg viewBox="0 0 140 140" class="h-full w-full -rotate-90">
             <!-- Background circle -->
             <circle cx="70" cy="70" r="60" fill="none" class="stroke-gray-200 dark:stroke-gray-700" stroke-width="14" />
-            <!-- Completed (green) -->
+            <!-- Completed -->
             <circle
               cx="70" cy="70" r="60" fill="none"
-              stroke="#a3e635" stroke-width="14" stroke-linecap="round"
+              stroke="#478FC8" stroke-width="14" stroke-linecap="round"
               :stroke-dasharray="`${completedDash} ${circumference}`"
               stroke-dashoffset="0"
             />
-            <!-- In Progress (lime-400) -->
+            <!-- In Progress -->
             <circle
               cx="70" cy="70" r="60" fill="none"
-              stroke="#bef264" stroke-width="14" stroke-linecap="round"
+              stroke="#98ccf7" stroke-width="14" stroke-linecap="round"
               :stroke-dasharray="`${inProgressDash} ${circumference}`"
               :stroke-dashoffset="`-${completedDash}`"
             />
@@ -47,11 +47,11 @@ const pendingDash = computed(() => (progress.value.pending / 100) * circumferenc
       <!-- Legend -->
       <div class="mt-4 flex items-center justify-center gap-6">
         <div class="flex items-center gap-1.5">
-          <div class="h-2.5 w-2.5 rounded-full bg-lime-500" />
+          <div class="h-2.5 w-2.5 rounded-full bg-[#478FC8]" />
           <span class="text-xs text-gray-500 dark:text-gray-400">Completed</span>
         </div>
         <div class="flex items-center gap-1.5">
-          <div class="h-2.5 w-2.5 rounded-full bg-lime-300" />
+          <div class="h-2.5 w-2.5 rounded-full bg-[#98ccf7]" />
           <span class="text-xs text-gray-500 dark:text-gray-400">In Progress</span>
         </div>
         <div class="flex items-center gap-1.5">

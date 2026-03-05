@@ -99,7 +99,7 @@ const priorityColors: Record<string, string> = {
             <div
               v-for="(assignee, idx) in task.assignees"
               :key="assignee.id"
-              class="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white dark:border-gray-800 bg-lime-500 text-xs font-bold text-gray-900"
+              class="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white dark:border-gray-800 bg-[#478FC8] text-xs font-bold text-gray-900"
               :title="assignee.name"
             >
               {{ assignee.name.charAt(0) }}

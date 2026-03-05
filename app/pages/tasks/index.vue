@@ -196,14 +196,14 @@ function statusLabel(status: string) {
 }
 
 function progressColor(progress: number) {
-  if (progress === 100) return 'bg-lime-500'
+  if (progress === 100) return 'bg-[#478FC8]'
   if (progress >= 60) return 'bg-blue-500'
   if (progress >= 30) return 'bg-yellow-500'
   return 'bg-gray-400 dark:bg-gray-500'
 }
 
 function progressTrack(progress: number) {
-  if (progress === 100) return 'bg-lime-500/20'
+  if (progress === 100) return 'bg-[#478FC8]/20'
   if (progress >= 60) return 'bg-blue-500/20'
   if (progress >= 30) return 'bg-yellow-500/20'
   return 'bg-gray-200 dark:bg-gray-700'

@@ -102,7 +102,7 @@ const events = ref<CalendarEvent[]>([
   {
     id: '1', title: 'Design Sprint Review', type: 'project',
     date: new Date(2026, 5, 25), startHour: 8, startMinute: 0, endHour: 9, endMinute: 30,
-    color: 'border-l-lime-500', bgColor: 'bg-lime-500/10 dark:bg-lime-500/15',
+    color: 'border-l-lime-500', bgColor: 'bg-[#478FC8]/10 dark:bg-[#478FC8]/15',
   },
   {
     id: '2', title: 'Project Work', type: 'project',
@@ -122,7 +122,7 @@ const events = ref<CalendarEvent[]>([
   {
     id: '5', title: 'Group Discussion', type: 'meeting',
     date: new Date(2026, 5, 25), startHour: 10, startMinute: 0, endHour: 10, endMinute: 30,
-    color: 'border-l-lime-500', bgColor: 'bg-lime-500/10 dark:bg-lime-500/15',
+    color: 'border-l-lime-500', bgColor: 'bg-[#478FC8]/10 dark:bg-[#478FC8]/15',
   },
   {
     id: '6', title: 'Weekly Meeting', type: 'meeting',
@@ -224,7 +224,7 @@ const teams = [
 const timeBreakdown = [
   { label: 'Project', color: 'bg-red-500', width: 'w-3/4' },
   { label: 'Meeting', color: 'bg-amber-500', width: 'w-1/2' },
-  { label: 'Education', color: 'bg-lime-500', width: 'w-1/3' },
+  { label: 'Education', color: 'bg-[#478FC8]', width: 'w-1/3' },
 ]
 
 const tabs = [
@@ -240,18 +240,14 @@ const tabs = [
     <!-- ═══ Page Header ═══ -->
     <LayoutPageHeader title="Calendar" subtitle="Plan, track, and organize your schedule.">
       <template #actions>
-        <div class="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-1">
-          <button
-            v-for="mode in (['day', 'week', 'month'] as const)"
-            :key="mode"
-            :class="[
-              'rounded-md px-4 py-1.5 text-sm font-medium transition-colors',
-              viewMode === mode
-                ? 'bg-lime-400 text-gray-900 shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white',
-            ]"
-            @click="viewMode = mode"
-          >
+        <div
+          class="flex items-center gap-1 rounded-lg border border-[#EDF4FF] dark:border-gray-700 bg-white dark:bg-gray-900 p-1">
+          <button v-for="mode in (['day', 'week', 'month'] as const)" :key="mode" :class="[
+            'rounded-md px-4 py-1.5 text-sm font-medium transition-colors',
+            viewMode === mode
+              ? 'bg-[#478FC8] text-white shadow-sm'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-[#EDF4FF]'
+          ]" @click="viewMode = mode">
             {{ mode.charAt(0).toUpperCase() + mode.slice(1) }}
           </button>
         </div>
@@ -268,10 +264,14 @@ const tabs = [
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-base font-bold text-gray-900 dark:text-white">{{ monthLabel }}</h3>
               <div class="flex items-center gap-1">
-                <button class="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition" @click="prevMonth">
+                <button
+                  class="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition"
+                  @click="prevMonth">
                   <ChevronLeft class="h-4 w-4" />
                 </button>
-                <button class="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition" @click="nextMonth">
+                <button
+                  class="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition"
+                  @click="nextMonth">
                   <ChevronRight class="h-4 w-4" />
                 </button>
               </div>
@@ -281,7 +281,8 @@ const tabs = [
             <table class="w-full table-fixed border-collapse">
               <thead>
                 <tr>
-                  <th v-for="d in DAYS_SHORT" :key="d" class="py-1 text-center text-xs font-medium text-gray-400 dark:text-gray-500">
+                  <th v-for="d in DAYS_SHORT" :key="d"
+                    class="py-1 text-center text-xs font-medium text-gray-400 dark:text-gray-500">
                     {{ d }}
                   </th>
                 </tr>
@@ -289,16 +290,16 @@ const tabs = [
               <tbody>
                 <tr v-for="(week, wi) in calendarWeeks" :key="wi">
                   <td v-for="(cell, ci) in week" :key="ci" class="p-0 text-center">
-                    <button
-                      :class="[
-                        'mx-auto flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium transition-colors',
-                        !cell.current && 'text-gray-300 dark:text-gray-600',
-                        cell.current && !isSelected(cell.date) && !isToday(cell.date) && 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800',
-                        isToday(cell.date) && !isSelected(cell.date) && 'bg-lime-400/20 text-lime-700 dark:text-lime-400 font-bold',
-                        isSelected(cell.date) && 'bg-lime-500 text-gray-900 font-bold shadow-sm',
-                      ]"
-                      @click="selectDay(cell.date)"
-                    >
+                    <button :class="[
+                      'mx-auto flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium transition-colors',
+                      !cell.current && 'text-gray-300 dark:text-gray-600',
+                      cell.current && !isSelected(cell.date) && !isToday(cell.date) &&
+                      'text-gray-700 dark:text-gray-300 hover:bg-[#EDF4FF]',
+                      isToday(cell.date) && !isSelected(cell.date) &&
+                      'bg-[#478FC8]/20 text-[#478FC8] font-bold',
+                      isSelected(cell.date) &&
+                      'bg-[#478FC8] text-white font-bold shadow-sm'
+                    ]" @click="selectDay(cell.date)">
                       {{ cell.day }}
                     </button>
                   </td>
@@ -347,11 +348,8 @@ const tabs = [
           <div>
             <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-3">Upcoming Schedule</h3>
             <ul class="space-y-2">
-              <li
-                v-for="event in upcomingEvents"
-                :key="event.id"
-                :class="['flex items-center gap-3 rounded-lg border border-gray-100 dark:border-gray-700 p-3 border-l-[3px]', event.color]"
-              >
+              <li v-for="event in upcomingEvents" :key="event.id"
+                :class="['flex items-center gap-3 rounded-lg border border-gray-100 dark:border-gray-700 p-3 border-l-[3px]', event.color]">
                 <div class="flex-1 min-w-0">
                   <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ event.title }}</p>
                   <p class="text-xs text-gray-500 dark:text-gray-400">{{ formatEventTime(event) }}</p>
@@ -375,17 +373,12 @@ const tabs = [
           <div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <!-- Event type tabs -->
             <div class="flex items-center gap-1 overflow-x-auto">
-              <button
-                v-for="tab in tabs"
-                :key="tab.key"
-                :class="[
-                  'flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                  activeTab === tab.key
-                    ? 'bg-lime-400/15 text-lime-700 dark:text-lime-400'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800',
-                ]"
-                @click="activeTab = tab.key"
-              >
+              <button v-for="tab in tabs" :key="tab.key" :class="[
+                'flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                activeTab === tab.key
+                  ? 'bg-[#478FC8]/15 text-[#478FC8]'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-[#EDF4FF]'
+              ]" @click="activeTab = tab.key">
                 <component :is="tab.icon" class="h-4 w-4" />
                 {{ tab.label }}
               </button>
@@ -394,11 +387,14 @@ const tabs = [
             <!-- Date navigation -->
             <div class="flex items-center gap-2">
               <div class="flex items-center gap-1 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5">
-                <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition" @click="prevPeriod">
+                <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
+                  @click="prevPeriod">
                   <ChevronLeft class="h-4 w-4" />
                 </button>
-                <span class="text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap px-2">{{ formattedDate }}</span>
-                <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition" @click="nextPeriod">
+                <span class="text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap px-2">{{ formattedDate
+                }}</span>
+                <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
+                  @click="nextPeriod">
                   <ChevronRight class="h-4 w-4" />
                 </button>
               </div>
@@ -412,27 +408,16 @@ const tabs = [
           <!-- Vue-Cal Schedule -->
           <ClientOnly>
             <div class="vuecal-wrapper">
-              <VueCal
-                :key="viewMode"
-                :view="viewMode"
-                :events="vueCalEvents"
-                :view-date="vueCalViewDate"
-                :time-from="7 * 60"
-                :time-to="19 * 60"
-                :time-step="30"
-                :title-bar="false"
-                :views-bar="false"
-                :twelve-hour="true"
-                :today-button="false"
-                hide-weekdays-short-label
-                @view-change="onVueCalViewChange"
-                @cell-click="onCellClick"
-              />
+              <VueCal :key="viewMode" :view="viewMode" :events="vueCalEvents" :view-date="vueCalViewDate"
+                :time-from="7 * 60" :time-to="19 * 60" :time-step="30" :title-bar="false" :views-bar="false"
+                :twelve-hour="true" :today-button="false" hide-weekdays-short-label @view-change="onVueCalViewChange"
+                @cell-click="onCellClick" />
             </div>
             <template #fallback>
               <div class="flex items-center justify-center h-[600px]">
                 <div class="text-center">
-                  <div class="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-lime-500" />
+                  <div
+                    class="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-lime-500" />
                   <p class="text-sm text-gray-400 dark:text-gray-500">Loading calendar...</p>
                 </div>
               </div>

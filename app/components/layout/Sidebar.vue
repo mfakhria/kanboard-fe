@@ -42,63 +42,53 @@ const handleLogout = async () => {
 </script>
 
 <template>
-  <aside
-    :class="[
-      'fixed left-0 top-0 z-40 hidden h-screen flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 lg:flex transition-all duration-300',
-      collapsed ? 'w-[68px]' : 'w-[240px]',
-    ]"
-  >
+  <aside :class="[
+    'fixed left-0 top-0 z-40 hidden h-screen flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 lg:flex transition-all duration-300',
+    collapsed ? 'w-[68px]' : 'w-[240px]',
+  ]">
     <!-- Logo -->
     <div class="flex items-center justify-between px-4 py-5" :class="collapsed ? 'px-3' : 'px-6'">
       <div class="flex items-center gap-2 overflow-hidden">
-        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-lime-500">
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#478FC8]">
           <svg viewBox="0 0 24 24" class="h-5 w-5 text-gray-900" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="12" cy="12" r="10"/>
+            <path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round" />
+            <circle cx="12" cy="12" r="10" />
           </svg>
         </div>
-        <span v-if="!collapsed" class="text-xl font-bold text-gray-900 dark:text-white whitespace-nowrap">Kanboard</span>
+        <span v-if="!collapsed"
+          class="text-xl font-bold text-gray-900 dark:text-white whitespace-nowrap">Kanboard</span>
       </div>
-      <button
-        v-if="!collapsed"
+      <button v-if="!collapsed"
         class="shrink-0 rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition"
-        @click="toggleCollapse"
-      >
+        @click="toggleCollapse">
         <ChevronsLeft class="h-4 w-4" />
       </button>
     </div>
 
     <!-- Menu Section -->
-    <nav class="flex-1 overflow-y-auto overflow-x-hidden" :class="collapsed ? 'px-2' : 'px-3'" >
-      <p v-if="!collapsed" class="mb-3 px-3 py-4 pb-0 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Menu</p>
+    <nav class="flex-1 overflow-y-auto overflow-x-hidden" :class="collapsed ? 'px-2' : 'px-3'">
+      <p v-if="!collapsed"
+        class="mb-3 px-3 py-4 pb-0 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Menu
+      </p>
       <div v-else class="py-2" />
       <ul class="space-y-1">
         <li v-for="item in menuItems" :key="item.href">
-          <NuxtLink
-            :to="item.href"
-            :title="collapsed ? item.label : undefined"
-            :class="[
-              'flex items-center rounded-lg text-sm font-medium transition-all',
-              collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2.5',
-              isActive(item.href)
-                ? 'bg-lime-400 text-gray-900 shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white',
-            ]"
-          >
-            <component
-              :is="item.icon"
-              :class="['h-5 w-5 shrink-0', isActive(item.href) ? 'text-gray-900' : 'text-gray-400 dark:text-gray-500']"
-            />
+          <NuxtLink :to="item.href" :title="collapsed ? item.label : undefined" :class="[
+            'flex items-center rounded-lg text-sm font-medium transition-all',
+            collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2.5',
+            isActive(item.href)
+              ? 'bg-[#478FC8] text-white shadow-sm'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-[#EDF4FF] hover:text-[#478FC8]'
+          ]">
+            <component :is="item.icon"
+              :class="['h-5 w-5 shrink-0', isActive(item.href) ? 'text-white' : 'text-gray-400 dark:text-gray-500']" />
             <span v-if="!collapsed">{{ item.label }}</span>
-            <span
-              v-if="item.badge && !collapsed"
-              :class="[
-                'ml-auto rounded-full px-2 py-0.5 text-xs font-semibold',
-                isActive(item.href)
-                  ? 'bg-gray-900/10 text-gray-900'
-                  : 'bg-lime-100 dark:bg-lime-900/30 text-lime-800 dark:text-lime-400',
-              ]"
-            >
+            <span v-if="item.badge && !collapsed" :class="[
+              'ml-auto rounded-full px-2 py-0.5 text-xs font-semibold',
+              isActive(item.href)
+                ? 'bg-white/20 text-white'
+                : 'bg-[#EDF4FF] text-[#478FC8]'
+            ]">
               {{ item.badge }}
             </span>
           </NuxtLink>
@@ -106,34 +96,28 @@ const handleLogout = async () => {
       </ul>
 
       <!-- General Section -->
-      <p v-if="!collapsed" class="mb-3 mt-8 px-3 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">General</p>
+      <p v-if="!collapsed"
+        class="mb-3 mt-8 px-3 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">General
+      </p>
       <div v-else class="my-4 border-t border-gray-200 dark:border-gray-700" />
       <ul class="space-y-1">
         <li v-for="item in generalItems" :key="item.href">
-          <NuxtLink
-            :to="item.href"
-            :title="collapsed ? item.label : undefined"
-            :class="[
-              'flex items-center rounded-lg text-sm font-medium transition-all',
-              collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2.5',
-              isActive(item.href)
-                ? 'bg-lime-400 text-gray-900'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white',
-            ]"
-          >
-            <component :is="item.icon" class="h-5 w-5 shrink-0 text-gray-400 dark:text-gray-500" />
+          <NuxtLink :to="item.href" :title="collapsed ? item.label : undefined" :class="[
+            'flex items-center rounded-lg text-sm font-medium transition-all',
+            collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2.5',
+            isActive(item.href)
+              ? 'bg-[#478FC8] text-white'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-[#EDF4FF] hover:text-[#478FC8]'
+          ]">
+            <component :is="item.icon" class="h-5 w-5 shrink-0 text-[#478FC8]" />
             <span v-if="!collapsed">{{ item.label }}</span>
           </NuxtLink>
         </li>
         <li>
-          <button
-            :title="collapsed ? 'Logout' : undefined"
-            :class="[
-              'flex w-full items-center rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 transition-all hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white',
-              collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2.5',
-            ]"
-            @click="handleLogout"
-          >
+          <button :title="collapsed ? 'Logout' : undefined" :class="[
+            'flex w-full items-center rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 transition-all hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white',
+            collapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2.5',
+          ]" @click="handleLogout">
             <LogOut class="h-5 w-5 shrink-0 text-gray-400 dark:text-gray-500" />
             <span v-if="!collapsed">Logout</span>
           </button>
@@ -145,9 +129,7 @@ const handleLogout = async () => {
     <div v-if="collapsed" class="border-t border-gray-200 dark:border-gray-700 p-2">
       <button
         class="flex w-full items-center justify-center rounded-lg py-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition"
-        title="Expand sidebar"
-        @click="toggleCollapse"
-      >
+        title="Expand sidebar" @click="toggleCollapse">
         <ChevronsLeft class="h-4 w-4 rotate-180" />
       </button>
     </div>

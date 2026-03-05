@@ -27,7 +27,7 @@ const columnColorMap: Record<string, string> = {
   '#6b7280': 'bg-gray-400',
   '#3b82f6': 'bg-blue-500',
   '#f59e0b': 'bg-amber-500',
-  '#16a34a': 'bg-lime-500',
+  '#16a34a': 'bg-[#478FC8]',
 }
 
 const columnColor = computed(() => columnColorMap[props.column.color || '#6b7280'] || 'bg-gray-400')
@@ -127,7 +127,7 @@ const handleDropOnColumn = (e: DragEvent) => {
         <!-- Drop indicator -->
         <div
           v-if="isDragOver && dragOverPosition === idx"
-          class="h-1 rounded-full bg-lime-500 mb-2"
+          class="h-1 rounded-full bg-[#478FC8] mb-2"
         />
         <KanbanKanbanTask
           :task="task"
@@ -138,7 +138,7 @@ const handleDropOnColumn = (e: DragEvent) => {
       <!-- Bottom drop indicator -->
       <div
         v-if="isDragOver && dragOverPosition >= column.tasks.length"
-        class="h-1 rounded-full bg-lime-500"
+        class="h-1 rounded-full bg-[#478FC8]"
       />
     </div>
 

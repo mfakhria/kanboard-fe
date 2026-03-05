@@ -18,7 +18,7 @@ const reminders = computed(() => analyticsStore.reminders)
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
           Time : {{ reminder.time }}
         </p>
-        <button class="mt-4 inline-flex items-center gap-2 rounded-lg bg-lime-500 px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-lime-600 transition">
+        <button class="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#478FC8] px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-lime-600 transition">
           <Video class="h-4 w-4" />
           Start Meeting
         </button>
