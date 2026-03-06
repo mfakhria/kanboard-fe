@@ -23,7 +23,7 @@ const menuItems = [
   { icon: FolderKanban, label: 'Projects', href: '/project' },
   { icon: CheckSquare, label: 'Tasks', href: '/tasks', badge: '12+' },
   { icon: Calendar, label: 'Calendar', href: '/calendar' },
-  { icon: BarChart3, label: 'Analytics', href: '/dashboard/analytics' },
+  { icon: BarChart3, label: 'Analytics', href: '/analytics' },
   { icon: Users, label: 'Team', href: '/dashboard/team' },
 ]
 
