@@ -24,7 +24,7 @@ const menuItems = [
   { icon: CheckSquare, label: 'Tasks', href: '/tasks', badge: '12+' },
   { icon: Calendar, label: 'Calendar', href: '/calendar' },
   { icon: BarChart3, label: 'Analytics', href: '/analytics' },
-  { icon: Users, label: 'Team', href: '/dashboard/team' },
+  { icon: Users, label: 'Team', href: '/team' },
 ]
 
 const generalItems = [
