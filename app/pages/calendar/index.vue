@@ -519,7 +519,7 @@ const tabs = [
 }
 
 /* Current time line */
-.vuecal-wrapper .vuecal .vuecal__now-line {
+.vuecal-wrapper .vuecal .vuecal__now-line { 
   border-color: rgb(132 204 22);
   z-index: 10;
 }
