@@ -4,6 +4,8 @@ import type { Column } from '~/features/kanban/types'
 
 const kanbanStore = useKanbanStore()
 
+const readonly = inject('projectReadonly', ref(false))
+
 const columns = computed(() => kanbanStore.columns)
 const searchQuery = ref('')
 
@@ -92,7 +94,7 @@ const handleDragEnd = () => {
       />
 
       <!-- Add Column -->
-      <div class="flex-shrink-0 w-[280px]">
+      <div v-if="!readonly" class="flex-shrink-0 w-[280px]">
         <div v-if="!showAddColumn">
           <button
             class="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 p-4 text-sm font-medium text-gray-400 dark:text-gray-500 hover:border-[#478FC8] dark:hover:border-[#478FC8] hover:text-[#478FC8] transition"

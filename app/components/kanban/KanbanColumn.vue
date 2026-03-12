@@ -19,6 +19,8 @@ const emit = defineEmits<{
 
 const kanbanStore = useKanbanStore()
 
+const readonly = inject('projectReadonly', ref(false))
+
 const showAddTask = ref(false)
 const newTaskTitle = ref('')
 const showColumnMenu = ref(false)
@@ -119,7 +121,7 @@ const handleDropOnColumn = (e: DragEvent) => {
           {{ filteredTasks.length }}
         </span>
       </div>
-      <UiDropdown>
+      <UiDropdown v-if="!readonly">
         <template #trigger>
           <button class="rounded-lg p-1 hover:bg-gray-200/70 dark:hover:bg-gray-700 transition">
             <MoreHorizontal class="h-4 w-4 text-gray-400 dark:text-gray-500" />
@@ -154,8 +156,9 @@ const handleDropOnColumn = (e: DragEvent) => {
         <KanbanTask
           :task="task"
           :column-title="column.title"
+          :draggable="!readonly"
           :class="{ 'opacity-40': draggedTaskId === task.id }"
-          @dragstart="emit('dragStart', task.id, column.id)"
+          @dragstart="!readonly && emit('dragStart', task.id, column.id)"
           @dragend="emit('dragEnd')"
         />
       </div>
@@ -178,7 +181,7 @@ const handleDropOnColumn = (e: DragEvent) => {
     </div>
 
     <!-- Add Task Button -->
-    <div class="px-3 pb-3">
+    <div v-if="!readonly" class="px-3 pb-3">
       <div v-if="!showAddTask">
         <button
           class="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 px-3 py-2.5 text-sm font-medium text-gray-400 dark:text-gray-500 hover:border-[#478FC8] hover:text-[#478FC8] hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all"

@@ -40,6 +40,26 @@ onMounted(async () => {
 
 const project = computed(() => projectStore.currentProject)
 
+// ─── Role-based access ───
+const authStore = useAuthStore()
+const myProjectRole = computed(() => {
+  const raw = project.value as any
+  if (!raw || !authStore.currentUser) return null
+  const uid = authStore.currentUser.id
+  // Check project membership
+  const pm = raw.members?.find((m: any) => m.userId === uid || m.user?.id === uid)
+  if (pm) return pm.role as string
+  // Check workspace membership
+  const wm = raw.workspace?.members?.find((m: any) => m.userId === uid || m.user?.id === uid)
+  if (wm && ['OWNER', 'ADMIN'].includes(wm.role)) return wm.role as string
+  return null
+})
+const canManage = computed(() => ['OWNER', 'ADMIN'].includes(myProjectRole.value || ''))
+const isViewer = computed(() => myProjectRole.value === 'VIEWER')
+
+// Provide readonly flag to kanban components
+provide('projectReadonly', isViewer)
+
 // ─── Task Stats ───
 const taskStats = computed(() => {
   const cols = kanbanStore.columns
@@ -255,7 +275,7 @@ const roleColors: Record<string, string> = {
         </div>
       </div>
       <!-- Actions -->
-      <div class="flex items-center gap-2 shrink-0">
+      <div v-if="canManage" class="flex items-center gap-2 shrink-0">
         <UiButton variant="outline" size="sm" class="gap-1.5" @click="openEditDialog">
           <Edit3 class="h-4 w-4" />
           Edit
@@ -377,7 +397,7 @@ const roleColors: Record<string, string> = {
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Project Members</h3>
           <p class="text-sm text-gray-500 dark:text-gray-400">Manage who has access to this project</p>
         </div>
-        <UiButton size="sm" class="gap-1.5 bg-[#478FC8] hover:bg-[#3a7bb3] text-white" @click="showInviteDialog = true">
+        <UiButton v-if="canManage" size="sm" class="gap-1.5 bg-[#478FC8] hover:bg-[#3a7bb3] text-white" @click="showInviteDialog = true">
           <UserPlus class="h-4 w-4" />
           Invite Member
         </UiButton>
@@ -403,7 +423,7 @@ const roleColors: Record<string, string> = {
             <span :class="['text-xs font-medium px-2 py-1 rounded-full', roleColors[member.role]]">
               {{ member.role }}
             </span>
-            <div v-if="member.role !== 'OWNER'" class="flex items-center gap-1">
+            <div v-if="member.role !== 'OWNER' && canManage" class="flex items-center gap-1">
               <select
                 :value="member.role"
                 class="text-xs border border-gray-200 dark:border-gray-700 rounded-md px-2 py-1 bg-transparent"

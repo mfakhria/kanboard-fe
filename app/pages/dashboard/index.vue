@@ -60,7 +60,7 @@ async function handleAcceptInvitation(token: string) {
     if (result?.project?.workspaceId) {
       const ws = workspaceStore.allWorkspaces.find(w => w.id === result.project.workspaceId)
       if (ws) {
-        workspaceStore.currentWorkspace = ws
+        workspaceStore.setCurrentWorkspace(ws.id)
       }
     }
     // Refresh projects and analytics for the (now active) workspace

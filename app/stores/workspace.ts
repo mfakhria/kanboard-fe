@@ -37,7 +37,11 @@ export const useWorkspaceStore = defineStore('workspace', {
         }
 
         if (!this.currentWorkspace && this.workspaces.length > 0) {
-          this.currentWorkspace = this.workspaces[0] ?? null
+          // Restore last active workspace from localStorage
+          const savedId = localStorage.getItem('activeWorkspaceId')
+          const saved = savedId ? this.workspaces.find(w => w.id === savedId) : null
+          this.currentWorkspace = saved || this.workspaces[0] ?? null
+          if (this.currentWorkspace) localStorage.setItem('activeWorkspaceId', this.currentWorkspace.id)
         }
       } catch (error) {
         console.error('Failed to fetch workspaces:', error)
@@ -51,6 +55,7 @@ export const useWorkspaceStore = defineStore('workspace', {
       try {
         const { data } = await workspaceApi.get(id)
         this.currentWorkspace = data as Workspace
+        if (this.currentWorkspace) localStorage.setItem('activeWorkspaceId', this.currentWorkspace.id)
         // Update in list too
         const idx = this.workspaces.findIndex(w => w.id === id)
         if (idx !== -1) this.workspaces[idx] = data as Workspace
@@ -91,6 +96,7 @@ export const useWorkspaceStore = defineStore('workspace', {
         this.workspaces = this.workspaces.filter(w => w.id !== id)
         if (this.currentWorkspace?.id === id) {
           this.currentWorkspace = this.workspaces[0] ?? null
+          if (this.currentWorkspace) localStorage.setItem('activeWorkspaceId', this.currentWorkspace.id)
         }
       } catch (error) {
         console.error('Failed to delete workspace:', error)
@@ -100,6 +106,7 @@ export const useWorkspaceStore = defineStore('workspace', {
 
     setCurrentWorkspace(workspaceId: string) {
       this.currentWorkspace = this.workspaces.find(w => w.id === workspaceId) ?? null
+      if (this.currentWorkspace) localStorage.setItem('activeWorkspaceId', this.currentWorkspace.id)
     },
   },
 })

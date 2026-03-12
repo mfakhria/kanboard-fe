@@ -12,6 +12,7 @@ import type { Task } from '~/features/kanban/types'
 const props = defineProps<{
   task: Task
   columnTitle?: string
+  draggable?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -62,8 +63,8 @@ const isOverdue = computed(() => {
 
 <template>
   <div
-    draggable="true"
-    class="group cursor-grab rounded-xl border border-gray-100 dark:border-gray-700/60 bg-white dark:bg-gray-900 p-4 shadow-sm hover:shadow-md transition-all active:cursor-grabbing active:shadow-lg active:scale-[1.02]"
+    :draggable="draggable !== false ? 'true' : 'false'"
+    :class="['group rounded-xl border border-gray-100 dark:border-gray-700/60 bg-white dark:bg-gray-900 p-4 shadow-sm hover:shadow-md transition-all', draggable !== false ? 'cursor-grab active:cursor-grabbing active:shadow-lg active:scale-[1.02]' : '']"
     @dragstart="emit('dragstart')"
     @dragend="emit('dragend')"
     @click="showModal = true"
