@@ -6,12 +6,15 @@ definePageMeta({ layout: 'dashboard' })
 interface TaskItem {
   id: string
   title: string
+  description?: string
   assignees: { id: string; name: string; avatar?: string }[]
   priority: 'high' | 'medium' | 'low'
   status: 'completed' | 'in_progress' | 'not_started'
   dueDate: string
   progress: number
   columnName?: string
+  columnId?: string
+  projectId?: string
 }
 
 const workspaceStore = useWorkspaceStore()
@@ -35,12 +38,15 @@ function mapApiTask(t: any): TaskItem {
   return {
     id: t.id,
     title: t.title,
+    description: t.description || '',
     assignees: t.assignee ? [{ id: t.assignee.id, name: t.assignee.name, avatar: t.assignee.avatar }] : [],
     priority,
     status,
     dueDate: t.dueDate || t.createdAt,
     progress,
     columnName: t.column?.name,
+    columnId: t.column?.id,
+    projectId: t.column?.board?.projectId,
   }
 }
 
@@ -220,6 +226,86 @@ async function openCreateTask() {
     await projectStore.fetchProjects()
   }
   showCreateTask.value = true
+}
+
+// ─── View Details Dialog ───
+const showViewDetail = ref(false)
+const viewTask = ref<TaskItem | null>(null)
+
+function handleViewDetails(task: TaskItem) {
+  viewTask.value = task
+  showViewDetail.value = true
+}
+
+// ─── Edit Task Dialog ───
+const showEditTask = ref(false)
+const editTaskId = ref('')
+const editTaskTitle = ref('')
+const editTaskDescription = ref('')
+const editTaskPriority = ref('MEDIUM')
+const editTaskDueDate = ref('')
+const isEditingTask = ref(false)
+
+function handleEditTask(task: TaskItem) {
+  editTaskId.value = task.id
+  editTaskTitle.value = task.title
+  editTaskDescription.value = task.description || ''
+  editTaskPriority.value = task.priority.toUpperCase()
+  editTaskDueDate.value = task.dueDate ? (new Date(task.dueDate).toISOString().split('T')[0] ?? '') : ''
+  showEditTask.value = true
+}
+
+async function submitEditTask() {
+  if (!editTaskTitle.value.trim()) return
+  isEditingTask.value = true
+  try {
+    await kanbanApi.updateTask(editTaskId.value, {
+      title: editTaskTitle.value.trim(),
+      description: editTaskDescription.value.trim() || undefined,
+      priority: editTaskPriority.value.toLowerCase() as any,
+      dueDate: editTaskDueDate.value || undefined,
+    })
+    showEditTask.value = false
+    await loadTasks()
+  } catch (error) {
+    console.error('Failed to update task:', error)
+  } finally {
+    isEditingTask.value = false
+  }
+}
+
+// ─── Move to Board ───
+const router = useRouter()
+
+function handleMoveToBoard(task: TaskItem) {
+  if (task.projectId) {
+    router.push(`/project/${task.projectId}`)
+  }
+}
+
+// ─── Delete Task ───
+const showDeleteConfirm = ref(false)
+const deleteTaskTarget = ref<TaskItem | null>(null)
+const isDeletingTask = ref(false)
+
+function handleDeleteTask(task: TaskItem) {
+  deleteTaskTarget.value = task
+  showDeleteConfirm.value = true
+}
+
+async function confirmDeleteTask() {
+  if (!deleteTaskTarget.value) return
+  isDeletingTask.value = true
+  try {
+    await kanbanApi.deleteTask(deleteTaskTarget.value.id)
+    showDeleteConfirm.value = false
+    deleteTaskTarget.value = null
+    await loadTasks()
+  } catch (error) {
+    console.error('Failed to delete task:', error)
+  } finally {
+    isDeletingTask.value = false
+  }
 }
 </script>
 
@@ -419,20 +505,20 @@ async function openCreateTask() {
                     </button>
                   </template>
                   <template #default="{ close }">
-                    <UiDropdownItem @click="close()">
+                    <UiDropdownItem @click="close(); handleViewDetails(task)">
                       <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
                       View Details
                     </UiDropdownItem>
-                    <UiDropdownItem @click="close()">
+                    <UiDropdownItem @click="close(); handleEditTask(task)">
                       <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                       Edit Task
                     </UiDropdownItem>
-                    <UiDropdownItem @click="close()">
+                    <UiDropdownItem @click="close(); handleMoveToBoard(task)">
                       <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>
                       Move to Board
                     </UiDropdownItem>
                     <div class="my-1 border-t border-border" />
-                    <UiDropdownItem class="text-destructive hover:!bg-destructive/10 hover:!text-destructive" @click="close()">
+                    <UiDropdownItem class="text-destructive hover:!bg-destructive/10 hover:!text-destructive" @click="close(); handleDeleteTask(task)">
                       <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
                       Delete Task
                     </UiDropdownItem>
@@ -496,6 +582,115 @@ async function openCreateTask() {
           </UiButton>
         </div>
       </form>
+    </template>
+  </UiDialog>
+
+  <!-- View Task Details Dialog -->
+  <UiDialog v-model:open="showViewDetail" title="Task Details" description="View task information.">
+    <template #default="{ close }">
+      <div v-if="viewTask" class="space-y-4">
+        <div>
+          <p class="text-xs font-medium uppercase text-muted-foreground">Title</p>
+          <p class="mt-1 text-sm font-semibold text-foreground">{{ viewTask.title }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-medium uppercase text-muted-foreground">Description</p>
+          <p class="mt-1 text-sm text-foreground whitespace-pre-wrap">{{ viewTask.description || 'No description' }}</p>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-xs font-medium uppercase text-muted-foreground">Priority</p>
+            <UiBadge :variant="priorityVariant(viewTask.priority)" class="mt-1">
+              {{ priorityLabel(viewTask.priority) }}
+            </UiBadge>
+          </div>
+          <div>
+            <p class="text-xs font-medium uppercase text-muted-foreground">Status</p>
+            <span class="mt-1 inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold" :class="statusClasses(viewTask.status)">
+              {{ statusLabel(viewTask.status) }}
+            </span>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-xs font-medium uppercase text-muted-foreground">Due Date</p>
+            <p class="mt-1 text-sm text-foreground">{{ formatDate(viewTask.dueDate) }}</p>
+          </div>
+          <div>
+            <p class="text-xs font-medium uppercase text-muted-foreground">Column</p>
+            <p class="mt-1 text-sm text-foreground">{{ viewTask.columnName || '-' }}</p>
+          </div>
+        </div>
+        <div>
+          <p class="text-xs font-medium uppercase text-muted-foreground">Assignee</p>
+          <div class="mt-1 flex items-center gap-2">
+            <template v-if="viewTask.assignees.length">
+              <UiAvatar v-for="a in viewTask.assignees" :key="a.id" :alt="a.name" :src="a.avatar" size="sm" />
+              <span class="text-sm text-foreground">{{ viewTask.assignees.map(a => a.name).join(', ') }}</span>
+            </template>
+            <span v-else class="text-sm text-muted-foreground">Unassigned</span>
+          </div>
+        </div>
+        <div>
+          <p class="text-xs font-medium uppercase text-muted-foreground">Progress</p>
+          <div class="mt-1 flex items-center gap-3">
+            <UiProgress :model-value="viewTask.progress" :class="progressTrack(viewTask.progress)" :indicator-class="progressColor(viewTask.progress)" class="flex-1" />
+            <span class="text-xs font-medium text-muted-foreground">{{ viewTask.progress }}%</span>
+          </div>
+        </div>
+        <div class="flex justify-end pt-2">
+          <UiButton variant="outline" @click="close()">Close</UiButton>
+        </div>
+      </div>
+    </template>
+  </UiDialog>
+
+  <!-- Edit Task Dialog -->
+  <UiDialog v-model:open="showEditTask" title="Edit Task" description="Update task information.">
+    <template #default="{ close }">
+      <form class="space-y-4" @submit.prevent="submitEditTask">
+        <div>
+          <UiLabel for="edit-task-title">Task Title</UiLabel>
+          <UiInput id="edit-task-title" v-model="editTaskTitle" placeholder="Task title" class="mt-1.5" />
+        </div>
+        <div>
+          <UiLabel for="edit-task-desc">Description</UiLabel>
+          <UiTextarea id="edit-task-desc" v-model="editTaskDescription" placeholder="Task details..." class="mt-1.5" rows="3" />
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <UiLabel for="edit-task-priority">Priority</UiLabel>
+            <UiSelect id="edit-task-priority" v-model="editTaskPriority" :options="priorityOptions" class="mt-1.5" />
+          </div>
+          <div>
+            <UiLabel for="edit-task-due">Due Date</UiLabel>
+            <UiInput id="edit-task-due" v-model="editTaskDueDate" type="date" class="mt-1.5" />
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 pt-2">
+          <UiButton variant="outline" type="button" @click="close()">Cancel</UiButton>
+          <UiButton type="submit" :disabled="isEditingTask || !editTaskTitle.trim()">
+            {{ isEditingTask ? 'Saving...' : 'Save Changes' }}
+          </UiButton>
+        </div>
+      </form>
+    </template>
+  </UiDialog>
+
+  <!-- Delete Task Confirmation Dialog -->
+  <UiDialog v-model:open="showDeleteConfirm" title="Delete Task" description="This action cannot be undone.">
+    <template #default="{ close }">
+      <div class="space-y-4">
+        <p class="text-sm text-muted-foreground">
+          Are you sure you want to delete <span class="font-semibold text-foreground">"{{ deleteTaskTarget?.title }}"</span>? This action is permanent and cannot be undone.
+        </p>
+        <div class="flex justify-end gap-3 pt-2">
+          <UiButton variant="outline" @click="close()">Cancel</UiButton>
+          <UiButton variant="destructive" :disabled="isDeletingTask" @click="confirmDeleteTask">
+            {{ isDeletingTask ? 'Deleting...' : 'Delete Task' }}
+          </UiButton>
+        </div>
+      </div>
     </template>
   </UiDialog>
 </template>

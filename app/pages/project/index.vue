@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   FolderKanban,
   Loader2,
+  GripVertical,
 } from 'lucide-vue-next'
 
 definePageMeta({ layout: 'dashboard' })
@@ -63,16 +64,24 @@ const iconBgOptions = [
 
 // ─── Combine API data ───
 const projectCards = computed<ProjectCard[]>(() => {
+  const now = new Date()
   return projectStore.projects.map((p) => {
-    const statusMap: Record<string, ProjectCard['status']> = {
-      ACTIVE: 'in_progress',
-      COMPLETED: 'completed',
-      ARCHIVED: 'pending',
+    // Derive status: overdue if ACTIVE with past dueDate
+    let status: ProjectCard['status'] = 'pending'
+    if (p.status === 'COMPLETED') {
+      status = 'completed'
+    } else if (p.status === 'ACTIVE') {
+      if (p.dueDate && new Date(p.dueDate) < now) {
+        status = 'overdue'
+      } else {
+        status = 'in_progress'
+      }
     }
+
     return {
       id: p.id,
       name: p.name,
-      status: statusMap[p.status] || 'pending',
+      status,
       pic: { name: p.pic?.name || '-', avatar: p.pic?.avatar || '' },
       department: '-',
       role: '-',
@@ -100,6 +109,12 @@ const filteredProjects = computed(() => {
   return result
 })
 
+// Ordered + filtered
+const filteredOrderedProjects = computed(() => {
+  const ids = new Set(filteredProjects.value.map(p => p.id))
+  return orderedProjectCards.value.filter(p => ids.has(p.id))
+})
+
 // ─── Stats ───
 const stats = computed(() => {
   const all = projectCards.value
@@ -116,11 +131,11 @@ const stats = computed(() => {
 const currentPage = ref(1)
 const perPage = 6
 
-const totalPages = computed(() => Math.max(1, Math.ceil(filteredProjects.value.length / perPage)))
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredOrderedProjects.value.length / perPage)))
 
 const paginatedProjects = computed(() => {
   const start = (currentPage.value - 1) * perPage
-  return filteredProjects.value.slice(start, start + perPage)
+  return filteredOrderedProjects.value.slice(start, start + perPage)
 })
 
 const visiblePages = computed(() => {
@@ -182,6 +197,66 @@ function getProgressTextColor(progress: number) {
 watch([searchQuery, statusFilter], () => {
   currentPage.value = 1
 })
+
+// ─── Drag & Drop reorder ───
+const projectOrder = ref<string[]>([])
+const dragIndex = ref<number | null>(null)
+const dragOverIndex = ref<number | null>(null)
+
+// Keep order in sync when projects change
+watch(() => projectStore.projects, (projects) => {
+  const existingIds = new Set(projectOrder.value)
+  const newIds = projects.map(p => p.id)
+  // Only reset if the set of projects changed
+  if (newIds.length !== existingIds.size || newIds.some(id => !existingIds.has(id))) {
+    projectOrder.value = newIds
+  }
+}, { immediate: true })
+
+// Override projectCards to respect custom order
+const orderedProjectCards = computed<ProjectCard[]>(() => {
+  const cardMap = new Map(projectCards.value.map(c => [c.id, c]))
+  const ordered: ProjectCard[] = []
+  for (const id of projectOrder.value) {
+    const card = cardMap.get(id)
+    if (card) ordered.push(card)
+  }
+  // Add any cards not in order (newly created)
+  for (const card of projectCards.value) {
+    if (!projectOrder.value.includes(card.id)) ordered.push(card)
+  }
+  return ordered
+})
+
+function onDragStart(index: number) {
+  dragIndex.value = index
+}
+
+function onDragOver(index: number, e: DragEvent) {
+  e.preventDefault()
+  dragOverIndex.value = index
+}
+
+function onDragEnd() {
+  if (dragIndex.value !== null && dragOverIndex.value !== null && dragIndex.value !== dragOverIndex.value) {
+    // Work with filtered+paginated indices mapped back to the order array
+    const currentItems = filteredOrderedProjects.value
+    const fromId = currentItems[dragIndex.value]?.id
+    const toId = currentItems[dragOverIndex.value]?.id
+    if (fromId && toId) {
+      const arr = [...projectOrder.value]
+      const fromIdx = arr.indexOf(fromId)
+      const toIdx = arr.indexOf(toId)
+      if (fromIdx !== -1 && toIdx !== -1) {
+        arr.splice(fromIdx, 1)
+        arr.splice(toIdx, 0, fromId)
+        projectOrder.value = arr
+      }
+    }
+  }
+  dragIndex.value = null
+  dragOverIndex.value = null
+}
 
 // ─── Create Project Dialog ───
 const showCreateProject = ref(false)
@@ -400,13 +475,24 @@ async function handleCreateProject() {
     <!-- ═══ Project Cards Grid ═══ -->
     <div v-if="viewMode === 'card'" class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
       <UiCard
-        v-for="project in paginatedProjects"
+        v-for="(project, idx) in paginatedProjects"
         :key="project.id"
-        class="flex flex-col p-5 transition-shadow hover:shadow-md"
+        draggable="true"
+        class="flex flex-col p-5 transition-all hover:shadow-md"
+        :class="{
+          'opacity-50 scale-95': dragIndex === idx,
+          'ring-2 ring-[#478FC8] ring-offset-2': dragOverIndex === idx && dragIndex !== idx,
+        }"
+        @dragstart="onDragStart(idx)"
+        @dragover="onDragOver(idx, $event)"
+        @dragend="onDragEnd"
       >
         <!-- Card Header: Icon + Name + Status -->
         <div class="flex items-start justify-between mb-4">
           <div class="flex items-center gap-3">
+            <div class="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 transition-colors -ml-1">
+              <GripVertical class="h-5 w-5" />
+            </div>
             <div
               :class="['flex h-10 w-10 items-center justify-center rounded-lg text-lg', project.iconBg]"
               :style="project.color ? { backgroundColor: project.color + '20' } : {}"
@@ -501,6 +587,7 @@ async function handleCreateProject() {
           <table class="w-full text-sm">
             <thead>
               <tr class="border-b border-gray-100 dark:border-gray-800">
+                <th class="w-10 px-2 py-3"></th>
                 <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Project</th>
                 <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                 <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">PIC</th>
@@ -512,10 +599,23 @@ async function handleCreateProject() {
             </thead>
             <tbody>
               <tr
-                v-for="project in paginatedProjects"
+                v-for="(project, idx) in paginatedProjects"
                 :key="project.id"
+                draggable="true"
                 class="border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors"
+                :class="{
+                  'opacity-50': dragIndex === idx,
+                  'bg-[#478FC8]/5': dragOverIndex === idx && dragIndex !== idx,
+                }"
+                @dragstart="onDragStart(idx)"
+                @dragover="onDragOver(idx, $event)"
+                @dragend="onDragEnd"
               >
+                <td class="px-2 py-4">
+                  <div class="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 transition-colors">
+                    <GripVertical class="h-4 w-4" />
+                  </div>
+                </td>
                 <td class="px-5 py-4">
                   <div class="flex items-center gap-3">
                     <div
@@ -574,7 +674,7 @@ async function handleCreateProject() {
     <!-- ═══ Pagination ═══ -->
     <div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
       <p class="text-sm text-gray-500 dark:text-gray-400">
-        Showing {{ (currentPage - 1) * perPage + 1 }} to {{ Math.min(currentPage * perPage, filteredProjects.length) }} of {{ filteredProjects.length }} entries
+        Showing {{ (currentPage - 1) * perPage + 1 }} to {{ Math.min(currentPage * perPage, filteredOrderedProjects.length) }} of {{ filteredOrderedProjects.length }} entries
       </p>
       <div class="flex items-center gap-1">
         <button
