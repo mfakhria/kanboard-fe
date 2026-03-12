@@ -12,24 +12,33 @@ import {
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
-const chartData = computed(() => ({
-  labels: ['Design', 'Software & Dev', 'Sales & Marketing', 'Video', 'P.M.'],
+const analyticsStore = useAnalyticsStore()
+
+const priorityColors: Record<string, string> = {
+  LOW: '#84cc16',
+  MEDIUM: '#478FC8',
+  HIGH: '#dc2626',
+  URGENT: '#7c3aed',
+}
+
+const chartData = computed(() => {
+  const byPriority = analyticsStore.overviewStats?.tasksByPriority
+  const labels = byPriority?.map(p => p.priority) ?? ['LOW', 'MEDIUM', 'HIGH', 'URGENT']
+  const data = byPriority?.map(p => p.count) ?? [0, 0, 0, 0]
+  const bgColors = labels.map(l => priorityColors[l] ?? '#478FC8')
+
+  return {
+  labels,
   datasets: [
     {
       label: 'Tasks',
-      data: [25, 18, 12, 15, 8],
-      backgroundColor: [
-        '#478FC8',
-        '#a78bfa',
-        '#84cc16',
-        '#478FC8',
-        '#dc2626',
-      ],
+      data,
+      backgroundColor: bgColors,
       borderRadius: 4,
       barThickness: 20,
     },
   ],
-}))
+}})
 
 const chartOptions = computed(() => ({
   indexAxis: 'y' as const,

@@ -19,6 +19,12 @@ interface AnalyticsState {
   reminders: Reminder[]
   timeTracker: TimeTracker
   isLoading: boolean
+  overviewStats: {
+    taskStats: { total: number; completed: number; inProgress: number; overdue: number }
+    taskDistribution: { label: string; count: number; percentage: number }[]
+    tasksByPriority: { priority: string; count: number }[]
+    weeklyTrend: { weekLabel: string; completed: number; created: number; overdue: number }[]
+  } | null
 }
 
 export const useAnalyticsStore = defineStore('analytics', {
@@ -52,6 +58,7 @@ export const useAnalyticsStore = defineStore('analytics', {
       taskName: undefined,
     },
     isLoading: false,
+    overviewStats: null,
   }),
 
   getters: {
@@ -140,6 +147,17 @@ export const useAnalyticsStore = defineStore('analytics', {
         }
       } catch (error) {
         console.error('Failed to fetch project stats:', error)
+      }
+    },
+
+    async fetchOverviewStats(workspaceId?: string) {
+      try {
+        const wsId = workspaceId || useWorkspaceStore().activeWorkspace?.id
+        if (!wsId) return
+        const { data } = await analyticsApi.getOverviewStats(wsId)
+        this.overviewStats = data as any
+      } catch (error) {
+        console.error('Failed to fetch overview stats:', error)
       }
     },
 

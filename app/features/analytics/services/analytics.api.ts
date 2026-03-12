@@ -12,4 +12,8 @@ export const analyticsApi = {
   getWeeklySummary(workspaceId: string) {
     return api.get('/analytics/weekly', { params: { workspaceId } })
   },
+
+  getOverviewStats(workspaceId: string) {
+    return api.get(`/analytics/overview/${workspaceId}`)
+  },
 }

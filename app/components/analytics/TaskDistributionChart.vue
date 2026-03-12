@@ -10,22 +10,26 @@ import {
 
 ChartJS.register(Title, Tooltip, Legend, ArcElement)
 
-const chartData = computed(() => ({
-  labels: ['To Do', 'Completed', 'Ongoing', 'Overdue'],
+const analyticsStore = useAnalyticsStore()
+
+const distColors = ['#334155', '#478FC8', '#84cc16', '#7c3aed', '#dc2626', '#f59e0b']
+
+const chartData = computed(() => {
+  const dist = analyticsStore.overviewStats?.taskDistribution
+  const labels = dist?.map(d => d.label) ?? ['To Do', 'Completed', 'Ongoing', 'Overdue']
+  const data = dist?.map(d => d.percentage) ?? [0, 0, 0, 0]
+
+  return {
+  labels,
   datasets: [
     {
-      data: [30, 35, 25, 10],
-      backgroundColor: [
-        '#334155',
-        '#478FC8',
-        '#84cc16',
-        '#7c3aed',
-      ],
+      data,
+      backgroundColor: labels.map((_, i) => distColors[i % distColors.length]),
       borderWidth: 0,
       hoverOffset: 6,
     },
   ],
-}))
+}})
 
 const chartOptions = computed(() => ({
   responsive: true,

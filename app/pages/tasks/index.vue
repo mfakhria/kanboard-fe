@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { kanbanApi } from '~/features/kanban/services/task.api'
+
 definePageMeta({ layout: 'dashboard' })
 
 interface TaskItem {
@@ -9,136 +11,59 @@ interface TaskItem {
   status: 'completed' | 'in_progress' | 'not_started'
   dueDate: string
   progress: number
+  columnName?: string
 }
 
+const workspaceStore = useWorkspaceStore()
 const searchQuery = ref('')
 const filterOpen = ref(false)
 const selectedPriority = ref<string | null>(null)
 const selectedStatus = ref<string | null>(null)
+const isLoading = ref(false)
 
-const tasks = ref<TaskItem[]>([
-  {
-    id: '1',
-    title: 'Design Landing Page Wireframe',
-    assignees: [
-      { id: 'u1', name: 'Sarah Miller' },
-      { id: 'u2', name: 'Jake Owen' },
-      { id: 'u3', name: 'Li Wei' },
-      { id: 'u4', name: 'Amy Diaz' },
-    ],
-    priority: 'high',
-    status: 'in_progress',
-    dueDate: '2025-02-15',
-    progress: 65,
-  },
-  {
-    id: '2',
-    title: 'Implement User Authentication',
-    assignees: [
-      { id: 'u5', name: 'Tom Bradley' },
-    ],
-    priority: 'high',
-    status: 'in_progress',
-    dueDate: '2025-02-18',
-    progress: 40,
-  },
-  {
-    id: '3',
-    title: 'Setup CI/CD Pipeline',
-    assignees: [
-      { id: 'u6', name: 'Nina Patel' },
-      { id: 'u7', name: 'Carlos Ruiz' },
-    ],
-    priority: 'medium',
-    status: 'completed',
-    dueDate: '2025-02-10',
-    progress: 100,
-  },
-  {
-    id: '4',
-    title: 'Write API Documentation',
-    assignees: [
-      { id: 'u8', name: 'Emma Chen' },
-    ],
-    priority: 'low',
-    status: 'not_started',
-    dueDate: '2025-02-25',
-    progress: 0,
-  },
-  {
-    id: '5',
-    title: 'Database Schema Migration',
-    assignees: [
-      { id: 'u9', name: 'David Kim' },
-      { id: 'u10', name: 'Rachel Green' },
-      { id: 'u11', name: 'Oleg Petrov' },
-    ],
-    priority: 'high',
-    status: 'in_progress',
-    dueDate: '2025-02-12',
-    progress: 80,
-  },
-  {
-    id: '6',
-    title: 'Create Onboarding Flow',
-    assignees: [
-      { id: 'u12', name: 'Mia Torres' },
-    ],
-    priority: 'medium',
-    status: 'not_started',
-    dueDate: '2025-03-01',
-    progress: 0,
-  },
-  {
-    id: '7',
-    title: 'Performance Optimization Audit',
-    assignees: [
-      { id: 'u5', name: 'Tom Bradley' },
-      { id: 'u9', name: 'David Kim' },
-    ],
-    priority: 'medium',
-    status: 'in_progress',
-    dueDate: '2025-02-20',
-    progress: 50,
-  },
-  {
-    id: '8',
-    title: 'Integrate Payment Gateway',
-    assignees: [
-      { id: 'u6', name: 'Nina Patel' },
-      { id: 'u1', name: 'Sarah Miller' },
-      { id: 'u2', name: 'Jake Owen' },
-      { id: 'u3', name: 'Li Wei' },
-    ],
-    priority: 'high',
-    status: 'not_started',
-    dueDate: '2025-03-05',
-    progress: 0,
-  },
-  {
-    id: '9',
-    title: 'Mobile Responsive Fixes',
-    assignees: [
-      { id: 'u12', name: 'Mia Torres' },
-    ],
-    priority: 'low',
-    status: 'completed',
-    dueDate: '2025-02-08',
-    progress: 100,
-  },
-  {
-    id: '10',
-    title: 'Unit Test Coverage Improvement',
-    assignees: [
-      { id: 'u7', name: 'Carlos Ruiz' },
-      { id: 'u8', name: 'Emma Chen' },
-    ],
-    priority: 'low',
-    status: 'in_progress',
-    dueDate: '2025-02-22',
-    progress: 30,
-  },
-])
+const tasks = ref<TaskItem[]>([])
+
+function mapApiTask(t: any): TaskItem {
+  const priority = (t.priority || 'medium').toLowerCase() as TaskItem['priority']
+  const colName = (t.column?.name || '').toLowerCase()
+  let status: TaskItem['status'] = 'not_started'
+  if (t.completed) status = 'completed'
+  else if (colName.includes('progress') || colName.includes('doing') || colName.includes('review')) status = 'in_progress'
+  else if (colName.includes('done') || colName.includes('complete')) status = 'completed'
+  const progress = t.completed ? 100 : (status === 'in_progress' ? 50 : 0)
+
+  return {
+    id: t.id,
+    title: t.title,
+    assignees: t.assignee ? [{ id: t.assignee.id, name: t.assignee.name, avatar: t.assignee.avatar }] : [],
+    priority,
+    status,
+    dueDate: t.dueDate || t.createdAt,
+    progress,
+    columnName: t.column?.name,
+  }
+}
+
+async function loadTasks() {
+  const wsId = workspaceStore.activeWorkspace?.id
+  if (!wsId) return
+  isLoading.value = true
+  try {
+    const { data } = await kanbanApi.listTasks(wsId)
+    tasks.value = (data as any[]).map(mapApiTask)
+  } catch (error) {
+    console.error('Failed to load tasks:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(async () => {
+  if (!workspaceStore.allWorkspaces.length) {
+    await workspaceStore.fetchWorkspaces()
+  }
+  await loadTasks()
+})
 
 const filteredTasks = computed(() => {
   return tasks.value.filter((task) => {
@@ -221,6 +146,81 @@ function visibleAssignees(assignees: TaskItem['assignees']) {
 function extraAssigneeCount(assignees: TaskItem['assignees']) {
   return assignees.length > 2 ? assignees.length - 2 : 0
 }
+
+// ─── Create Task Dialog ───
+const showCreateTask = ref(false)
+const newTaskTitle = ref('')
+const newTaskDescription = ref('')
+const newTaskPriority = ref('MEDIUM')
+const newTaskDueDate = ref('')
+const newTaskProjectId = ref('')
+const newTaskColumnId = ref('')
+const isCreatingTask = ref(false)
+
+const projectStore = useProjectStore()
+const kanbanStore = useKanbanStore()
+
+const projectOptions = computed(() =>
+  projectStore.projects.map(p => ({ label: p.name, value: p.id })),
+)
+
+const columnOptions = computed(() =>
+  kanbanStore.columns.map(c => ({ label: c.title, value: c.id })),
+)
+
+const priorityOptions = [
+  { label: 'Low', value: 'LOW' },
+  { label: 'Medium', value: 'MEDIUM' },
+  { label: 'High', value: 'HIGH' },
+  { label: 'Urgent', value: 'URGENT' },
+]
+
+watch(newTaskProjectId, async (projectId) => {
+  newTaskColumnId.value = ''
+  if (projectId) {
+    await kanbanStore.fetchBoard(projectId)
+    if (kanbanStore.columns.length > 0) {
+      newTaskColumnId.value = kanbanStore.columns[0]?.id ?? ''
+    }
+  }
+})
+
+function resetTaskForm() {
+  newTaskTitle.value = ''
+  newTaskDescription.value = ''
+  newTaskPriority.value = 'MEDIUM'
+  newTaskDueDate.value = ''
+  newTaskProjectId.value = ''
+  newTaskColumnId.value = ''
+}
+
+async function handleCreateTask() {
+  if (!newTaskTitle.value.trim() || !newTaskColumnId.value) return
+  isCreatingTask.value = true
+  try {
+    await kanbanApi.createTask({
+      title: newTaskTitle.value.trim(),
+      description: newTaskDescription.value.trim() || undefined,
+      columnId: newTaskColumnId.value,
+      priority: newTaskPriority.value as any,
+      dueDate: newTaskDueDate.value || undefined,
+    })
+    resetTaskForm()
+    showCreateTask.value = false
+    await loadTasks()
+  } catch (error) {
+    console.error('Failed to create task:', error)
+  } finally {
+    isCreatingTask.value = false
+  }
+}
+
+async function openCreateTask() {
+  if (!projectStore.projects.length) {
+    await projectStore.fetchProjects()
+  }
+  showCreateTask.value = true
+}
 </script>
 
 <template>
@@ -228,7 +228,7 @@ function extraAssigneeCount(assignees: TaskItem['assignees']) {
     <!-- Page Header -->
     <LayoutPageHeader title="All Tasks" subtitle="Manage and track all your tasks across projects">
       <template #actions>
-        <UiButton variant="success" class="shrink-0">
+        <UiButton variant="success" class="shrink-0" @click="openCreateTask">
           <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
           Create Task
         </UiButton>
@@ -456,4 +456,46 @@ function extraAssigneeCount(assignees: TaskItem['assignees']) {
       </div>
     </UiCard>
   </LayoutPageContainer>
+
+  <!-- Create Task Dialog -->
+  <UiDialog v-model:open="showCreateTask" title="Create Task" description="Add a new task to a project board.">
+    <template #default="{ close }">
+      <form class="space-y-4" @submit.prevent="handleCreateTask">
+        <div>
+          <UiLabel for="task-title">Task Title</UiLabel>
+          <UiInput id="task-title" v-model="newTaskTitle" placeholder="e.g. Implement login page" class="mt-1.5" />
+        </div>
+        <div>
+          <UiLabel for="task-desc">Description</UiLabel>
+          <UiTextarea id="task-desc" v-model="newTaskDescription" placeholder="Task details..." class="mt-1.5" rows="3" />
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <UiLabel for="task-project">Project</UiLabel>
+            <UiSelect id="task-project" v-model="newTaskProjectId" :options="projectOptions" placeholder="Select project" class="mt-1.5" />
+          </div>
+          <div>
+            <UiLabel for="task-column">Column</UiLabel>
+            <UiSelect id="task-column" v-model="newTaskColumnId" :options="columnOptions" :disabled="!newTaskProjectId" placeholder="Select column" class="mt-1.5" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <UiLabel for="task-priority">Priority</UiLabel>
+            <UiSelect id="task-priority" v-model="newTaskPriority" :options="priorityOptions" class="mt-1.5" />
+          </div>
+          <div>
+            <UiLabel for="task-due">Due Date</UiLabel>
+            <UiInput id="task-due" v-model="newTaskDueDate" type="date" class="mt-1.5" />
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 pt-2">
+          <UiButton variant="outline" type="button" @click="resetTaskForm(); close()">Cancel</UiButton>
+          <UiButton type="submit" :disabled="isCreatingTask || !newTaskTitle.trim() || !newTaskColumnId">
+            {{ isCreatingTask ? 'Creating...' : 'Create Task' }}
+          </UiButton>
+        </div>
+      </form>
+    </template>
+  </UiDialog>
 </template>

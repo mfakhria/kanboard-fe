@@ -14,12 +14,22 @@ import {
 
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale, Filler)
 
-const chartData = computed(() => ({
-  labels: ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4', 'Wk 5', 'June'],
+const analyticsStore = useAnalyticsStore()
+
+const chartData = computed(() => {
+  const trend = analyticsStore.overviewStats?.weeklyTrend
+  const labels = trend?.map(w => w.weekLabel) ?? ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4', 'Wk 5', 'Wk 6']
+  const data = trend?.map(w => {
+    const total = w.completed + w.created
+    return total > 0 ? Math.round((w.completed / total) * 100) : 0
+  }) ?? [0, 0, 0, 0, 0, 0]
+
+  return {
+  labels,
   datasets: [
     {
       label: 'Task Completion Rate',
-      data: [60, 45, 80, 95, 70, 85],
+      data,
       borderColor: '#478FC8',
       backgroundColor: 'rgba(71, 143, 200, 0.1)',
       fill: true,
@@ -31,7 +41,7 @@ const chartData = computed(() => ({
       pointHoverRadius: 6,
     },
   ],
-}))
+}})
 
 const chartOptions = computed(() => ({
   responsive: true,

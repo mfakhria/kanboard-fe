@@ -4,7 +4,7 @@ import { cn } from '~/utils/cn'
 
 const props = withDefaults(defineProps<{
   class?: HTMLAttributes['class']
-  type?: 'text' | 'email' | 'password' | 'search' | 'number'
+  type?: 'text' | 'email' | 'password' | 'search' | 'number' | 'date' | 'color' | 'url' | 'tel'
   placeholder?: string
   modelValue?: string | number
   disabled?: boolean

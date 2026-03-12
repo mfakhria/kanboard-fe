@@ -14,12 +14,21 @@ import {
 
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale, Filler)
 
-const chartData = computed(() => ({
-  labels: ['Jan', 'Wk 1', 'Wk 2', 'Wk 3', 'Wk 4', 'Wk 5', 'June'],
+const analyticsStore = useAnalyticsStore()
+
+const chartData = computed(() => {
+  const trend = analyticsStore.overviewStats?.weeklyTrend
+  const labels = trend?.map(w => w.weekLabel) ?? ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4', 'Wk 5', 'Wk 6']
+  const completedData = trend?.map(w => w.completed) ?? [0, 0, 0, 0, 0, 0]
+  const createdData = trend?.map(w => w.created) ?? [0, 0, 0, 0, 0, 0]
+  const overdueData = trend?.map(w => w.overdue) ?? [0, 0, 0, 0, 0, 0]
+
+  return {
+  labels,
   datasets: [
     {
       label: 'Complete',
-      data: [5, 12, 18, 15, 22, 10, 8],
+      data: completedData,
       borderColor: '#478FC8',
       backgroundColor: 'rgba(71, 143, 200, 0.08)',
       fill: true,
@@ -29,7 +38,7 @@ const chartData = computed(() => ({
     },
     {
       label: 'Ongoing',
-      data: [3, 8, 10, 12, 8, 14, 6],
+      data: createdData,
       borderColor: '#84cc16',
       backgroundColor: 'rgba(132, 204, 22, 0.08)',
       fill: true,
@@ -39,7 +48,7 @@ const chartData = computed(() => ({
     },
     {
       label: 'Overdue',
-      data: [1, 3, 5, 4, 6, 3, 2],
+      data: overdueData,
       borderColor: '#dc2626',
       backgroundColor: 'rgba(220, 38, 38, 0.08)',
       fill: true,
@@ -48,7 +57,7 @@ const chartData = computed(() => ({
       pointBackgroundColor: '#dc2626',
     },
   ],
-}))
+}})
 
 const chartOptions = computed(() => ({
   responsive: true,

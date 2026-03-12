@@ -35,7 +35,7 @@ const departmentFilter = ref('')
 const progressFilter = ref('')
 const deadlineFilter = ref('')
 
-// ─── Mock project data (used when API data is empty) ───
+// ─── Mock project data removed — uses real API data ───
 interface ProjectCard {
   id: string
   name: string
@@ -51,64 +51,31 @@ interface ProjectCard {
   iconBg: string
 }
 
-const mockProjects: ProjectCard[] = [
-  {
-    id: '1', name: 'Onboarding Process', status: 'in_progress',
-    pic: { name: 'Jenny Lim', avatar: '' }, department: 'Human Resource', role: 'Talent Officer',
-    completedTasks: 5, totalTasks: 21, deadline: 'May 24, 2025', progress: 42,
-    icon: '📋', iconBg: 'bg-orange-100 dark:bg-orange-900/30',
-  },
-  {
-    id: '2', name: 'Cybersecurity Policy Upda...', status: 'completed',
-    pic: { name: 'Michael Ardi', avatar: '' }, department: 'Engineer', role: 'IT Security Officer',
-    completedTasks: 14, totalTasks: 14, deadline: 'May 10, 2025', progress: 100,
-    icon: '🔒', iconBg: 'bg-emerald-100 dark:bg-emerald-900/30',
-  },
-  {
-    id: '3', name: 'Talent Development Program', status: 'pending',
-    pic: { name: 'Lisa Kim', avatar: '' }, department: 'Human Resource', role: 'Talent Officer',
-    completedTasks: 1, totalTasks: 12, deadline: 'June 25, 2025', progress: 10,
-    icon: '🎯', iconBg: 'bg-blue-100 dark:bg-blue-900/30',
-  },
-  {
-    id: '4', name: 'Internship 2025', status: 'completed',
-    pic: { name: 'Peter Gabrielle', avatar: '' }, department: 'Human Resource', role: 'HR Lead',
-    completedTasks: 3, totalTasks: 3, deadline: 'May 30, 2025', progress: 100,
-    icon: '🎓', iconBg: 'bg-teal-100 dark:bg-teal-900/30',
-  },
-  {
-    id: '5', name: 'Network Infrastructure Up...', status: 'in_progress',
-    pic: { name: 'Daniel Chong', avatar: '' }, department: 'Engineer', role: 'IT Lead',
-    completedTasks: 9, totalTasks: 12, deadline: 'June 10, 2025', progress: 75,
-    icon: '🌐', iconBg: 'bg-amber-100 dark:bg-amber-900/30',
-  },
-  {
-    id: '6', name: 'Website SEO Optimization', status: 'completed',
-    pic: { name: 'Thomas Yeo', avatar: '' }, department: 'Marketing', role: 'SEO Specialist',
-    completedTasks: 15, totalTasks: 15, deadline: 'May 10, 2025', progress: 100,
-    icon: '🔍', iconBg: 'bg-violet-100 dark:bg-violet-900/30',
-  },
+const iconBgOptions = [
+  'bg-orange-100 dark:bg-orange-900/30',
+  'bg-emerald-100 dark:bg-emerald-900/30',
+  'bg-blue-100 dark:bg-blue-900/30',
+  'bg-teal-100 dark:bg-teal-900/30',
+  'bg-amber-100 dark:bg-amber-900/30',
+  'bg-violet-100 dark:bg-violet-900/30',
 ]
 
-// ─── Combine API data with mock ───
+// ─── Combine API data ───
 const projectCards = computed<ProjectCard[]>(() => {
-  if (projectStore.projects.length > 0) {
-    return projectStore.projects.map((p) => ({
-      id: p.id,
-      name: p.name,
-      status: p.status === 'running' ? 'in_progress' as const : p.status as ProjectCard['status'],
-      pic: { name: '-', avatar: '' },
-      department: '-',
-      role: '-',
-      completedTasks: 0,
-      totalTasks: 0,
-      deadline: p.dueDate ? new Date(p.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-',
-      progress: 0,
-      icon: p.icon || '📁',
-      iconBg: 'bg-blue-100 dark:bg-blue-900/30',
-    }))
-  }
-  return mockProjects
+  return projectStore.projects.map((p, idx) => ({
+    id: p.id,
+    name: p.name,
+    status: p.status === 'running' ? 'in_progress' as const : (p.status || 'pending') as ProjectCard['status'],
+    pic: { name: '-', avatar: '' },
+    department: '-',
+    role: '-',
+    completedTasks: 0,
+    totalTasks: 0,
+    deadline: p.dueDate ? new Date(p.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-',
+    progress: 0,
+    icon: p.icon || '📁',
+    iconBg: iconBgOptions[idx % iconBgOptions.length] ?? 'bg-blue-100 dark:bg-blue-900/30',
+  }))
 })
 
 // ─── Filtered projects ───
@@ -206,6 +173,43 @@ function getProgressTextColor(progress: number) {
 watch([searchQuery, statusFilter], () => {
   currentPage.value = 1
 })
+
+// ─── Create Project Dialog ───
+const showCreateProject = ref(false)
+const newProjectName = ref('')
+const newProjectDescription = ref('')
+const newProjectColor = ref('')
+const newProjectDueDate = ref('')
+const isCreatingProject = ref(false)
+
+function resetCreateForm() {
+  newProjectName.value = ''
+  newProjectDescription.value = ''
+  newProjectColor.value = ''
+  newProjectDueDate.value = ''
+}
+
+async function handleCreateProject() {
+  if (!newProjectName.value.trim()) return
+  const wsId = workspaceStore.activeWorkspace?.id
+  if (!wsId) return
+  isCreatingProject.value = true
+  try {
+    await projectStore.createProject({
+      name: newProjectName.value.trim(),
+      description: newProjectDescription.value.trim() || undefined,
+      workspaceId: wsId,
+      color: newProjectColor.value || undefined,
+      dueDate: newProjectDueDate.value || undefined,
+    })
+    resetCreateForm()
+    showCreateProject.value = false
+  } catch (error) {
+    console.error('Failed to create project:', error)
+  } finally {
+    isCreatingProject.value = false
+  }
+}
 </script>
 
 <template>
@@ -365,7 +369,7 @@ watch([searchQuery, statusFilter], () => {
             Card
           </button>
         </div>
-        <UiButton class="gap-2 bg-[#478FC8] hover:bg-[#3a7bb3] text-white shadow-sm hover:shadow-md transition-all">
+        <UiButton class="gap-2 bg-[#478FC8] hover:bg-[#3a7bb3] text-white shadow-sm hover:shadow-md transition-all" @click="showCreateProject = true">
           <Plus class="h-4 w-4" />
           Add Project
         </UiButton>
@@ -584,4 +588,36 @@ watch([searchQuery, statusFilter], () => {
       </button>
     </div>
   </LayoutPageContainer>
+
+  <!-- Create Project Dialog -->
+  <UiDialog v-model:open="showCreateProject" title="Create Project" description="Add a new project to your workspace.">
+    <template #default="{ close }">
+      <form class="space-y-4" @submit.prevent="handleCreateProject">
+        <div>
+          <UiLabel for="project-name">Project Name</UiLabel>
+          <UiInput id="project-name" v-model="newProjectName" placeholder="e.g. Website Redesign" class="mt-1.5" />
+        </div>
+        <div>
+          <UiLabel for="project-desc">Description</UiLabel>
+          <UiTextarea id="project-desc" v-model="newProjectDescription" placeholder="Brief description of the project..." class="mt-1.5" rows="3" />
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <UiLabel for="project-color">Color</UiLabel>
+            <UiInput id="project-color" v-model="newProjectColor" type="color" class="mt-1.5 h-10" />
+          </div>
+          <div>
+            <UiLabel for="project-due">Due Date</UiLabel>
+            <UiInput id="project-due" v-model="newProjectDueDate" type="date" class="mt-1.5" />
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 pt-2">
+          <UiButton variant="outline" type="button" @click="resetCreateForm(); close()">Cancel</UiButton>
+          <UiButton type="submit" :disabled="isCreatingProject || !newProjectName.trim()" class="bg-[#478FC8] hover:bg-[#3a7bb3] text-white">
+            {{ isCreatingProject ? 'Creating...' : 'Create Project' }}
+          </UiButton>
+        </div>
+      </form>
+    </template>
+  </UiDialog>
 </template>

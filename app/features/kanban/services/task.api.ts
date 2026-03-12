@@ -70,4 +70,8 @@ export const kanbanApi = {
   addComment(taskId: string, content: string) {
     return api.post(`/tasks/${taskId}/comments`, { content })
   },
+
+  listTasks(workspaceId: string) {
+    return api.get('/tasks', { params: { workspaceId } })
+  },
 }

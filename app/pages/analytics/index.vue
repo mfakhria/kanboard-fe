@@ -13,6 +13,22 @@ definePageMeta({
   layout: 'dashboard',
 })
 
+const analyticsStore = useAnalyticsStore()
+const workspaceStore = useWorkspaceStore()
+
+onMounted(async () => {
+  if (!workspaceStore.allWorkspaces.length) {
+    await workspaceStore.fetchWorkspaces()
+  }
+  const wsId = workspaceStore.activeWorkspace?.id
+  if (wsId) {
+    await Promise.all([
+      analyticsStore.fetchAnalytics(wsId),
+      analyticsStore.fetchOverviewStats(wsId),
+    ])
+  }
+})
+
 const selectedPeriod = ref('month')
 const periodOptions = [
   { label: 'Week', value: 'week' },
@@ -30,11 +46,13 @@ const dateRange = computed(() => {
   return `${fmt(start)} - ${fmt(end)}`
 })
 
-const statsCards = computed(() => [
+const statsCards = computed(() => {
+  const os = analyticsStore.overviewStats?.taskStats
+  return [
   {
     title: 'Task Completed',
-    value: '25',
-    change: 50,
+    value: String(os?.completed ?? 0).padStart(2, '0'),
+    change: 0,
     description: 'This is the total number of tasks you have marked completed in this time frame.',
     icon: CheckCircle2,
     color: 'text-[#478FC8]',
@@ -43,8 +61,8 @@ const statsCards = computed(() => [
   },
   {
     title: 'Task in Progress',
-    value: '08',
-    change: 16,
+    value: String(os?.inProgress ?? 0).padStart(2, '0'),
+    change: 0,
     description: 'This is the number of tasks your team is actively working on.',
     icon: Clock,
     color: 'text-[#84cc16]',
@@ -53,15 +71,15 @@ const statsCards = computed(() => [
   },
   {
     title: 'Task Overdue',
-    value: '04',
-    change: 10,
+    value: String(os?.overdue ?? 0).padStart(2, '0'),
+    change: 0,
     description: 'This is the number of tasks that are yet to be completed and has passed their due date.',
     icon: AlertTriangle,
     color: 'text-[#dc2626]',
     bgColor: 'bg-red-50 dark:bg-red-900/10',
     iconBg: 'bg-red-100 dark:bg-red-900/20',
   },
-])
+]})
 </script>
 
 <template>

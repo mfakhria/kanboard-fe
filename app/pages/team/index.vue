@@ -35,23 +35,8 @@ const members = computed(() =>
   })),
 )
 
-// If no real data, show demo members
-const demoMembers = [
-  { id: '1', name: 'Asthon Kucher', role: 'Lead Product Designer', avatar: undefined, taskProgress: 83, collaborators: fakeCollabs(6), status: 'online' as const },
-  { id: '2', name: 'Bethany Maria', role: 'Senior Product Designer', avatar: undefined, taskProgress: 76, collaborators: fakeCollabs(6), status: 'online' as const },
-  { id: '3', name: 'Daniel Richard', role: 'UX Researcher', avatar: undefined, taskProgress: 69, collaborators: fakeCollabs(4), status: 'online' as const },
-  { id: '4', name: 'Eric Winston', role: 'Head Director', avatar: undefined, taskProgress: 89, collaborators: fakeCollabs(4), status: 'online' as const },
-  { id: '5', name: 'Keith Pirerra', role: 'General Manager', avatar: undefined, taskProgress: 78, collaborators: fakeCollabs(5), status: 'offline' as const },
-  { id: '6', name: 'Laura Charlotte', role: 'Creative Lead', avatar: undefined, taskProgress: 71, collaborators: fakeCollabs(4), status: 'online' as const },
-  { id: '7', name: 'Leonardo P.', role: 'Front-end Developer', avatar: undefined, taskProgress: 65, collaborators: fakeCollabs(3), status: 'online' as const },
-  { id: '8', name: 'Michael Dale', role: 'Junior UI/UX', avatar: undefined, taskProgress: 54, collaborators: fakeCollabs(3), status: 'offline' as const },
-  { id: '9', name: 'Poppy Vera', role: 'Junior Marketing', avatar: undefined, taskProgress: 51, collaborators: fakeCollabs(4), status: 'online' as const },
-  { id: '10', name: 'Sarah Chen', role: 'Social Media Department', avatar: undefined, taskProgress: 81, collaborators: fakeCollabs(5), status: 'online' as const },
-  { id: '11', name: 'Tex Saverio', role: 'Digital Marketing', avatar: undefined, taskProgress: 79, collaborators: fakeCollabs(3), status: 'online' as const },
-  { id: '12', name: 'Vera Wang', role: 'Social Media Department', avatar: undefined, taskProgress: 68, collaborators: fakeCollabs(4), status: 'offline' as const },
-]
-
-const displayMembers = computed(() => members.value.length > 0 ? members.value : demoMembers)
+// Use real workspace members only — no demo data
+const displayMembers = computed(() => members.value)
 
 // Search
 const searchQuery = ref('')

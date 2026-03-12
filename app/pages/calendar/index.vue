@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight, Plus, Filter, Briefcase, Users, GraduationCap, CalendarDays, MoreVertical } from 'lucide-vue-next'
+import { kanbanApi } from '~/features/kanban/services/task.api'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -8,8 +9,10 @@ const VueCal = defineAsyncComponent(() =>
   import('vue-cal').then((m) => m.VueCal),
 )
 
+const workspaceStore = useWorkspaceStore()
+
 // ─── State ───
-const selectedDate = ref(new Date(2026, 5, 25)) // June 25, 2026
+const selectedDate = ref(new Date())
 const activeTab = ref<'all' | 'project' | 'meeting' | 'education'>('all')
 const viewMode = ref<'day' | 'week' | 'month'>('week')
 
@@ -70,14 +73,12 @@ const calendarWeeks = computed(() => {
   return weeks
 })
 
-const simulatedToday = new Date(2026, 5, 25)
-
 function isSelected(date: Date) {
   return date.toDateString() === selectedDate.value.toDateString()
 }
 
 function isToday(date: Date) {
-  return date.toDateString() === simulatedToday.toDateString()
+  return date.toDateString() === new Date().toDateString()
 }
 
 function selectDay(date: Date) {
@@ -98,62 +99,50 @@ interface CalendarEvent {
   bgColor: string
 }
 
-const events = ref<CalendarEvent[]>([
-  {
-    id: '1',
-    title: 'Design Sprint Review',
-    type: 'project',
-    date: new Date(2026, 5, 25),
-    startHour: 8,
-    startMinute: 0,
-    endHour: 9,
-    endMinute: 30,
-    color: 'border-l-[#478FC8]',
-    bgColor: 'bg-[#478FC8]/10 dark:bg-[#478FC8]/15',
-  },
-  {
-    id: '2', title: 'Project Work', type: 'project',
-    date: new Date(2026, 5, 24), startHour: 9, startMinute: 0, endHour: 10, endMinute: 30,
-    color: 'border-l-orange-500', bgColor: 'bg-orange-500/10 dark:bg-orange-500/15',
-  },
-  {
-    id: '3', title: 'Wireframe Review', type: 'meeting',
-    date: new Date(2026, 5, 26), startHour: 9, startMinute: 0, endHour: 10, endMinute: 0,
-    color: 'border-l-yellow-500', bgColor: 'bg-yellow-500/10 dark:bg-yellow-500/15',
-  },
-  {
-    id: '4', title: 'Client Presentation', type: 'meeting',
-    date: new Date(2026, 5, 23), startHour: 10, startMinute: 0, endHour: 11, endMinute: 30,
-    color: 'border-l-red-500', bgColor: 'bg-red-500/10 dark:bg-red-500/15',
-  },
-  {
-    id: '5',
-    title: 'Group Discussion',
-    type: 'meeting',
-    date: new Date(2026, 5, 25),
-    startHour: 10,
-    startMinute: 0,
-    endHour: 10,
-    endMinute: 30,
-    color: 'border-l-[#478FC8]',
-    bgColor: 'bg-[#478FC8]/10 dark:bg-[#478FC8]/15',
-  },
-  {
-    id: '6', title: 'Weekly Meeting', type: 'meeting',
-    date: new Date(2026, 5, 26), startHour: 10, startMinute: 30, endHour: 12, endMinute: 0,
-    color: 'border-l-amber-500', bgColor: 'bg-amber-500/10 dark:bg-amber-500/15',
-  },
-  {
-    id: '7', title: 'Online Workshop', type: 'education',
-    date: new Date(2026, 5, 24), startHour: 11, startMinute: 0, endHour: 12, endMinute: 0,
-    color: 'border-l-blue-500', bgColor: 'bg-blue-500/10 dark:bg-blue-500/15',
-  },
-  {
-    id: '8', title: 'Code Review', type: 'project',
-    date: new Date(2026, 5, 23), startHour: 8, startMinute: 0, endHour: 9, endMinute: 0,
-    color: 'border-l-violet-500', bgColor: 'bg-violet-500/10 dark:bg-violet-500/15',
-  },
-])
+const events = ref<CalendarEvent[]>([])
+
+const priorityColorMap: Record<string, { color: string; bgColor: string }> = {
+  HIGH: { color: 'border-l-red-500', bgColor: 'bg-red-500/10 dark:bg-red-500/15' },
+  URGENT: { color: 'border-l-violet-500', bgColor: 'bg-violet-500/10 dark:bg-violet-500/15' },
+  MEDIUM: { color: 'border-l-[#478FC8]', bgColor: 'bg-[#478FC8]/10 dark:bg-[#478FC8]/15' },
+  LOW: { color: 'border-l-orange-500', bgColor: 'bg-orange-500/10 dark:bg-orange-500/15' },
+}
+
+async function loadCalendarEvents() {
+  const wsId = workspaceStore.activeWorkspace?.id
+  if (!wsId) return
+  try {
+    const { data } = await kanbanApi.listTasks(wsId)
+    const tasks = data as any[]
+    events.value = tasks
+      .filter((t: any) => t.dueDate)
+      .map((t: any) => {
+        const due = new Date(t.dueDate)
+        const colors = priorityColorMap[t.priority] ?? priorityColorMap.MEDIUM!
+        return {
+          id: t.id,
+          title: t.title,
+          type: 'project' as const,
+          date: due,
+          startHour: 9,
+          startMinute: 0,
+          endHour: 10,
+          endMinute: 0,
+          color: colors.color,
+          bgColor: colors.bgColor,
+        }
+      })
+  } catch (error) {
+    console.error('Failed to load calendar events:', error)
+  }
+}
+
+onMounted(async () => {
+  if (!workspaceStore.allWorkspaces.length) {
+    await workspaceStore.fetchWorkspaces()
+  }
+  await loadCalendarEvents()
+})
 
 // ─── Vue-Cal events format ───
 function pad(n: number) { return String(n).padStart(2, '0') as `${number}${number}` }
