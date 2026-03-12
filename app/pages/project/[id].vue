@@ -221,7 +221,7 @@ async function handleDeleteProject() {
 
     <!-- Tab Content: Board -->
     <div v-show="activeTab === 'board'" class="mt-4">
-      <KanbanKanbanBoard />
+      <KanbanBoard />
     </div>
 
     <!-- Tab Content: Overview -->

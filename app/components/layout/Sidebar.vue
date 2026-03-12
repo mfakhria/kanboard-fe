@@ -17,15 +17,24 @@ const { sidebarCollapsed: collapsed, toggleCollapse } = useLayoutState()
 const authStore = useAuthStore()
 const router = useRouter()
 const route = useRoute()
+const { badgeLabel, fetchTaskCount } = useTaskCount()
 
-const menuItems = [
+onMounted(async () => {
+  const workspaceStore = useWorkspaceStore()
+  if (!workspaceStore.allWorkspaces.length) {
+    await workspaceStore.fetchWorkspaces()
+  }
+  await fetchTaskCount()
+})
+
+const menuItems = computed(() => [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
   { icon: FolderKanban, label: 'Projects', href: '/project' },
-  { icon: CheckSquare, label: 'Tasks', href: '/tasks', badge: '12+' },
+  { icon: CheckSquare, label: 'Tasks', href: '/tasks', badge: badgeLabel.value },
   { icon: Calendar, label: 'Calendar', href: '/calendar' },
   { icon: BarChart3, label: 'Analytics', href: '/analytics' },
   { icon: Users, label: 'Team', href: '/team' },
-]
+])
 
 const generalItems = [
   { icon: Settings, label: 'Settings', href: '/dashboard/settings' },

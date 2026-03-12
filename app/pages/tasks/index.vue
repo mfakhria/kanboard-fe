@@ -30,7 +30,7 @@ function mapApiTask(t: any): TaskItem {
   if (t.completed) status = 'completed'
   else if (colName.includes('progress') || colName.includes('doing') || colName.includes('review')) status = 'in_progress'
   else if (colName.includes('done') || colName.includes('complete')) status = 'completed'
-  const progress = t.completed ? 100 : (status === 'in_progress' ? 50 : 0)
+  const progress = status === 'completed' ? 100 : (status === 'in_progress' ? 50 : 0)
 
   return {
     id: t.id,

@@ -9,6 +9,8 @@ export interface Project {
   dueDate?: string
   picId?: string
   pic?: { id: string; name: string; email: string; avatar?: string }
+  totalTasks?: number
+  completedTasks?: number
   createdAt: string
   updatedAt: string
 }
