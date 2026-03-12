@@ -266,6 +266,7 @@ const newProjectColor = ref('#6366f1')
 const newProjectDueDate = ref('')
 const newProjectPicId = ref('')
 const newProjectIcon = ref('FolderKanban')
+const newProjectVisibility = ref<'PUBLIC' | 'PRIVATE'>('PUBLIC')
 const isCreatingProject = ref(false)
 
 // Workspace members for PIC dropdown
@@ -278,6 +279,7 @@ function resetCreateForm() {
   newProjectDueDate.value = ''
   newProjectPicId.value = ''
   newProjectIcon.value = 'FolderKanban'
+  newProjectVisibility.value = 'PUBLIC'
 }
 
 async function handleCreateProject() {
@@ -297,6 +299,7 @@ async function handleCreateProject() {
       dueDate: newProjectDueDate.value || undefined,
       picId: newProjectPicId.value || undefined,
       icon: newProjectIcon.value || undefined,
+      visibility: newProjectVisibility.value,
     })
     resetCreateForm()
     showCreateProject.value = false
@@ -755,6 +758,17 @@ async function handleCreateProject() {
           >
             <option value="">-- Select PIC --</option>
             <option v-for="m in wsMembers" :key="m.userId" :value="m.userId">{{ m.user?.name || m.userId }}</option>
+          </select>
+        </div>
+        <div>
+          <UiLabel for="project-visibility">Visibility</UiLabel>
+          <select
+            id="project-visibility"
+            v-model="newProjectVisibility"
+            class="mt-1.5 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="PUBLIC">Public — Visible to all workspace members</option>
+            <option value="PRIVATE">Private — Only invited members</option>
           </select>
         </div>
         <div class="flex justify-end gap-3 pt-2">

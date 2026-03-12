@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowUpRight, Upload } from 'lucide-vue-next'
+import { ArrowUpRight, Upload, Mail, CheckCircle2, X } from 'lucide-vue-next'
 
 definePageMeta({
   layout: 'dashboard',
@@ -12,10 +12,11 @@ const workspaceStore = useWorkspaceStore()
 onMounted(async () => {
   // Fetch workspaces first so other stores can use activeWorkspace
   await workspaceStore.fetchWorkspaces()
-  // Then fetch projects and analytics in parallel
+  // Then fetch projects, analytics, and pending invitations in parallel
   await Promise.all([
     projectStore.fetchProjects(),
     analyticsStore.fetchAnalytics(),
+    projectStore.fetchPendingInvitations(),
   ])
 })
 
@@ -49,6 +50,28 @@ const statsCards = computed(() => [
     icon: ArrowUpRight,
   },
 ])
+
+async function handleAcceptInvitation(token: string) {
+  try {
+    const result = await projectStore.acceptInvitation(token)
+    // Refresh workspace list (user may now be a member of a new workspace)
+    await workspaceStore.fetchWorkspaces()
+    // Switch to the workspace containing the accepted project
+    if (result?.project?.workspaceId) {
+      const ws = workspaceStore.allWorkspaces.find(w => w.id === result.project.workspaceId)
+      if (ws) {
+        workspaceStore.currentWorkspace = ws
+      }
+    }
+    // Refresh projects and analytics for the (now active) workspace
+    await Promise.all([
+      projectStore.fetchProjects(),
+      analyticsStore.fetchAnalytics(),
+    ])
+  } catch (error) {
+    console.error('Failed to accept invitation:', error)
+  }
+}
 </script>
 
 <template>
@@ -106,6 +129,52 @@ const statsCards = computed(() => [
           ]">
             {{ stat.change }}
           </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending Invitations -->
+    <div v-if="projectStore.pendingInvitations.length > 0" class="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/10 p-4">
+      <h3 class="text-sm font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-2 mb-3">
+        <Mail class="h-4 w-4" />
+        Pending Project Invitations ({{ projectStore.pendingInvitations.length }})
+      </h3>
+      <div class="space-y-2">
+        <div
+          v-for="inv in projectStore.pendingInvitations"
+          :key="inv.id"
+          class="flex items-center justify-between rounded-lg bg-white dark:bg-gray-900 p-3 border border-amber-100 dark:border-amber-900/30"
+        >
+          <div class="flex items-center gap-3">
+            <div
+              class="flex h-8 w-8 items-center justify-center rounded-lg text-sm"
+              :style="{ backgroundColor: (inv.project.color || '#6366f1') + '20' }"
+            >
+              <UiLucideIcon :name="inv.project.icon || 'FolderKanban'" :size="16" :style="{ color: inv.project.color || '#6366f1' }" />
+            </div>
+            <div>
+              <p class="text-sm font-medium text-gray-900 dark:text-white">{{ inv.project.name }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                Invited by {{ inv.inviter.name }} as <strong>{{ inv.role }}</strong>
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              class="inline-flex items-center gap-1 rounded-md bg-[#478FC8] hover:bg-[#3a7bb3] text-white px-3 py-1.5 text-xs font-medium transition-colors"
+              @click="handleAcceptInvitation(inv.token)"
+            >
+              <CheckCircle2 class="h-3.5 w-3.5" />
+              Accept
+            </button>
+            <button
+              class="inline-flex items-center gap-1 rounded-md border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 transition-colors"
+              @click="projectStore.declineInvitation(inv.token)"
+            >
+              <X class="h-3.5 w-3.5" />
+              Decline
+            </button>
+          </div>
         </div>
       </div>
     </div>

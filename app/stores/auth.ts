@@ -77,6 +77,16 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     accessToken.value = null
     refreshToken.value = null
+
+    // Clear all other stores to prevent data leaking between users
+    try {
+      useProjectStore().$reset()
+      useWorkspaceStore().$reset()
+      useKanbanStore().$reset()
+      useAnalyticsStore().$reset()
+    } catch {
+      // Stores may not be initialized yet
+    }
   }
 
   return {

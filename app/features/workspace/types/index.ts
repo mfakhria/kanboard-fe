@@ -12,7 +12,7 @@ export interface WorkspaceMember {
   id: string
   userId: string
   workspaceId: string
-  role: 'owner' | 'admin' | 'member' | 'viewer'
+  role: 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER'
   user: {
     id: string
     name: string
@@ -29,5 +29,5 @@ export interface CreateWorkspacePayload {
 
 export interface InviteMemberPayload {
   email: string
-  role: 'admin' | 'member' | 'viewer'
+  role: 'ADMIN' | 'MEMBER' | 'VIEWER'
 }

@@ -10,7 +10,14 @@ import {
   Clock,
   AlertTriangle,
   Loader2,
+  Users,
+  UserPlus,
+  Mail,
+  Shield,
+  MoreHorizontal,
+  X,
 } from 'lucide-vue-next'
+import type { ProjectMember, ProjectInvitation } from '~/features/project/types'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -25,7 +32,10 @@ const projectId = computed(() => route.params.id as string)
 onMounted(async () => {
   await workspaceStore.fetchWorkspaces()
   await projectStore.fetchProjectById(projectId.value)
-  await kanbanStore.fetchBoard(projectId.value)
+  await Promise.all([
+    kanbanStore.fetchBoard(projectId.value),
+    projectStore.fetchMembers(projectId.value),
+  ])
 })
 
 const project = computed(() => projectStore.currentProject)
@@ -52,7 +62,7 @@ const statusConfig: Record<string, { label: string; class: string; icon: any }> 
 }
 
 // ─── Active tab ───
-const activeTab = ref<'board' | 'overview'>('board')
+const activeTab = ref<'board' | 'overview' | 'members'>('board')
 
 // ─── Edit Project Dialog ───
 const showEditDialog = ref(false)
@@ -63,6 +73,7 @@ const editDueDate = ref('')
 const editPicId = ref('')
 const editStatus = ref<'ACTIVE' | 'ARCHIVED' | 'COMPLETED'>('ACTIVE')
 const editIcon = ref('FolderKanban')
+const editVisibility = ref<'PUBLIC' | 'PRIVATE'>('PUBLIC')
 const isSaving = ref(false)
 
 const wsMembers = computed(() => {
@@ -80,6 +91,7 @@ function openEditDialog() {
   editPicId.value = p.picId || ''
   editStatus.value = p.status || 'ACTIVE'
   editIcon.value = p.icon || 'FolderKanban'
+  editVisibility.value = p.visibility || 'PUBLIC'
   showEditDialog.value = true
 }
 
@@ -94,6 +106,7 @@ async function handleSaveEdit() {
       dueDate: editDueDate.value || undefined,
       picId: editPicId.value || undefined,
       status: editStatus.value,
+      visibility: editVisibility.value,
       icon: editIcon.value || undefined,
     })
     // Refresh to get updated data
@@ -120,6 +133,72 @@ async function handleDeleteProject() {
   } finally {
     isDeleting.value = false
   }
+}
+
+// ─── Members Tab ───
+const showInviteDialog = ref(false)
+const inviteEmail = ref('')
+const inviteRole = ref<'ADMIN' | 'MEMBER' | 'VIEWER'>('MEMBER')
+const isInviting = ref(false)
+const inviteError = ref('')
+
+async function loadMembers() {
+  await projectStore.fetchMembers(projectId.value)
+  await projectStore.fetchProjectInvitations(projectId.value)
+}
+
+watch(activeTab, (tab) => {
+  if (tab === 'members') loadMembers()
+})
+
+async function handleInvite() {
+  if (!inviteEmail.value.trim()) return
+  isInviting.value = true
+  inviteError.value = ''
+  try {
+    await projectStore.inviteMember(projectId.value, {
+      email: inviteEmail.value.trim(),
+      role: inviteRole.value,
+    })
+    inviteEmail.value = ''
+    inviteRole.value = 'MEMBER'
+    showInviteDialog.value = false
+  } catch (err: any) {
+    inviteError.value = err?.response?.data?.message || 'Failed to send invitation'
+  } finally {
+    isInviting.value = false
+  }
+}
+
+async function handleRemoveMember(memberId: string) {
+  try {
+    await projectStore.removeMember(projectId.value, memberId)
+  } catch (err) {
+    console.error('Failed to remove member:', err)
+  }
+}
+
+async function handleUpdateRole(memberId: string, role: string) {
+  try {
+    await projectStore.updateMemberRole(projectId.value, memberId, role)
+  } catch (err) {
+    console.error('Failed to update role:', err)
+  }
+}
+
+async function handleCancelInvitation(invitationId: string) {
+  try {
+    await projectStore.cancelInvitation(projectId.value, invitationId)
+  } catch (err) {
+    console.error('Failed to cancel invitation:', err)
+  }
+}
+
+const roleColors: Record<string, string> = {
+  OWNER: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+  ADMIN: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  MEMBER: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  VIEWER: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
 }
 </script>
 
@@ -217,6 +296,14 @@ async function handleDeleteProject() {
       >
         Overview
       </button>
+      <button
+        :class="['px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5', activeTab === 'members' ? 'border-[#478FC8] text-[#478FC8]' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200']"
+        @click="activeTab = 'members'"
+      >
+        <Users class="h-4 w-4" />
+        Members
+        <span class="ml-1 text-xs bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-full">{{ projectStore.currentMembers.length || 0 }}</span>
+      </button>
     </div>
 
     <!-- Tab Content: Board -->
@@ -281,6 +368,94 @@ async function handleDeleteProject() {
         </div>
       </UiCard>
     </div>
+
+    <!-- Tab Content: Members -->
+    <div v-show="activeTab === 'members'" class="mt-4 space-y-6">
+      <!-- Header with invite button -->
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Project Members</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Manage who has access to this project</p>
+        </div>
+        <UiButton size="sm" class="gap-1.5 bg-[#478FC8] hover:bg-[#3a7bb3] text-white" @click="showInviteDialog = true">
+          <UserPlus class="h-4 w-4" />
+          Invite Member
+        </UiButton>
+      </div>
+
+      <!-- Members List -->
+      <UiCard class="divide-y divide-gray-100 dark:divide-gray-800">
+        <div
+          v-for="member in projectStore.currentMembers"
+          :key="member.id"
+          class="flex items-center justify-between p-4"
+        >
+          <div class="flex items-center gap-3">
+            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-sm font-medium text-gray-600 dark:text-gray-300">
+              {{ member.user.name?.charAt(0)?.toUpperCase() || '?' }}
+            </div>
+            <div>
+              <p class="text-sm font-medium text-gray-900 dark:text-white">{{ member.user.name }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ member.user.email }}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span :class="['text-xs font-medium px-2 py-1 rounded-full', roleColors[member.role]]">
+              {{ member.role }}
+            </span>
+            <div v-if="member.role !== 'OWNER'" class="flex items-center gap-1">
+              <select
+                :value="member.role"
+                class="text-xs border border-gray-200 dark:border-gray-700 rounded-md px-2 py-1 bg-transparent"
+                @change="handleUpdateRole(member.id, ($event.target as HTMLSelectElement).value)"
+              >
+                <option value="ADMIN">Admin</option>
+                <option value="MEMBER">Member</option>
+                <option value="VIEWER">Viewer</option>
+              </select>
+              <button
+                class="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                title="Remove member"
+                @click="handleRemoveMember(member.id)"
+              >
+                <X class="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+        <div v-if="projectStore.currentMembers.length === 0" class="p-8 text-center text-sm text-gray-400 dark:text-gray-500">
+          No members yet
+        </div>
+      </UiCard>
+
+      <!-- Pending Invitations -->
+      <div v-if="projectStore.currentInvitations.length > 0">
+        <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Pending Invitations</h4>
+        <UiCard class="divide-y divide-gray-100 dark:divide-gray-800">
+          <div
+            v-for="inv in projectStore.currentInvitations"
+            :key="inv.id"
+            class="flex items-center justify-between p-4"
+          >
+            <div class="flex items-center gap-3">
+              <div class="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400">
+                <Mail class="h-4 w-4" />
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ inv.email }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Invited as {{ inv.role }} &middot; Expires {{ new Date(inv.expiresAt).toLocaleDateString() }}</p>
+              </div>
+            </div>
+            <button
+              class="text-xs text-red-500 hover:text-red-700 font-medium"
+              @click="handleCancelInvitation(inv.id)"
+            >
+              Cancel
+            </button>
+          </div>
+        </UiCard>
+      </div>
+    </div>
   </LayoutPageContainer>
 
   <!-- ═══ Edit Project Dialog ═══ -->
@@ -334,6 +509,17 @@ async function handleDeleteProject() {
             <option v-for="m in wsMembers" :key="m.userId" :value="m.userId">{{ m.user?.name || m.userId }}</option>
           </select>
         </div>
+        <div>
+          <UiLabel for="edit-visibility">Visibility</UiLabel>
+          <select
+            id="edit-visibility"
+            v-model="editVisibility"
+            class="mt-1.5 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="PUBLIC">Public — Visible to all workspace members</option>
+            <option value="PRIVATE">Private — Only invited members</option>
+          </select>
+        </div>
         <div class="flex justify-end gap-3 pt-2">
           <UiButton variant="outline" type="button" @click="close()">Cancel</UiButton>
           <UiButton type="submit" :disabled="isSaving || !editName.trim()" class="bg-[#478FC8] hover:bg-[#3a7bb3] text-white">
@@ -368,6 +554,46 @@ async function handleDeleteProject() {
           </UiButton>
         </div>
       </div>
+    </template>
+  </UiDialog>
+
+  <!-- ═══ Invite Member Dialog ═══ -->
+  <UiDialog v-model:open="showInviteDialog" title="Invite Member" description="Send an invitation to join this project.">
+    <template #default="{ close }">
+      <form class="space-y-4" @submit.prevent="handleInvite">
+        <div>
+          <UiLabel for="invite-email">Email Address</UiLabel>
+          <UiInput
+            id="invite-email"
+            v-model="inviteEmail"
+            type="email"
+            placeholder="colleague@example.com"
+            class="mt-1.5"
+          />
+        </div>
+        <div>
+          <UiLabel for="invite-role">Role</UiLabel>
+          <select
+            id="invite-role"
+            v-model="inviteRole"
+            class="mt-1.5 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="ADMIN">Admin - Can manage project & invite others</option>
+            <option value="MEMBER">Member - Can create & edit tasks</option>
+            <option value="VIEWER">Viewer - Read-only access</option>
+          </select>
+        </div>
+        <div v-if="inviteError" class="rounded-md bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-600 dark:text-red-400">
+          {{ inviteError }}
+        </div>
+        <div class="flex justify-end gap-3 pt-2">
+          <UiButton variant="outline" type="button" @click="close()">Cancel</UiButton>
+          <UiButton type="submit" :disabled="isInviting || !inviteEmail.trim()" class="bg-[#478FC8] hover:bg-[#3a7bb3] text-white gap-1.5">
+            <UserPlus class="h-4 w-4" />
+            {{ isInviting ? 'Sending...' : 'Send Invitation' }}
+          </UiButton>
+        </div>
+      </form>
     </template>
   </UiDialog>
 </template>

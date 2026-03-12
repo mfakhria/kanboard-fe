@@ -74,9 +74,9 @@ export const useWorkspaceStore = defineStore('workspace', {
       }
     },
 
-    async inviteMember(workspaceId: string, payload: { email: string; role?: 'admin' | 'member' | 'viewer' }) {
+    async inviteMember(workspaceId: string, payload: { email: string; role?: 'ADMIN' | 'MEMBER' | 'VIEWER' }) {
       try {
-        await workspaceApi.inviteMember(workspaceId, { email: payload.email, role: payload.role || 'member' })
+        await workspaceApi.inviteMember(workspaceId, { email: payload.email, role: payload.role || 'MEMBER' })
         // Re-fetch workspace to get updated members
         await this.fetchWorkspaceById(workspaceId)
       } catch (error) {

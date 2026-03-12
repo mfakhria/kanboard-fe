@@ -69,13 +69,13 @@ const newestMember = computed(() => displayMembers.value[displayMembers.value.le
 // Invite dialog
 const showInvite = ref(false)
 const inviteEmail = ref('')
-const inviteRole = ref('member')
+const inviteRole = ref('MEMBER')
 const isInviting = ref(false)
 
 const roleOptions = [
-  { label: 'Admin', value: 'admin' },
-  { label: 'Member', value: 'member' },
-  { label: 'Viewer', value: 'viewer' },
+  { label: 'Admin', value: 'ADMIN' },
+  { label: 'Member', value: 'MEMBER' },
+  { label: 'Viewer', value: 'VIEWER' },
 ]
 
 async function handleInvite() {
@@ -86,7 +86,7 @@ async function handleInvite() {
   try {
     await workspaceStore.inviteMember(ws.id, { email: inviteEmail.value, role: inviteRole.value as any })
     inviteEmail.value = ''
-    inviteRole.value = 'member'
+    inviteRole.value = 'MEMBER'
     showInvite.value = false
   } catch {
     // Error handled in store
