@@ -8,17 +8,25 @@ const api = axios.create({
   },
 })
 
-/** Read a cookie value by name (client-side only helper for axios interceptors) */
+// Module-level token that works on both SSR and client.
+// Synced from useCookie via the api plugin (plugins/api.ts).
+let _authToken: string | null = null
+
+export function setAuthToken(token: string | null) {
+  _authToken = token
+}
+
+/** Read a cookie value by name (client-side only fallback) */
 function getCookie(name: string): string | null {
   if (!import.meta.client) return null
   const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))
   return match ? decodeURIComponent(match[1] ?? '') : null
 }
 
-// Request interceptor - attach JWT
+// Request interceptor - attach JWT (prefers SSR-compatible _authToken, falls back to document.cookie)
 api.interceptors.request.use(
   (config) => {
-    const token = getCookie('access_token')
+    const token = _authToken || getCookie('access_token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }

@@ -49,6 +49,7 @@ interface ProjectCard {
   progress: number
   icon: string
   iconBg: string
+  color: string
 }
 
 const iconBgOptions = [
@@ -62,20 +63,28 @@ const iconBgOptions = [
 
 // ─── Combine API data ───
 const projectCards = computed<ProjectCard[]>(() => {
-  return projectStore.projects.map((p, idx) => ({
-    id: p.id,
-    name: p.name,
-    status: p.status === 'running' ? 'in_progress' as const : (p.status || 'pending') as ProjectCard['status'],
-    pic: { name: '-', avatar: '' },
-    department: '-',
-    role: '-',
-    completedTasks: 0,
-    totalTasks: 0,
-    deadline: p.dueDate ? new Date(p.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-',
-    progress: 0,
-    icon: p.icon || '📁',
-    iconBg: iconBgOptions[idx % iconBgOptions.length] ?? 'bg-blue-100 dark:bg-blue-900/30',
-  }))
+  return projectStore.projects.map((p) => {
+    const statusMap: Record<string, ProjectCard['status']> = {
+      ACTIVE: 'in_progress',
+      COMPLETED: 'completed',
+      ARCHIVED: 'pending',
+    }
+    return {
+      id: p.id,
+      name: p.name,
+      status: statusMap[p.status] || 'pending',
+      pic: { name: p.pic?.name || '-', avatar: p.pic?.avatar || '' },
+      department: '-',
+      role: '-',
+      completedTasks: 0,
+      totalTasks: 0,
+      deadline: p.dueDate ? new Date(p.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-',
+      progress: 0,
+      icon: p.icon || '📁',
+      iconBg: p.color ? '' : (iconBgOptions[projectStore.projects.indexOf(p) % iconBgOptions.length] ?? 'bg-blue-100 dark:bg-blue-900/30'),
+      color: p.color || '',
+    }
+  })
 })
 
 // ─── Filtered projects ───
@@ -178,21 +187,29 @@ watch([searchQuery, statusFilter], () => {
 const showCreateProject = ref(false)
 const newProjectName = ref('')
 const newProjectDescription = ref('')
-const newProjectColor = ref('')
+const newProjectColor = ref('#6366f1')
 const newProjectDueDate = ref('')
+const newProjectPicId = ref('')
 const isCreatingProject = ref(false)
+
+// Workspace members for PIC dropdown
+const wsMembers = computed(() => workspaceStore.members)
 
 function resetCreateForm() {
   newProjectName.value = ''
   newProjectDescription.value = ''
-  newProjectColor.value = ''
+  newProjectColor.value = '#6366f1'
   newProjectDueDate.value = ''
+  newProjectPicId.value = ''
 }
 
 async function handleCreateProject() {
   if (!newProjectName.value.trim()) return
   const wsId = workspaceStore.activeWorkspace?.id
-  if (!wsId) return
+  if (!wsId) {
+    alert('No workspace selected. Please create or select a workspace first.')
+    return
+  }
   isCreatingProject.value = true
   try {
     await projectStore.createProject({
@@ -201,6 +218,7 @@ async function handleCreateProject() {
       workspaceId: wsId,
       color: newProjectColor.value || undefined,
       dueDate: newProjectDueDate.value || undefined,
+      picId: newProjectPicId.value || undefined,
     })
     resetCreateForm()
     showCreateProject.value = false
@@ -386,7 +404,10 @@ async function handleCreateProject() {
         <!-- Card Header: Icon + Name + Status -->
         <div class="flex items-start justify-between mb-4">
           <div class="flex items-center gap-3">
-            <div :class="['flex h-10 w-10 items-center justify-center rounded-lg text-lg', project.iconBg]">
+            <div
+              :class="['flex h-10 w-10 items-center justify-center rounded-lg text-lg', project.iconBg]"
+              :style="project.color ? { backgroundColor: project.color + '20' } : {}"
+            >
               {{ project.icon }}
             </div>
             <h3 class="text-sm font-semibold text-gray-900 dark:text-white leading-tight max-w-[160px] truncate">
@@ -461,9 +482,11 @@ async function handleCreateProject() {
               View Details
             </UiButton>
           </NuxtLink>
-          <UiButton variant="ghost" size="sm" class="flex-1 text-xs text-[#478FC8]">
-            Edit Project Info
-          </UiButton>
+          <NuxtLink :to="`/project/${project.id}`" class="flex-1">
+            <UiButton variant="ghost" size="sm" class="w-full text-xs text-[#478FC8]">
+              Edit Project Info
+            </UiButton>
+          </NuxtLink>
         </div>
       </UiCard>
     </div>
@@ -492,7 +515,10 @@ async function handleCreateProject() {
               >
                 <td class="px-5 py-4">
                   <div class="flex items-center gap-3">
-                    <div :class="['flex h-9 w-9 items-center justify-center rounded-lg text-base', project.iconBg]">
+                    <div
+                      :class="['flex h-9 w-9 items-center justify-center rounded-lg text-base', project.iconBg]"
+                      :style="project.color ? { backgroundColor: project.color + '20' } : {}"
+                    >
                       {{ project.icon }}
                     </div>
                     <span class="font-medium text-gray-900 dark:text-white">{{ project.name }}</span>
@@ -607,9 +633,20 @@ async function handleCreateProject() {
             <UiInput id="project-color" v-model="newProjectColor" type="color" class="mt-1.5 h-10" />
           </div>
           <div>
-            <UiLabel for="project-due">Due Date</UiLabel>
+            <UiLabel for="project-due">Deadline</UiLabel>
             <UiInput id="project-due" v-model="newProjectDueDate" type="date" class="mt-1.5" />
           </div>
+        </div>
+        <div>
+          <UiLabel for="project-pic">PIC (Person In Charge)</UiLabel>
+          <select
+            id="project-pic"
+            v-model="newProjectPicId"
+            class="mt-1.5 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="">-- Select PIC --</option>
+            <option v-for="m in wsMembers" :key="m.userId" :value="m.userId">{{ m.user?.name || m.userId }}</option>
+          </select>
         </div>
         <div class="flex justify-end gap-3 pt-2">
           <UiButton variant="outline" type="button" @click="resetCreateForm(); close()">Cancel</UiButton>

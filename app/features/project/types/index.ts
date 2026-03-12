@@ -3,10 +3,12 @@ export interface Project {
   name: string
   description?: string
   workspaceId: string
-  status: 'running' | 'completed' | 'pending' | 'on_discuss'
-  color: string
-  icon: string
+  status: 'ACTIVE' | 'ARCHIVED' | 'COMPLETED'
+  color?: string
+  icon?: string
   dueDate?: string
+  picId?: string
+  pic?: { id: string; name: string; email: string; avatar?: string }
   createdAt: string
   updatedAt: string
 }
@@ -17,6 +19,7 @@ export interface CreateProjectPayload {
   workspaceId: string
   color?: string
   dueDate?: string
+  picId?: string
 }
 
 export interface UpdateProjectPayload {
@@ -25,4 +28,5 @@ export interface UpdateProjectPayload {
   status?: Project['status']
   color?: string
   dueDate?: string
+  picId?: string
 }

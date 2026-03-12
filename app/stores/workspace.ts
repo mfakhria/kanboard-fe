@@ -27,6 +27,15 @@ export const useWorkspaceStore = defineStore('workspace', {
       try {
         const { data } = await workspaceApi.list()
         this.workspaces = data as Workspace[]
+
+        // Auto-create a default workspace if user has none
+        if (this.workspaces.length === 0) {
+          const created = await this.createWorkspace({ name: 'My Workspace' })
+          if (created) {
+            this.workspaces = [created]
+          }
+        }
+
         if (!this.currentWorkspace && this.workspaces.length > 0) {
           this.currentWorkspace = this.workspaces[0] ?? null
         }
