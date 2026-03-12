@@ -68,7 +68,10 @@ onMounted(async () => {
   if (!workspaceStore.allWorkspaces.length) {
     await workspaceStore.fetchWorkspaces()
   }
-  await loadTasks()
+  await Promise.all([
+    loadTasks(),
+    projectStore.fetchProjects(),
+  ])
 })
 
 const filteredTasks = computed(() => {
@@ -166,8 +169,28 @@ const isCreatingTask = ref(false)
 const projectStore = useProjectStore()
 const kanbanStore = useKanbanStore()
 
+// Role-based: map projectId → myRole
+const projectRoleMap = computed(() => {
+  const map: Record<string, string | null> = {}
+  for (const p of projectStore.projects) {
+    map[p.id] = (p as any).myRole ?? null
+  }
+  return map
+})
+
+function canEditTask(task: TaskItem) {
+  const role = task.projectId ? projectRoleMap.value[task.projectId] : null
+  return role !== 'VIEWER'
+}
+
+const hasEditableProjects = computed(() =>
+  projectStore.projects.some((p: any) => p.myRole && p.myRole !== 'VIEWER'),
+)
+
 const projectOptions = computed(() =>
-  projectStore.projects.map(p => ({ label: p.name, value: p.id })),
+  projectStore.projects
+    .filter((p: any) => p.myRole && p.myRole !== 'VIEWER')
+    .map(p => ({ label: p.name, value: p.id })),
 )
 
 const columnOptions = computed(() =>
@@ -314,7 +337,7 @@ async function confirmDeleteTask() {
     <!-- Page Header -->
     <LayoutPageHeader title="All Tasks" subtitle="Manage and track all your tasks across projects">
       <template #actions>
-        <UiButton variant="success" class="shrink-0" @click="openCreateTask">
+        <UiButton v-if="hasEditableProjects" variant="success" class="shrink-0" @click="openCreateTask">
           <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
           Create Task
         </UiButton>
@@ -509,6 +532,7 @@ async function confirmDeleteTask() {
                       <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
                       View Details
                     </UiDropdownItem>
+                    <template v-if="canEditTask(task)">
                     <UiDropdownItem @click="close(); handleEditTask(task)">
                       <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                       Edit Task
@@ -522,6 +546,7 @@ async function confirmDeleteTask() {
                       <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
                       Delete Task
                     </UiDropdownItem>
+                    </template>
                   </template>
                 </UiDropdown>
               </td>

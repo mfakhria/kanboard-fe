@@ -40,7 +40,7 @@ export const useWorkspaceStore = defineStore('workspace', {
           // Restore last active workspace from localStorage
           const savedId = localStorage.getItem('activeWorkspaceId')
           const saved = savedId ? this.workspaces.find(w => w.id === savedId) : null
-          this.currentWorkspace = saved || this.workspaces[0] ?? null
+          this.currentWorkspace = saved || (this.workspaces[0] ?? null)
           if (this.currentWorkspace) localStorage.setItem('activeWorkspaceId', this.currentWorkspace.id)
         }
       } catch (error) {
