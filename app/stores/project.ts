@@ -23,9 +23,9 @@ export const useProjectStore = defineStore('project', {
 
   getters: {
     allProjects: (state) => state.projects,
-    runningProjects: (state) => state.projects.filter(p => p.status === 'running'),
-    completedProjects: (state) => state.projects.filter(p => p.status === 'completed'),
-    pendingProjects: (state) => state.projects.filter(p => p.status === 'pending'),
+    runningProjects: (state) => state.projects.filter(p => p.status === 'ACTIVE'),
+    completedProjects: (state) => state.projects.filter(p => p.status === 'COMPLETED'),
+    pendingProjects: (state) => state.projects.filter(p => p.status === 'ARCHIVED'),
     totalProjects: (state) => state.projects.length,
     projectsByWorkspace: (state) => (workspaceId: string) =>
       state.projects.filter(p => p.workspaceId === workspaceId),
