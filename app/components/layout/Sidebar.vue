@@ -58,16 +58,9 @@ const handleLogout = async () => {
     collapsed ? 'w-[68px]' : 'w-[240px]',
   ]">
     <!-- Logo -->
-    <div class="flex items-center justify-between px-4 py-5" :class="collapsed ? 'px-3' : 'px-6'">
-      <div class="flex items-center gap-2 overflow-hidden">
-        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#478FC8]">
-          <svg viewBox="0 0 24 24" class="h-5 w-5 text-gray-900" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round" />
-            <circle cx="12" cy="12" r="10" />
-          </svg>
-        </div>
-        <span v-if="!collapsed"
-          class="text-xl font-bold text-gray-900 dark:text-white whitespace-nowrap">Kanboard</span>
+    <div class="flex items-center justify-between py-5" :class="collapsed ? 'px-3' : 'px-6'">
+      <div class="flex items-center overflow-hidden">
+        <img src="/kanzon.jpeg" alt="Kanzon" :class="collapsed ? 'h-10 w-10' : 'h-14 w-auto max-w-[160px]'" class="shrink-0 object-contain transition-all duration-300" />
       </div>
       <button v-if="!collapsed"
         class="shrink-0 rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition"

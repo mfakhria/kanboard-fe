@@ -41,14 +41,8 @@ const handleLogin = async () => {
   <div>
     <!-- Logo -->
     <div class="mb-8 text-center">
-      <div class="mb-4 flex items-center justify-center gap-2">
-        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#478FC8]">
-          <svg viewBox="0 0 24 24" class="h-6 w-6 text-gray-900" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round" />
-            <circle cx="12" cy="12" r="10" />
-          </svg>
-        </div>
-        <span class="text-2xl font-bold text-gray-900 dark:text-white">Kanboard</span>
+      <div class="mb-4 flex items-center justify-center">
+        <img src="/kanzon.jpeg" alt="Kanzon" class="h-16 w-auto object-contain" />
       </div>
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Welcome back</h1>
       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Sign in to your account to continue</p>

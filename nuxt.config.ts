@@ -45,14 +45,14 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      title: 'Kanboard - Task Management',
+      title: 'Kanzon - Task Management',
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'description', content: 'Plan, prioritize, and accomplish your tasks with ease.' },
       ],
       link: [
-        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+        { rel: 'icon', type: 'image/jpeg', href: '/kanzon.jpeg' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
         { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap' },
