@@ -62,6 +62,7 @@ const editColor = ref('#6366f1')
 const editDueDate = ref('')
 const editPicId = ref('')
 const editStatus = ref<'ACTIVE' | 'ARCHIVED' | 'COMPLETED'>('ACTIVE')
+const editIcon = ref('FolderKanban')
 const isSaving = ref(false)
 
 const wsMembers = computed(() => {
@@ -78,6 +79,7 @@ function openEditDialog() {
   editDueDate.value = p.dueDate ? new Date(p.dueDate).toISOString().split('T')[0] ?? '' : ''
   editPicId.value = p.picId || ''
   editStatus.value = p.status || 'ACTIVE'
+  editIcon.value = p.icon || 'FolderKanban'
   showEditDialog.value = true
 }
 
@@ -92,6 +94,7 @@ async function handleSaveEdit() {
       dueDate: editDueDate.value || undefined,
       picId: editPicId.value || undefined,
       status: editStatus.value,
+      icon: editIcon.value || undefined,
     })
     // Refresh to get updated data
     await projectStore.fetchProjectById(projectId.value)
@@ -140,7 +143,7 @@ async function handleDeleteProject() {
           class="flex h-12 w-12 items-center justify-center rounded-xl text-xl shrink-0"
           :style="{ backgroundColor: ((project as any)?.color || '#6366f1') + '20' }"
         >
-          <FolderKanban class="h-6 w-6" :style="{ color: (project as any)?.color || '#6366f1' }" />
+          <UiLucideIcon :name="(project as any)?.icon || 'FolderKanban'" :size="24" :style="{ color: (project as any)?.color || '#6366f1' }" />
         </div>
         <div>
           <div class="flex items-center gap-3">
@@ -284,6 +287,12 @@ async function handleDeleteProject() {
   <UiDialog v-model:open="showEditDialog" title="Edit Project" description="Update project details.">
     <template #default="{ close }">
       <form class="space-y-4" @submit.prevent="handleSaveEdit">
+        <div>
+          <UiLabel>Icon</UiLabel>
+          <div class="mt-1.5">
+            <UiIconPicker v-model="editIcon" />
+          </div>
+        </div>
         <div>
           <UiLabel for="edit-name">Project Name</UiLabel>
           <UiInput id="edit-name" v-model="editName" placeholder="Project name" class="mt-1.5" />

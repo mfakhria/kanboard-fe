@@ -80,7 +80,7 @@ const projectCards = computed<ProjectCard[]>(() => {
       totalTasks: 0,
       deadline: p.dueDate ? new Date(p.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-',
       progress: 0,
-      icon: p.icon || '📁',
+      icon: p.icon || 'FolderKanban',
       iconBg: p.color ? '' : (iconBgOptions[projectStore.projects.indexOf(p) % iconBgOptions.length] ?? 'bg-blue-100 dark:bg-blue-900/30'),
       color: p.color || '',
     }
@@ -190,6 +190,7 @@ const newProjectDescription = ref('')
 const newProjectColor = ref('#6366f1')
 const newProjectDueDate = ref('')
 const newProjectPicId = ref('')
+const newProjectIcon = ref('FolderKanban')
 const isCreatingProject = ref(false)
 
 // Workspace members for PIC dropdown
@@ -201,6 +202,7 @@ function resetCreateForm() {
   newProjectColor.value = '#6366f1'
   newProjectDueDate.value = ''
   newProjectPicId.value = ''
+  newProjectIcon.value = 'FolderKanban'
 }
 
 async function handleCreateProject() {
@@ -219,6 +221,7 @@ async function handleCreateProject() {
       color: newProjectColor.value || undefined,
       dueDate: newProjectDueDate.value || undefined,
       picId: newProjectPicId.value || undefined,
+      icon: newProjectIcon.value || undefined,
     })
     resetCreateForm()
     showCreateProject.value = false
@@ -408,7 +411,7 @@ async function handleCreateProject() {
               :class="['flex h-10 w-10 items-center justify-center rounded-lg text-lg', project.iconBg]"
               :style="project.color ? { backgroundColor: project.color + '20' } : {}"
             >
-              {{ project.icon }}
+              <UiLucideIcon :name="project.icon" :size="20" :style="project.color ? { color: project.color } : {}" />
             </div>
             <h3 class="text-sm font-semibold text-gray-900 dark:text-white leading-tight max-w-[160px] truncate">
               {{ project.name }}
@@ -519,7 +522,7 @@ async function handleCreateProject() {
                       :class="['flex h-9 w-9 items-center justify-center rounded-lg text-base', project.iconBg]"
                       :style="project.color ? { backgroundColor: project.color + '20' } : {}"
                     >
-                      {{ project.icon }}
+                      <UiLucideIcon :name="project.icon" :size="18" :style="project.color ? { color: project.color } : {}" />
                     </div>
                     <span class="font-medium text-gray-900 dark:text-white">{{ project.name }}</span>
                   </div>
@@ -626,6 +629,12 @@ async function handleCreateProject() {
         <div>
           <UiLabel for="project-desc">Description</UiLabel>
           <UiTextarea id="project-desc" v-model="newProjectDescription" placeholder="Brief description of the project..." class="mt-1.5" rows="3" />
+        </div>
+        <div>
+          <UiLabel>Icon</UiLabel>
+          <div class="mt-1.5">
+            <UiIconPicker v-model="newProjectIcon" />
+          </div>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>

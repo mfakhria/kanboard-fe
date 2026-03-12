@@ -18,6 +18,7 @@ export interface CreateProjectPayload {
   description?: string
   workspaceId: string
   color?: string
+  icon?: string
   dueDate?: string
   picId?: string
 }
@@ -27,6 +28,7 @@ export interface UpdateProjectPayload {
   description?: string
   status?: Project['status']
   color?: string
+  icon?: string
   dueDate?: string
   picId?: string
 }
