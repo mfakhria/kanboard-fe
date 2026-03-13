@@ -3,7 +3,8 @@ const analyticsStore = useAnalyticsStore()
 
 const days = computed(() => analyticsStore.weeklyProductivity.labels)
 const data = computed(() => analyticsStore.weeklyProductivity.data)
-const maxValue = computed(() => Math.max(...data.value))
+const maxValue = computed(() => Math.max(...data.value, 1))
+const weeklyTotal = computed(() => data.value.reduce((sum, v) => sum + v, 0))
 </script>
 
 <template>
@@ -13,7 +14,7 @@ const maxValue = computed(() => Math.max(...data.value))
         <UiCardTitle class="text-base">Project Analytics</UiCardTitle>
         <span class="text-xs text-gray-400 dark:text-gray-500">
           <span class="inline-block h-2 w-2 rounded-full bg-[#478FC8] mr-1"></span>
-          34%
+          {{ weeklyTotal }} tasks this week
         </span>
       </div>
     </UiCardHeader>

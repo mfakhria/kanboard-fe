@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowUpRight, Upload, Mail, CheckCircle2, X } from 'lucide-vue-next'
+import { ArrowUpRight, Upload, Mail, CheckCircle2, X, GripVertical } from 'lucide-vue-next'
 
 definePageMeta({
   layout: 'dashboard',
@@ -71,6 +71,91 @@ async function handleAcceptInvitation(token: string) {
   } catch (error) {
     console.error('Failed to accept invitation:', error)
   }
+}
+
+// ─── Dashboard Widget Drag & Drop ───
+interface DashboardWidget {
+  id: string
+  label: string
+  component: ReturnType<typeof resolveComponent>
+}
+
+const defaultWidgets = computed<DashboardWidget[]>(() => [
+  { id: 'weekly-chart', label: 'Weekly Chart', component: resolveComponent('AnalyticsWeeklyChart') },
+  { id: 'reminders', label: 'Reminders', component: resolveComponent('AnalyticsReminders') },
+  { id: 'project-list', label: 'Project List', component: resolveComponent('AnalyticsProjectList') },
+  { id: 'team-collaboration', label: 'Team Collaboration', component: resolveComponent('AnalyticsTeamCollaboration') },
+  { id: 'project-progress', label: 'Project Progress', component: resolveComponent('AnalyticsProjectProgress') },
+  { id: 'time-tracker', label: 'Time Tracker', component: resolveComponent('AnalyticsTimeTracker') },
+])
+
+const ALL_WIDGET_IDS = ['weekly-chart', 'reminders', 'project-list', 'team-collaboration', 'project-progress', 'time-tracker']
+
+const authStore = useAuthStore()
+
+const storageKey = computed(() => {
+  const userId = authStore.currentUser?.id
+  return userId ? `dashboard-widget-order-${userId}` : 'dashboard-widget-order'
+})
+
+function loadWidgetOrder(): string[] {
+  try {
+    const saved = localStorage.getItem(storageKey.value)
+    if (saved) {
+      const parsed = JSON.parse(saved) as string[]
+      const validIds = new Set(ALL_WIDGET_IDS)
+      if (parsed.every(id => validIds.has(id)) && parsed.length === ALL_WIDGET_IDS.length) {
+        return parsed
+      }
+    }
+  } catch {}
+  return [...ALL_WIDGET_IDS]
+}
+
+const widgetOrder = ref<string[]>(loadWidgetOrder())
+
+// Reload order when user changes (login switch)
+watch(storageKey, () => {
+  widgetOrder.value = loadWidgetOrder()
+})
+
+const orderedWidgets = computed(() => {
+  const widgetMap = new Map(defaultWidgets.value.map(w => [w.id, w]))
+  return widgetOrder.value.map(id => widgetMap.get(id)!).filter(Boolean)
+})
+
+watch(widgetOrder, (order) => {
+  localStorage.setItem(storageKey.value, JSON.stringify(order))
+}, { deep: true })
+
+const widgetDragIndex = ref<number | null>(null)
+const widgetDragOverIndex = ref<number | null>(null)
+
+function onWidgetDragStart(index: number, e: DragEvent) {
+  widgetDragIndex.value = index
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move'
+  }
+}
+
+function onWidgetDragOver(index: number, e: DragEvent) {
+  e.preventDefault()
+  widgetDragOverIndex.value = index
+}
+
+function onWidgetDragEnd() {
+  if (
+    widgetDragIndex.value !== null &&
+    widgetDragOverIndex.value !== null &&
+    widgetDragIndex.value !== widgetDragOverIndex.value
+  ) {
+    const arr = [...widgetOrder.value]
+    const [moved] = arr.splice(widgetDragIndex.value, 1)
+    if (moved) arr.splice(widgetDragOverIndex.value, 0, moved)
+    widgetOrder.value = arr
+  }
+  widgetDragIndex.value = null
+  widgetDragOverIndex.value = null
 }
 </script>
 
@@ -179,39 +264,26 @@ async function handleAcceptInvitation(token: string) {
       </div>
     </div>
 
-    <!-- Main Content Grid -->
+    <!-- Dashboard Widgets (Draggable) -->
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
-      <!-- Left: Analytics Chart -->
-      <div class="xl:col-span-1">
-        <AnalyticsWeeklyChart />
-      </div>
-
-      <!-- Center: Reminders -->
-      <div class="xl:col-span-1">
-        <AnalyticsReminders />
-      </div>
-
-      <!-- Right: Project List -->
-      <div class="xl:col-span-1">
-        <AnalyticsProjectList />
-      </div>
-    </div>
-
-    <!-- Bottom Grid -->
-    <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
-      <!-- Team Collaboration -->
-      <div class="xl:col-span-1">
-        <AnalyticsTeamCollaboration />
-      </div>
-
-      <!-- Project Progress -->
-      <div class="xl:col-span-1">
-        <AnalyticsProjectProgress />
-      </div>
-
-      <!-- Time Tracker -->
-      <div class="xl:col-span-1">
-        <AnalyticsTimeTracker />
+      <div
+        v-for="(widget, idx) in orderedWidgets"
+        :key="widget.id"
+        draggable="true"
+        class="xl:col-span-1 relative group transition-all"
+        :class="{
+          'opacity-50 scale-95': widgetDragIndex === idx,
+          'ring-2 ring-[#478FC8] ring-offset-2 rounded-xl': widgetDragOverIndex === idx && widgetDragIndex !== idx,
+        }"
+        @dragstart="onWidgetDragStart(idx, $event)"
+        @dragover="onWidgetDragOver(idx, $event)"
+        @dragend="onWidgetDragEnd"
+      >
+        <!-- Grip Handle -->
+        <div class="absolute left-2 top-2 z-10 cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 transition-colors opacity-0 group-hover:opacity-100">
+          <GripVertical class="h-5 w-5" />
+        </div>
+        <component :is="widget.component" />
       </div>
     </div>
   </LayoutPageContainer>

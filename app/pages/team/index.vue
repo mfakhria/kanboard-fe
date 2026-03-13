@@ -9,6 +9,16 @@ import {
   UserCog,
 } from 'lucide-vue-next'
 
+interface MemberItem {
+  id: string
+  name: string
+  email: string
+  role: string
+  rawRole: 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER'
+  avatar?: string
+  joinedAt: string
+}
+
 definePageMeta({
   layout: 'dashboard',
 })
@@ -88,20 +98,20 @@ async function handleInvite() {
 
 // View Profile dialog
 const showProfile = ref(false)
-const profileMember = ref<typeof members.value[0] | null>(null)
+const profileMember = ref<MemberItem | null>(null)
 
-function handleViewProfile(member: typeof members.value[0]) {
+function handleViewProfile(member: MemberItem) {
   profileMember.value = member
   showProfile.value = true
 }
 
 // Edit Role dialog
 const showEditRole = ref(false)
-const editRoleMember = ref<typeof members.value[0] | null>(null)
+const editRoleMember = ref<MemberItem | null>(null)
 const editRoleValue = ref('')
 const isUpdatingRole = ref(false)
 
-function handleEditRole(member: typeof members.value[0]) {
+function handleEditRole(member: MemberItem) {
   editRoleMember.value = member
   editRoleValue.value = member.rawRole
   showEditRole.value = true
@@ -123,10 +133,10 @@ async function submitEditRole() {
 
 // Remove member dialog
 const showRemove = ref(false)
-const removeMember_ = ref<typeof members.value[0] | null>(null)
+const removeMember_ = ref<MemberItem | null>(null)
 const isRemoving = ref(false)
 
-function handleRemove(member: typeof members.value[0]) {
+function handleRemove(member: MemberItem) {
   removeMember_.value = member
   showRemove.value = true
 }

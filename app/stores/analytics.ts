@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { analyticsApi } from '~/features/analytics/services/analytics.api'
+import { kanbanApi } from '~/features/kanban/services/task.api'
 import type {
   DashboardStats,
   WeeklyProductivity,
@@ -72,10 +73,11 @@ export const useAnalyticsStore = defineStore('analytics', {
         const wsId = workspaceId || useWorkspaceStore().activeWorkspace?.id
         if (!wsId) return
 
-        // Fetch workspace stats and weekly summary in parallel
-        const [wsStatsRes, weeklyRes] = await Promise.all([
+        // Fetch workspace stats, weekly summary, and tasks in parallel
+        const [wsStatsRes, weeklyRes, tasksRes] = await Promise.all([
           analyticsApi.getWorkspaceStats(wsId),
           analyticsApi.getWeeklySummary(wsId),
+          kanbanApi.listTasks(wsId),
         ])
 
         const wsStats = wsStatsRes.data as any
@@ -126,6 +128,55 @@ export const useAnalyticsStore = defineStore('analytics', {
             timestamp: a.createdAt,
           }))
         }
+
+        // Build team members from real tasks (group by assignee, show latest task)
+        const tasks = (tasksRes.data ?? []) as any[]
+        const assigneeMap = new Map<string, { name: string; avatar?: string; task: string; status: 'completed' | 'in_progress' | 'pending' }>()
+        for (const t of tasks) {
+          if (!t.assignee) continue
+          const uid = t.assignee.id
+          if (!assigneeMap.has(uid)) {
+            const colName = t.column?.name?.toLowerCase() ?? ''
+            let status: 'completed' | 'in_progress' | 'pending' = 'pending'
+            if (t.completed) status = 'completed'
+            else if (colName.includes('progress') || colName.includes('review')) status = 'in_progress'
+            assigneeMap.set(uid, {
+              name: t.assignee.name,
+              avatar: t.assignee.avatar,
+              task: t.title,
+              status,
+            })
+          }
+        }
+        this.teamMembers = Array.from(assigneeMap.entries()).slice(0, 5).map(([id, m]) => ({
+          id,
+          name: m.name,
+          avatar: m.avatar,
+          task: m.task,
+          status: m.status,
+        }))
+
+        // Build reminders from upcoming task deadlines
+        const now = new Date()
+        const upcoming = tasks
+          .filter((t: any) => t.dueDate && !t.completed && new Date(t.dueDate) >= now)
+          .sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+          .slice(0, 5)
+        this.reminders = upcoming.map((t: any) => {
+          const due = new Date(t.dueDate)
+          const diffMs = due.getTime() - now.getTime()
+          const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+          let timeLabel: string
+          if (diffDays === 0) timeLabel = 'Today'
+          else if (diffDays === 1) timeLabel = 'Tomorrow'
+          else timeLabel = `${diffDays} days left`
+          return {
+            id: t.id,
+            title: t.title,
+            time: `${due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — ${timeLabel}`,
+            type: 'deadline' as const,
+          }
+        })
       } catch (error) {
         console.error('Failed to fetch analytics:', error)
       } finally {

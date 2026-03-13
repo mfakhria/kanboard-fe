@@ -199,19 +199,41 @@ watch([searchQuery, statusFilter], () => {
 })
 
 // ─── Drag & Drop reorder ───
-const projectOrder = ref<string[]>([])
+const authStore = useAuthStore()
+const PROJECT_ORDER_KEY = computed(() => {
+  const userId = authStore.currentUser?.id
+  return userId ? `project-order-${userId}` : 'project-order'
+})
+
+function loadProjectOrder(): string[] {
+  try {
+    const saved = localStorage.getItem(PROJECT_ORDER_KEY.value)
+    if (saved) return JSON.parse(saved) as string[]
+  } catch {}
+  return []
+}
+
+const projectOrder = ref<string[]>(loadProjectOrder())
 const dragIndex = ref<number | null>(null)
 const dragOverIndex = ref<number | null>(null)
 
-// Keep order in sync when projects change
+// Reload order when user changes
+watch(PROJECT_ORDER_KEY, () => {
+  projectOrder.value = loadProjectOrder()
+})
+
+// Keep order in sync when projects change (merge saved + new)
 watch(() => projectStore.projects, (projects) => {
-  const existingIds = new Set(projectOrder.value)
   const newIds = projects.map(p => p.id)
-  // Only reset if the set of projects changed
-  if (newIds.length !== existingIds.size || newIds.some(id => !existingIds.has(id))) {
-    projectOrder.value = newIds
-  }
+  const savedOrder = projectOrder.value.filter(id => newIds.includes(id))
+  const newProjects = newIds.filter(id => !projectOrder.value.includes(id))
+  projectOrder.value = [...savedOrder, ...newProjects]
 }, { immediate: true })
+
+// Persist order to localStorage
+watch(projectOrder, (order) => {
+  localStorage.setItem(PROJECT_ORDER_KEY.value, JSON.stringify(order))
+}, { deep: true })
 
 // Override projectCards to respect custom order
 const orderedProjectCards = computed<ProjectCard[]>(() => {

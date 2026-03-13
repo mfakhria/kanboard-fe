@@ -8,6 +8,10 @@ const api = axios.create({
   },
 })
 
+export function setApiBaseUrl(url: string) {
+  api.defaults.baseURL = url
+}
+
 // Module-level token that works on both SSR and client.
 // Synced from useCookie via the api plugin (plugins/api.ts).
 let _authToken: string | null = null

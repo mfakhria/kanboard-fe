@@ -9,7 +9,7 @@ interface TeamMemberCard {
   name: string
   email: string
   role: string
-  rawRole: string
+  rawRole: 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER'
   avatar?: string
   joinedAt: string
 }
