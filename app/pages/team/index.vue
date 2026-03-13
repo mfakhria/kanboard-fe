@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import {
   Users,
-  Zap,
-  Building2,
-  BarChart3,
   UserPlus,
-  Download,
-  Settings,
   Search,
+  Shield,
+  Crown,
+  Eye,
+  UserCog,
 } from 'lucide-vue-next'
 
 definePageMeta({
@@ -24,47 +23,39 @@ onMounted(async () => {
 
 // Map real workspace members into the card format
 const members = computed(() =>
-  workspaceStore.members.map((m, idx) => ({
+  workspaceStore.members.map((m) => ({
     id: m.id,
     name: m.user.name,
+    email: m.user.email,
     role: formatRole(m.role),
+    rawRole: m.role,
     avatar: m.user.avatar,
-    taskProgress: generateProgress(idx),
-    collaborators: buildCollaborators(idx),
-    status: (idx % 3 !== 2 ? 'online' : 'offline') as 'online' | 'offline',
+    joinedAt: m.joinedAt,
   })),
 )
-
-// Use real workspace members only — no demo data
-const displayMembers = computed(() => members.value)
 
 // Search
 const searchQuery = ref('')
 const filteredMembers = computed(() => {
-  if (!searchQuery.value.trim()) return displayMembers.value
+  if (!searchQuery.value.trim()) return members.value
   const q = searchQuery.value.toLowerCase()
-  return displayMembers.value.filter(
-    (m) => m.name.toLowerCase().includes(q) || m.role.toLowerCase().includes(q),
+  return members.value.filter(
+    (m) =>
+      m.name.toLowerCase().includes(q) ||
+      m.role.toLowerCase().includes(q) ||
+      m.email.toLowerCase().includes(q),
   )
 })
 
 // Stats
 const statsCards = computed(() => {
-  const total = displayMembers.value.length
-  const active = displayMembers.value.filter((m) => m.status === 'online').length
-  const avgTask = total > 0
-    ? (displayMembers.value.reduce((sum, m) => sum + m.taskProgress, 0) / total).toFixed(1)
-    : '0'
+  const total = members.value.length
+  const admins = members.value.filter((m) => m.rawRole === 'ADMIN' || m.rawRole === 'OWNER').length
   return [
     { title: 'Total Members', value: total, icon: Users, color: 'text-[#478FC8]', bgColor: 'bg-[#EDF4FF] dark:bg-[#478FC8]/10' },
-    { title: 'Active Now', value: active, icon: Zap, color: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-900/10' },
-    { title: 'Departments', value: 7, icon: Building2, color: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-50 dark:bg-purple-900/10' },
-    { title: 'Avg. Task', value: avgTask, icon: BarChart3, color: 'text-amber-600 dark:text-amber-400', bgColor: 'bg-amber-50 dark:bg-amber-900/10' },
+    { title: 'Admins', value: admins, icon: Shield, color: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-50 dark:bg-purple-900/10' },
   ]
 })
-
-// Welcome banner - newest member
-const newestMember = computed(() => displayMembers.value[displayMembers.value.length - 1])
 
 // Invite dialog
 const showInvite = ref(false)
@@ -95,43 +86,89 @@ async function handleInvite() {
   }
 }
 
+// View Profile dialog
+const showProfile = ref(false)
+const profileMember = ref<typeof members.value[0] | null>(null)
+
+function handleViewProfile(member: typeof members.value[0]) {
+  profileMember.value = member
+  showProfile.value = true
+}
+
+// Edit Role dialog
+const showEditRole = ref(false)
+const editRoleMember = ref<typeof members.value[0] | null>(null)
+const editRoleValue = ref('')
+const isUpdatingRole = ref(false)
+
+function handleEditRole(member: typeof members.value[0]) {
+  editRoleMember.value = member
+  editRoleValue.value = member.rawRole
+  showEditRole.value = true
+}
+
+async function submitEditRole() {
+  const ws = workspaceStore.activeWorkspace
+  if (!ws || !editRoleMember.value) return
+  isUpdatingRole.value = true
+  try {
+    await workspaceStore.updateMemberRole(ws.id, editRoleMember.value.id, editRoleValue.value)
+    showEditRole.value = false
+  } catch {
+    // Error handled in store
+  } finally {
+    isUpdatingRole.value = false
+  }
+}
+
+// Remove member dialog
+const showRemove = ref(false)
+const removeMember_ = ref<typeof members.value[0] | null>(null)
+const isRemoving = ref(false)
+
+function handleRemove(member: typeof members.value[0]) {
+  removeMember_.value = member
+  showRemove.value = true
+}
+
+async function submitRemove() {
+  const ws = workspaceStore.activeWorkspace
+  if (!ws || !removeMember_.value) return
+  isRemoving.value = true
+  try {
+    await workspaceStore.removeMember(ws.id, removeMember_.value.id)
+    showRemove.value = false
+  } catch {
+    // Error handled in store
+  } finally {
+    isRemoving.value = false
+  }
+}
+
 // Helpers
 function formatRole(role: string) {
   return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase()
 }
 
-function generateProgress(idx: number) {
-  const base = [83, 76, 69, 89, 78, 71, 65, 54, 51, 81, 79, 68]
-  return base[idx % base.length] ?? 70
+function formatDate(date: string) {
+  return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-function buildCollaborators(idx: number) {
-  const count = 3 + (idx % 4)
-  return Array.from({ length: count }, (_, i) => ({
-    name: `Collaborator ${i + 1}`,
-    avatar: undefined as string | undefined,
-  }))
-}
-
-function fakeCollabs(count: number) {
-  return Array.from({ length: count }, (_, i) => ({
-    name: `Collab ${i + 1}`,
-    avatar: undefined as string | undefined,
-  }))
+function getRoleIcon(role: string) {
+  switch (role) {
+    case 'OWNER': return Crown
+    case 'ADMIN': return Shield
+    case 'VIEWER': return Eye
+    default: return UserCog
+  }
 }
 </script>
 
 <template>
   <LayoutPageContainer>
     <!-- Page Header -->
-    <LayoutPageHeader title="Team & Profile" subtitle="Manage team members and your profile settings.">
+    <LayoutPageHeader title="Team" subtitle="Manage workspace members and roles.">
       <template #actions>
-        <UiButton variant="outline" size="icon" title="Download">
-          <Download class="h-4 w-4" />
-        </UiButton>
-        <UiButton variant="outline" size="icon" title="Settings">
-          <Settings class="h-4 w-4" />
-        </UiButton>
         <UiButton class="gap-2" @click="showInvite = true">
           <UserPlus class="h-4 w-4" />
           Invite member
@@ -140,8 +177,7 @@ function fakeCollabs(count: number) {
     </LayoutPageHeader>
 
     <!-- Stats Row -->
-    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
-      <!-- Stat Cards -->
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
       <UiCard
         v-for="(stat, idx) in statsCards"
         :key="idx"
@@ -155,20 +191,6 @@ function fakeCollabs(count: number) {
           <p class="text-xl font-bold text-gray-900 dark:text-white">{{ stat.value }}</p>
         </div>
       </UiCard>
-
-      <!-- Welcome Card -->
-      <UiCard v-if="newestMember" class="flex items-center gap-3 p-4 col-span-2 sm:col-span-1">
-        <div class="min-w-0 flex-1">
-          <p class="text-xs font-medium text-muted-foreground">Welcome, new member!</p>
-          <div class="mt-1 flex items-center gap-2">
-            <UiAvatar :alt="newestMember.name" :src="newestMember.avatar" size="sm" />
-            <div class="min-w-0">
-              <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ newestMember.name }}</p>
-              <p class="text-xs text-muted-foreground truncate">{{ newestMember.role }}</p>
-            </div>
-          </div>
-        </div>
-      </UiCard>
     </div>
 
     <!-- Search Bar -->
@@ -176,7 +198,7 @@ function fakeCollabs(count: number) {
       <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       <UiInput
         v-model="searchQuery"
-        placeholder="Search members by name or role..."
+        placeholder="Search members by name, role, or email..."
         class="pl-10"
       />
     </div>
@@ -187,6 +209,9 @@ function fakeCollabs(count: number) {
         v-for="member in filteredMembers"
         :key="member.id"
         :member="member"
+        @view-profile="handleViewProfile"
+        @edit-role="handleEditRole"
+        @remove="handleRemove"
       />
     </div>
 
@@ -229,6 +254,88 @@ function fakeCollabs(count: number) {
             </UiButton>
           </div>
         </form>
+      </template>
+    </UiDialog>
+
+    <!-- View Profile Dialog -->
+    <UiDialog v-model:open="showProfile" title="Member Profile">
+      <template #default="{ close }">
+        <div v-if="profileMember" class="space-y-4">
+          <div class="flex flex-col items-center">
+            <UiAvatar :src="profileMember.avatar" :alt="profileMember.name" size="xl" />
+            <h3 class="mt-3 text-lg font-semibold text-gray-900 dark:text-white">{{ profileMember.name }}</h3>
+            <p class="text-sm text-muted-foreground">{{ profileMember.email }}</p>
+          </div>
+          <div class="space-y-3 rounded-lg border p-4">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-muted-foreground">Role</span>
+              <div class="flex items-center gap-1.5">
+                <component :is="getRoleIcon(profileMember.rawRole)" class="h-3.5 w-3.5 text-muted-foreground" />
+                <span class="text-sm font-medium">{{ profileMember.role }}</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-muted-foreground">Joined</span>
+              <span class="text-sm font-medium">{{ formatDate(profileMember.joinedAt) }}</span>
+            </div>
+          </div>
+          <div class="flex justify-end pt-2">
+            <UiButton variant="outline" @click="close">Close</UiButton>
+          </div>
+        </div>
+      </template>
+    </UiDialog>
+
+    <!-- Edit Role Dialog -->
+    <UiDialog v-model:open="showEditRole" title="Edit Member Role" description="Change the role for this member.">
+      <template #default="{ close }">
+        <form v-if="editRoleMember" class="space-y-4" @submit.prevent="submitEditRole">
+          <div class="flex items-center gap-3 rounded-lg border p-3">
+            <UiAvatar :src="editRoleMember.avatar" :alt="editRoleMember.name" size="sm" />
+            <div class="min-w-0">
+              <p class="text-sm font-medium truncate">{{ editRoleMember.name }}</p>
+              <p class="text-xs text-muted-foreground truncate">{{ editRoleMember.email }}</p>
+            </div>
+          </div>
+          <div>
+            <UiLabel for="edit-role">New Role</UiLabel>
+            <UiSelect
+              v-model="editRoleValue"
+              :options="roleOptions"
+              class="mt-1.5"
+            />
+          </div>
+          <div class="flex justify-end gap-3 pt-2">
+            <UiButton variant="outline" type="button" @click="close">Cancel</UiButton>
+            <UiButton type="submit" :disabled="isUpdatingRole || editRoleValue === editRoleMember.rawRole">
+              {{ isUpdatingRole ? 'Updating...' : 'Update Role' }}
+            </UiButton>
+          </div>
+        </form>
+      </template>
+    </UiDialog>
+
+    <!-- Remove Member Confirmation Dialog -->
+    <UiDialog v-model:open="showRemove" title="Remove Member" description="Are you sure you want to remove this member?">
+      <template #default="{ close }">
+        <div v-if="removeMember_" class="space-y-4">
+          <div class="flex items-center gap-3 rounded-lg border border-destructive/20 bg-destructive/5 p-3">
+            <UiAvatar :src="removeMember_.avatar" :alt="removeMember_.name" size="sm" />
+            <div class="min-w-0">
+              <p class="text-sm font-medium truncate">{{ removeMember_.name }}</p>
+              <p class="text-xs text-muted-foreground truncate">{{ removeMember_.email }}</p>
+            </div>
+          </div>
+          <p class="text-sm text-muted-foreground">
+            This member will lose access to the workspace and all its projects. This action cannot be undone.
+          </p>
+          <div class="flex justify-end gap-3 pt-2">
+            <UiButton variant="outline" @click="close">Cancel</UiButton>
+            <UiButton variant="destructive" :disabled="isRemoving" @click="submitRemove">
+              {{ isRemoving ? 'Removing...' : 'Remove Member' }}
+            </UiButton>
+          </div>
+        </div>
       </template>
     </UiDialog>
   </LayoutPageContainer>

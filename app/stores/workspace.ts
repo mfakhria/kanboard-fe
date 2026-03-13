@@ -90,6 +90,26 @@ export const useWorkspaceStore = defineStore('workspace', {
       }
     },
 
+    async updateMemberRole(workspaceId: string, memberId: string, role: string) {
+      try {
+        await workspaceApi.assignRole(workspaceId, memberId, role)
+        await this.fetchWorkspaceById(workspaceId)
+      } catch (error) {
+        console.error('Failed to update member role:', error)
+        throw error
+      }
+    },
+
+    async removeMember(workspaceId: string, memberId: string) {
+      try {
+        await workspaceApi.removeMember(workspaceId, memberId)
+        await this.fetchWorkspaceById(workspaceId)
+      } catch (error) {
+        console.error('Failed to remove member:', error)
+        throw error
+      }
+    },
+
     async deleteWorkspace(id: string) {
       try {
         await workspaceApi.delete(id)

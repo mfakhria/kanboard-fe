@@ -25,4 +25,8 @@ export const workspaceApi = {
   removeMember(workspaceId: string, memberId: string) {
     return api.delete(`/workspaces/${workspaceId}/members/${memberId}`)
   },
+
+  assignRole(workspaceId: string, memberId: string, role: string) {
+    return api.patch(`/workspaces/${workspaceId}/members/${memberId}/role`, { role })
+  },
 }
