@@ -79,7 +79,7 @@ const handleLogout = async () => {
         class="fixed left-0 top-0 z-50 h-screen w-[280px] bg-white dark:bg-gray-900 shadow-xl lg:hidden">
         <div class="flex items-center justify-between px-6 py-5">
           <div class="flex items-center">
-            <img src="/kanzon.jpeg" alt="Kanzon" class="h-12 w-auto max-w-[160px] object-contain" />
+            <img src="/kanzon.png" alt="Kanzon" class="h-12 w-auto max-w-[160px] object-contain" />
           </div>
           <button class="rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-gray-800" @click="closeDrawer">
             <X class="h-5 w-5 text-gray-500 dark:text-gray-400" />

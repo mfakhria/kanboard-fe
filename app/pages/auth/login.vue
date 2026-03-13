@@ -42,7 +42,7 @@ const handleLogin = async () => {
     <!-- Logo -->
     <div class="mb-8 text-center">
       <div class="mb-4 flex items-center justify-center">
-        <img src="/kanzon.jpeg" alt="Kanzon" class="h-16 w-auto object-contain" />
+        <img src="/kanzon.png" alt="Kanzon" class="h-16 w-auto object-contain" />
       </div>
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Welcome back</h1>
       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Sign in to your account to continue</p>

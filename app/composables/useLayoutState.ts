@@ -1,14 +1,19 @@
 /**
  * useLayoutState — persisted layout state across all pages
- * Uses Nuxt's useState so the sidebar collapsed state
- * survives navigation between pages without resetting.
+ * Uses useCookie so the sidebar collapsed state is available during SSR
+ * and survives page refresh without hydration mismatch.
  */
 export const useLayoutState = () => {
-  const sidebarCollapsed = useState<boolean>('sidebar-collapsed', () => false)
+  const collapsedCookie = useCookie<boolean>('sidebar-collapsed', {
+    default: () => false,
+    watch: true,
+  })
+  const sidebarCollapsed = useState<boolean>('sidebar-collapsed', () => collapsedCookie.value)
   const mobileDrawerOpen = useState<boolean>('mobile-drawer-open', () => false)
 
   const toggleCollapse = () => {
     sidebarCollapsed.value = !sidebarCollapsed.value
+    collapsedCookie.value = sidebarCollapsed.value
   }
 
   const toggleMobileDrawer = () => {

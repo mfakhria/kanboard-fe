@@ -19,7 +19,10 @@ const router = useRouter()
 const route = useRoute()
 const { badgeLabel, fetchTaskCount } = useTaskCount()
 
+const ready = ref(false)
+
 onMounted(async () => {
+  nextTick(() => { ready.value = true })
   const workspaceStore = useWorkspaceStore()
   if (!workspaceStore.allWorkspaces.length) {
     await workspaceStore.fetchWorkspaces()
@@ -54,13 +57,14 @@ const handleLogout = async () => {
 
 <template>
   <aside :class="[
-    'fixed left-0 top-0 z-40 hidden h-screen flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 lg:flex transition-all duration-300',
+    'fixed left-0 top-0 z-40 hidden h-screen flex-col border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 lg:flex',
+    ready ? 'transition-all duration-300' : '',
     collapsed ? 'w-[68px]' : 'w-[240px]',
   ]">
     <!-- Logo -->
     <div class="flex items-center justify-between py-5" :class="collapsed ? 'px-3' : 'px-6'">
       <div class="flex items-center overflow-hidden">
-        <img src="/kanzon.jpeg" alt="Kanzon" :class="collapsed ? 'h-10 w-10' : 'h-14 w-auto max-w-[160px]'" class="shrink-0 object-contain transition-all duration-300" />
+        <img src="/kanzon.png" alt="Kanzon" :class="[collapsed ? 'h-10 w-10' : 'h-14 w-auto max-w-[160px]', ready ? 'transition-all duration-300' : '']" class="shrink-0 object-contain" />
       </div>
       <button v-if="!collapsed"
         class="shrink-0 rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition"
