@@ -21,7 +21,7 @@ const classes = computed(() =>
       'bg-[#EDF4FF] text-[#478FC8] shadow-sm hover:bg-[#EDF4FF]/80': props.variant === 'secondary',
       'hover:bg-[#EDF4FF] hover:text-[#478FC8]': props.variant === 'ghost',
       'text-[#478FC8] underline-offset-4 hover:underline': props.variant === 'link',
-      'bg-[#478FC8] text-white shadow hover:bg-[#478FC8]/90': props.variant === 'success',
+      'bg-emerald-500 text-white shadow hover:bg-emerald-600': props.variant === 'success',
 
       'h-9 px-4 py-2': props.size === 'default',
       'h-8 rounded-md px-3 text-xs': props.size === 'sm',
