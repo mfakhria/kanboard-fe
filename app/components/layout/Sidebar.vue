@@ -63,8 +63,8 @@ const handleLogout = async () => {
   ]">
     <!-- Logo -->
     <div class="flex items-center justify-between py-5" :class="collapsed ? 'px-3' : 'px-6'">
-      <div class="flex items-center overflow-hidden">
-        <img src="/kanzon.png" alt="Kanzon" :class="[collapsed ? 'h-10 w-10' : 'h-14 w-auto max-w-[160px]', ready ? 'transition-all duration-300' : '']" class="shrink-0 object-contain" />
+      <div class="flex items-center justify-center overflow-hidden" :class="collapsed ? 'w-full' : ''">
+        <img src="/kanzon.png" alt="Kanzon" :class="[collapsed ? 'h-12 w-12' : 'h-16 w-auto max-w-[160px]', ready ? 'transition-all duration-300' : '']" class="shrink-0 object-contain" />
       </div>
       <button v-if="!collapsed"
         class="shrink-0 rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition"
