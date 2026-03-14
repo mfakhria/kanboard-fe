@@ -2,8 +2,8 @@
 import {
   CheckSquare, CheckCircle2, Clock, AlertTriangle, Loader2,
   Search, SlidersHorizontal, LayoutGrid, List, Plus, ChevronDown,
-  MoreHorizontal, Flag, CalendarDays, ArrowUpRight, User,
-  FolderKanban, ChevronLeft, ChevronRight, Pencil, Trash2, Eye,
+  MoreHorizontal, Flag, CalendarDays, ArrowUpRight,
+  ChevronLeft, ChevronRight, Pencil, Trash2, Eye,
 } from 'lucide-vue-next'
 import { kanbanApi } from '~/features/kanban/services/task.api'
 
@@ -128,6 +128,8 @@ const statsCards = computed(() => [
     iconColor: 'text-blue-100',
     highlighted: true,
     trend: `${taskStats.value.total} total`,
+    filterKey: null as string | null,
+    filterType: null as string | null,
   },
   {
     title: 'Completed',
@@ -137,6 +139,8 @@ const statsCards = computed(() => [
     iconColor: 'text-green-600',
     highlighted: false,
     trend: taskStats.value.completed > 0 ? `+${taskStats.value.completed} done` : undefined,
+    filterKey: 'completed',
+    filterType: 'status',
   },
   {
     title: 'In Progress',
@@ -146,6 +150,8 @@ const statsCards = computed(() => [
     iconColor: 'text-[#478FC8]',
     highlighted: false,
     trend: undefined,
+    filterKey: 'in_progress',
+    filterType: 'status',
   },
   {
     title: 'To Do',
@@ -155,6 +161,8 @@ const statsCards = computed(() => [
     iconColor: 'text-gray-500',
     highlighted: false,
     trend: undefined,
+    filterKey: 'not_started',
+    filterType: 'status',
   },
   {
     title: 'Overdue',
@@ -164,20 +172,41 @@ const statsCards = computed(() => [
     iconColor: 'text-red-500',
     highlighted: false,
     trend: undefined,
+    filterKey: null,
+    filterType: 'overdue',
   },
 ])
 
-// ─── Config Maps ───
-const priorityMap: Record<string, { label: string; bg: string; text: string }> = {
-  high: { label: 'High', bg: 'bg-red-500', text: 'text-white' },
-  medium: { label: 'Medium', bg: 'bg-amber-400', text: 'text-white' },
-  low: { label: 'Low', bg: 'bg-gray-400', text: 'text-white' },
+function handleStatCardClick(card: typeof statsCards.value[0]) {
+  if (card.filterType === 'status' && card.filterKey) {
+    toggleStatusFilter(card.filterKey)
+  } else if (card.filterType === 'overdue') {
+    // Clear filters for "all" view
+    clearFilters()
+  } else {
+    // Total tasks — clear all filters
+    clearFilters()
+  }
 }
 
-const statusMap: Record<string, { label: string; bg: string; text: string; dot: string }> = {
-  completed: { label: 'Completed', bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400', dot: 'bg-green-500' },
-  in_progress: { label: 'In Progress', bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400', dot: 'bg-blue-500' },
-  not_started: { label: 'To Do', bg: 'bg-gray-100 dark:bg-gray-800/50', text: 'text-gray-600 dark:text-gray-400', dot: 'bg-gray-400' },
+function isStatCardActive(card: typeof statsCards.value[0]) {
+  if (card.filterType === 'status' && card.filterKey) {
+    return selectedStatus.value === card.filterKey
+  }
+  return false
+}
+
+// ─── Config Maps ───
+const priorityMap: Record<string, { label: string; bg: string; text: string; hoverBg: string; activeBg: string; icon: string }> = {
+  high: { label: 'High', bg: 'bg-red-500', text: 'text-white', hoverBg: 'hover:bg-red-600 hover:shadow-md hover:shadow-red-500/25', activeBg: 'ring-2 ring-red-400 ring-offset-1 dark:ring-offset-gray-900', icon: 'text-red-200' },
+  medium: { label: 'Medium', bg: 'bg-amber-400', text: 'text-white', hoverBg: 'hover:bg-amber-500 hover:shadow-md hover:shadow-amber-400/25', activeBg: 'ring-2 ring-amber-300 ring-offset-1 dark:ring-offset-gray-900', icon: 'text-amber-200' },
+  low: { label: 'Low', bg: 'bg-gray-400', text: 'text-white', hoverBg: 'hover:bg-gray-500 hover:shadow-md hover:shadow-gray-400/25', activeBg: 'ring-2 ring-gray-300 ring-offset-1 dark:ring-offset-gray-900', icon: 'text-gray-200' },
+}
+
+const statusMap: Record<string, { label: string; bg: string; text: string; dot: string; hoverBg: string; activeBg: string }> = {
+  completed: { label: 'Completed', bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400', dot: 'bg-green-500', hoverBg: 'hover:bg-green-200 dark:hover:bg-green-900/50 hover:shadow-md hover:shadow-green-500/10', activeBg: 'ring-2 ring-green-400 ring-offset-1 dark:ring-offset-gray-900' },
+  in_progress: { label: 'In Progress', bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400', dot: 'bg-blue-500', hoverBg: 'hover:bg-blue-200 dark:hover:bg-blue-900/50 hover:shadow-md hover:shadow-blue-500/10', activeBg: 'ring-2 ring-blue-400 ring-offset-1 dark:ring-offset-gray-900' },
+  not_started: { label: 'To Do', bg: 'bg-gray-100 dark:bg-gray-800/50', text: 'text-gray-600 dark:text-gray-400', dot: 'bg-gray-400', hoverBg: 'hover:bg-gray-200 dark:hover:bg-gray-700/50 hover:shadow-md hover:shadow-gray-400/10', activeBg: 'ring-2 ring-gray-400 ring-offset-1 dark:ring-offset-gray-900' },
 }
 
 function priorityLabel(priority: string) {
@@ -186,6 +215,25 @@ function priorityLabel(priority: string) {
 
 function statusLabel(status: string) {
   return statusMap[status]?.label || status
+}
+
+// ─── Badge Click Filter ───
+function togglePriorityFilter(priority: string) {
+  selectedPriority.value = selectedPriority.value === priority ? null : priority
+  currentPage.value = 1
+}
+
+function toggleStatusFilter(status: string) {
+  selectedStatus.value = selectedStatus.value === status ? null : status
+  currentPage.value = 1
+}
+
+function isPriorityActive(priority: string) {
+  return selectedPriority.value === priority
+}
+
+function isStatusActive(status: string) {
+  return selectedStatus.value === status
 }
 
 function formatDate(dateStr: string) {
@@ -355,15 +403,6 @@ async function submitEditTask() {
   }
 }
 
-// ─── Move to Board ───
-const router = useRouter()
-
-function handleMoveToBoard(task: TaskItem) {
-  if (task.projectId) {
-    router.push(`/project/${task.projectId}`)
-  }
-}
-
 // ─── Delete Task ───
 const showDeleteConfirm = ref(false)
 const deleteTaskTarget = ref<TaskItem | null>(null)
@@ -420,15 +459,18 @@ async function confirmDeleteTask() {
 
     <!-- Stats Cards -->
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-      <div
+      <button
         v-for="(stat, index) in statsCards"
         :key="index"
         :class="[
-          'relative flex flex-col gap-3 px-5 py-4 rounded-xl border transition-all duration-200 cursor-pointer overflow-hidden',
+          'relative flex flex-col gap-3 px-5 py-4 rounded-xl border transition-all duration-200 cursor-pointer overflow-hidden text-left',
           stat.highlighted
             ? 'bg-[#478FC8] border-[#478FC8] text-white shadow-md shadow-[#478FC8]/20'
-            : 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-[#478FC8]/30 hover:shadow-sm'
+            : isStatCardActive(stat)
+              ? 'bg-white dark:bg-gray-900 border-[#478FC8] shadow-md shadow-[#478FC8]/10 ring-1 ring-[#478FC8]/30'
+              : 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-[#478FC8]/30 hover:shadow-sm',
         ]"
+        @click="handleStatCardClick(stat)"
       >
         <div v-if="stat.highlighted" class="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-white/10" />
         <div class="flex items-center justify-between">
@@ -458,7 +500,7 @@ async function confirmDeleteTask() {
           <ArrowUpRight class="h-3 w-3" />
           <span>{{ stat.trend }}</span>
         </div>
-      </div>
+      </button>
     </div>
 
     <!-- Filter Bar -->
@@ -542,6 +584,28 @@ async function confirmDeleteTask() {
         Clear filters
       </button>
 
+      <!-- Active filter chips -->
+      <div v-if="hasActiveFilters" class="flex items-center gap-1.5">
+        <span
+          v-if="selectedPriority"
+          :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full cursor-pointer transition-all duration-200', priorityMap[selectedPriority]?.bg, priorityMap[selectedPriority]?.hoverBg]"
+          @click="selectedPriority = null; currentPage = 1"
+        >
+          <Flag class="h-[10px] w-[10px]" :class="priorityMap[selectedPriority]?.text" />
+          <span :class="priorityMap[selectedPriority]?.text" style="font-size: 11px; font-weight: 700;">{{ priorityLabel(selectedPriority) }}</span>
+          <span class="text-white/80 hover:text-white" style="font-size: 12px; font-weight: 800; line-height: 1;">&times;</span>
+        </span>
+        <span
+          v-if="selectedStatus"
+          :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full cursor-pointer transition-all duration-200', statusMap[selectedStatus]?.bg, statusMap[selectedStatus]?.hoverBg]"
+          @click="selectedStatus = null; currentPage = 1"
+        >
+          <span :class="['w-1.5 h-1.5 rounded-full shrink-0', statusMap[selectedStatus]?.dot]" />
+          <span :class="statusMap[selectedStatus]?.text" style="font-size: 11px; font-weight: 700;">{{ statusLabel(selectedStatus) }}</span>
+          <span :class="statusMap[selectedStatus]?.text" style="font-size: 12px; font-weight: 800; line-height: 1; opacity: 0.7;">&times;</span>
+        </span>
+      </div>
+
       <div class="flex-1" />
 
       <!-- Task count -->
@@ -620,33 +684,63 @@ async function confirmDeleteTask() {
         <!-- Assignee -->
         <div class="hidden md:flex items-center gap-2 w-40 shrink-0">
           <template v-if="task.assignees.length > 0">
-            <UiAvatar v-if="task.assignees[0].avatar" :src="task.assignees[0].avatar" :alt="task.assignees[0].name" size="xs" />
+            <UiAvatar v-if="task.assignees[0]?.avatar" :src="task.assignees[0]!.avatar!" :alt="task.assignees[0]!.name" size="sm" />
             <div
               v-else
               :class="['w-6 h-6 rounded-full flex items-center justify-center text-white shrink-0', assigneeColors[idx % assigneeColors.length]]"
               style="font-size: 10px; font-weight: 700;"
             >
-              {{ getAssigneeInitials(task.assignees[0].name) }}
+              {{ getAssigneeInitials(task.assignees[0]!.name) }}
             </div>
-            <span class="text-gray-600 dark:text-gray-300 truncate" style="font-size: 12.5px;">{{ task.assignees[0].name.split(' ')[0] }}</span>
+            <span class="text-gray-600 dark:text-gray-300 truncate" style="font-size: 12.5px;">{{ task.assignees[0]!.name.split(' ')[0] }}</span>
           </template>
           <span v-else class="text-gray-400 dark:text-gray-500" style="font-size: 12.5px;">Unassigned</span>
         </div>
 
         <!-- Priority -->
         <div class="hidden sm:block shrink-0">
-          <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full', priorityMap[task.priority]?.bg]">
+          <button
+            :class="[
+              'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full cursor-pointer transition-all duration-200 select-none',
+              priorityMap[task.priority]?.bg,
+              priorityMap[task.priority]?.hoverBg,
+              isPriorityActive(task.priority) ? priorityMap[task.priority]?.activeBg : '',
+              isPriorityActive(task.priority) ? 'scale-105' : 'hover:scale-105',
+            ]"
+            :title="`Click to filter by ${priorityLabel(task.priority)} priority`"
+            @click.stop="togglePriorityFilter(task.priority)"
+          >
             <Flag class="h-[10px] w-[10px]" :class="priorityMap[task.priority]?.text" />
             <span :class="priorityMap[task.priority]?.text" style="font-size: 11.5px; font-weight: 700;">{{ priorityLabel(task.priority) }}</span>
-          </span>
+            <span
+              v-if="isPriorityActive(task.priority)"
+              class="ml-0.5 w-3.5 h-3.5 flex items-center justify-center rounded-full bg-white/30 text-white"
+              style="font-size: 9px; font-weight: 800;"
+            >&#10003;</span>
+          </button>
         </div>
 
         <!-- Status -->
         <div class="hidden sm:block shrink-0">
-          <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full', statusMap[task.status]?.bg]">
-            <span :class="['w-1.5 h-1.5 rounded-full shrink-0', statusMap[task.status]?.dot]" />
+          <button
+            :class="[
+              'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full cursor-pointer transition-all duration-200 select-none',
+              statusMap[task.status]?.bg,
+              statusMap[task.status]?.hoverBg,
+              isStatusActive(task.status) ? statusMap[task.status]?.activeBg : '',
+              isStatusActive(task.status) ? 'scale-105' : 'hover:scale-105',
+            ]"
+            :title="`Click to filter by ${statusLabel(task.status)}`"
+            @click.stop="toggleStatusFilter(task.status)"
+          >
+            <span :class="['w-1.5 h-1.5 rounded-full shrink-0', statusMap[task.status]?.dot, isStatusActive(task.status) ? 'animate-pulse' : '']" />
             <span :class="statusMap[task.status]?.text" style="font-size: 11.5px; font-weight: 600;">{{ statusLabel(task.status) }}</span>
-          </span>
+            <span
+              v-if="isStatusActive(task.status)"
+              :class="['ml-0.5 w-3.5 h-3.5 flex items-center justify-center rounded-full', statusMap[task.status]?.dot]"
+              style="font-size: 9px; font-weight: 800; color: white;"
+            >&#10003;</span>
+          </button>
         </div>
 
         <!-- Due date -->
@@ -788,32 +882,62 @@ async function confirmDeleteTask() {
               <p class="text-gray-400 dark:text-gray-500 mb-1" style="font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;">Assignee</p>
               <div class="flex items-center gap-2">
                 <template v-if="task.assignees.length > 0">
-                  <UiAvatar v-if="task.assignees[0].avatar" :src="task.assignees[0].avatar" :alt="task.assignees[0].name" size="xs" />
+                  <UiAvatar v-if="task.assignees[0]?.avatar" :src="task.assignees[0]!.avatar!" :alt="task.assignees[0]!.name" size="sm" />
                   <div
                     v-else
                     :class="['w-6 h-6 rounded-full flex items-center justify-center text-white shrink-0', assigneeColors[idx % assigneeColors.length]]"
                     style="font-size: 10px; font-weight: 700;"
                   >
-                    {{ getAssigneeInitials(task.assignees[0].name) }}
+                    {{ getAssigneeInitials(task.assignees[0]!.name) }}
                   </div>
-                  <span class="text-gray-700 dark:text-gray-300 truncate" style="font-size: 12.5px; font-weight: 500;">{{ task.assignees[0].name.split(' ')[0] }}</span>
+                  <span class="text-gray-700 dark:text-gray-300 truncate" style="font-size: 12.5px; font-weight: 500;">{{ task.assignees[0]!.name.split(' ')[0] }}</span>
                 </template>
                 <span v-else class="text-gray-400" style="font-size: 12.5px;">Unassigned</span>
               </div>
             </div>
             <div>
               <p class="text-gray-400 dark:text-gray-500 mb-1" style="font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;">Priority</p>
-              <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full', priorityMap[task.priority]?.bg]">
+              <button
+                :class="[
+                  'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full cursor-pointer transition-all duration-200 select-none',
+                  priorityMap[task.priority]?.bg,
+                  priorityMap[task.priority]?.hoverBg,
+                  isPriorityActive(task.priority) ? priorityMap[task.priority]?.activeBg : '',
+                  isPriorityActive(task.priority) ? 'scale-105' : 'hover:scale-105',
+                ]"
+                :title="`Click to filter by ${priorityLabel(task.priority)} priority`"
+                @click.stop="togglePriorityFilter(task.priority)"
+              >
                 <Flag class="h-[10px] w-[10px]" :class="priorityMap[task.priority]?.text" />
                 <span :class="priorityMap[task.priority]?.text" style="font-size: 11.5px; font-weight: 700;">{{ priorityLabel(task.priority) }}</span>
-              </span>
+                <span
+                  v-if="isPriorityActive(task.priority)"
+                  class="ml-0.5 w-3.5 h-3.5 flex items-center justify-center rounded-full bg-white/30 text-white"
+                  style="font-size: 9px; font-weight: 800;"
+                >&#10003;</span>
+              </button>
             </div>
             <div>
               <p class="text-gray-400 dark:text-gray-500 mb-1" style="font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;">Status</p>
-              <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full', statusMap[task.status]?.bg]">
-                <span :class="['w-1.5 h-1.5 rounded-full shrink-0', statusMap[task.status]?.dot]" />
+              <button
+                :class="[
+                  'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full cursor-pointer transition-all duration-200 select-none',
+                  statusMap[task.status]?.bg,
+                  statusMap[task.status]?.hoverBg,
+                  isStatusActive(task.status) ? statusMap[task.status]?.activeBg : '',
+                  isStatusActive(task.status) ? 'scale-105' : 'hover:scale-105',
+                ]"
+                :title="`Click to filter by ${statusLabel(task.status)}`"
+                @click.stop="toggleStatusFilter(task.status)"
+              >
+                <span :class="['w-1.5 h-1.5 rounded-full shrink-0', statusMap[task.status]?.dot, isStatusActive(task.status) ? 'animate-pulse' : '']" />
                 <span :class="statusMap[task.status]?.text" style="font-size: 11.5px; font-weight: 600;">{{ statusLabel(task.status) }}</span>
-              </span>
+                <span
+                  v-if="isStatusActive(task.status)"
+                  :class="['ml-0.5 w-3.5 h-3.5 flex items-center justify-center rounded-full', statusMap[task.status]?.dot]"
+                  style="font-size: 9px; font-weight: 800; color: white;"
+                >&#10003;</span>
+              </button>
             </div>
             <div>
               <p class="text-gray-400 dark:text-gray-500 mb-1" style="font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;">Due Date</p>

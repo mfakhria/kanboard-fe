@@ -29,7 +29,7 @@ const segments = computed(() => {
   const t = c + ip + p
 
   if (t === 0) {
-    return [{ offset: 0, dash: circumference, color: '#e5e7eb' }]
+    return [{ offset: 0, dash: circumference, gap: 0, color: '#e5e7eb' }]
   }
 
   const completedLen = (c / 100) * circumference

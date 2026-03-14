@@ -44,10 +44,15 @@ const points = computed(() => {
 const linePath = computed(() => {
   if (points.value.length === 0) return ''
   const pts = points.value
-  let d = `M ${pts[0].x} ${pts[0].y}`
+  const first = pts[0]
+  if (!first) return ''
+
+  let d = `M ${first.x} ${first.y}`
   for (let i = 1; i < pts.length; i++) {
     const p0 = pts[i - 1]
     const p1 = pts[i]
+    if (!p0 || !p1) continue
+
     const cpx1 = p0.x + (p1.x - p0.x) * 0.4
     const cpx2 = p0.x + (p1.x - p0.x) * 0.6
     d += ` C ${cpx1} ${p0.y}, ${cpx2} ${p1.y}, ${p1.x} ${p1.y}`
@@ -58,7 +63,11 @@ const linePath = computed(() => {
 const areaPath = computed(() => {
   if (points.value.length === 0) return ''
   const bottom = padding.top + innerH
-  return `${linePath.value} L ${points.value[points.value.length - 1].x} ${bottom} L ${points.value[0].x} ${bottom} Z`
+  const first = points.value[0]
+  const last = points.value[points.value.length - 1]
+  if (!first || !last) return ''
+
+  return `${linePath.value} L ${last.x} ${bottom} L ${first.x} ${bottom} Z`
 })
 
 // Horizontal grid lines
