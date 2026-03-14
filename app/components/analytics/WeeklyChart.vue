@@ -71,122 +71,101 @@ const gridLines = computed(() => {
 </script>
 
 <template>
-  <UiCard class="h-full border border-gray-100 dark:border-gray-800 shadow-sm">
-    <UiCardHeader class="px-5 pt-5 pb-2">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-[#EDF4FF] dark:bg-[#478FC8]/10">
-            <BarChart2 class="h-3.5 w-3.5 text-[#478FC8]" />
-          </div>
-          <UiCardTitle class="text-sm text-gray-700 dark:text-gray-200">Project Analytics</UiCardTitle>
-        </div>
-        <div class="flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-500">
-          <span class="h-2 w-2 rounded-full bg-[#478FC8]" />
-          {{ weeklyTotal }} tasks this week
-        </div>
+  <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl flex flex-col overflow-hidden h-full">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-50 dark:border-gray-800">
+      <div class="flex items-center gap-2">
+        <BarChart2 class="h-4 w-4 text-[#478FC8]" />
+        <span class="text-[13.5px] font-bold text-gray-900 dark:text-white">Project Analytics</span>
       </div>
-    </UiCardHeader>
-    <UiCardContent class="px-2 pb-4">
+      <span class="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-full text-[11px] font-medium">
+        {{ weeklyTotal }} tasks this week
+      </span>
+    </div>
+    <!-- Content -->
+    <div class="flex-1 flex flex-col">
       <!-- Empty state -->
-      <div v-if="!hasData" class="flex flex-col items-center justify-center h-44 text-gray-400 dark:text-gray-500">
-        <TrendingUp class="h-10 w-10 mb-3 opacity-20" />
-        <p class="text-xs font-medium">No activity this week</p>
-        <p class="text-[10px] mt-0.5 text-gray-300 dark:text-gray-600">Complete tasks to see your chart</p>
+      <div v-if="!hasData" class="flex-1 flex flex-col items-center justify-center gap-2 py-10">
+        <TrendingUp class="h-10 w-10 text-gray-300 dark:text-gray-600" />
+        <p class="text-[13px] font-semibold text-gray-500 dark:text-gray-400">No activity this week</p>
+        <p class="text-xs text-gray-400 dark:text-gray-500">Complete tasks to see your chart</p>
       </div>
 
       <!-- Area Chart SVG -->
-      <svg v-else :viewBox="`0 0 ${chartWidth} ${chartHeight + 25}`" class="w-full h-44" preserveAspectRatio="xMidYMid meet">
-        <defs>
-          <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#478FC8" stop-opacity="0.25" />
-            <stop offset="100%" stop-color="#478FC8" stop-opacity="0.02" />
-          </linearGradient>
-        </defs>
+      <div v-else class="px-4 pt-2 pb-4 flex-1">
+        <svg :viewBox="`0 0 ${chartWidth} ${chartHeight + 25}`" class="w-full h-44" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#478FC8" stop-opacity="0.15" />
+              <stop offset="100%" stop-color="#478FC8" stop-opacity="0" />
+            </linearGradient>
+          </defs>
 
-        <!-- Y-axis labels + grid lines -->
-        <template v-for="(line, i) in gridLines" :key="'grid-' + i">
-          <line
-            :x1="padding.left"
-            :y1="line.y"
-            :x2="chartWidth - padding.right"
-            :y2="line.y"
-            stroke="#f0f0f0"
-            stroke-dasharray="3 3"
-            class="dark:stroke-gray-800"
-          />
-          <text
-            :x="padding.left - 5"
-            :y="line.y + 3"
-            text-anchor="end"
-            class="fill-gray-300 dark:fill-gray-600"
-            style="font-size: 9px;"
-          >
-            {{ line.label }}
-          </text>
-        </template>
+          <!-- Y-axis labels + grid lines -->
+          <template v-for="(line, i) in gridLines" :key="'grid-' + i">
+            <line
+              :x1="padding.left"
+              :y1="line.y"
+              :x2="chartWidth - padding.right"
+              :y2="line.y"
+              stroke="#f1f5f9"
+              stroke-dasharray="3 3"
+              class="dark:stroke-gray-800"
+            />
+            <text
+              :x="padding.left - 5"
+              :y="line.y + 3"
+              text-anchor="end"
+              class="fill-gray-300 dark:fill-gray-600"
+              style="font-size: 9px;"
+            >
+              {{ line.label }}
+            </text>
+          </template>
 
-        <!-- Area fill -->
-        <path
-          :d="areaPath"
-          fill="url(#areaGradient)"
-        />
+          <!-- Area fill -->
+          <path :d="areaPath" fill="url(#areaGradient)" />
 
-        <!-- Line -->
-        <path
-          :d="linePath"
-          fill="none"
-          stroke="#478FC8"
-          stroke-width="2.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-
-        <!-- Dots + value labels -->
-        <template v-for="(pt, i) in points" :key="'pt-' + i">
-          <!-- Value label above dot -->
-          <text
-            v-if="pt.value > 0"
-            :x="pt.x"
-            :y="pt.y - 8"
-            text-anchor="middle"
-            class="fill-[#478FC8]"
-            style="font-size: 9px; font-weight: 600;"
-          >
-            {{ pt.value }}
-          </text>
-          <!-- Dot outer glow -->
-          <circle
-            :cx="pt.x"
-            :cy="pt.y"
-            r="5"
-            fill="#478FC8"
-            fill-opacity="0.15"
-          />
-          <!-- Dot -->
-          <circle
-            :cx="pt.x"
-            :cy="pt.y"
-            r="3"
-            fill="#478FC8"
-            stroke="white"
+          <!-- Line -->
+          <path
+            :d="linePath"
+            fill="none"
+            stroke="#478FC8"
             stroke-width="2"
-            class="dark:stroke-gray-900"
+            stroke-linecap="round"
+            stroke-linejoin="round"
           />
-        </template>
 
-        <!-- X-axis labels -->
-        <text
-          v-for="(pt, i) in points"
-          :key="'label-' + i"
-          :x="pt.x"
-          :y="chartHeight + 18"
-          text-anchor="middle"
-          class="fill-gray-400 dark:fill-gray-500"
-          style="font-size: 10px;"
-        >
-          {{ days[i] }}
-        </text>
-      </svg>
-    </UiCardContent>
-  </UiCard>
+          <!-- Dots + value labels -->
+          <template v-for="(pt, i) in points" :key="'pt-' + i">
+            <text
+              v-if="pt.value > 0"
+              :x="pt.x"
+              :y="pt.y - 8"
+              text-anchor="middle"
+              class="fill-[#478FC8]"
+              style="font-size: 9px; font-weight: 600;"
+            >
+              {{ pt.value }}
+            </text>
+            <circle :cx="pt.x" :cy="pt.y" r="5" fill="#478FC8" fill-opacity="0.15" />
+            <circle :cx="pt.x" :cy="pt.y" r="3" fill="#478FC8" stroke="white" stroke-width="2" class="dark:stroke-gray-900" />
+          </template>
+
+          <!-- X-axis labels -->
+          <text
+            v-for="(pt, i) in points"
+            :key="'label-' + i"
+            :x="pt.x"
+            :y="chartHeight + 18"
+            text-anchor="middle"
+            class="fill-gray-400 dark:fill-gray-500"
+            style="font-size: 10px;"
+          >
+            {{ days[i] }}
+          </text>
+        </svg>
+      </div>
+    </div>
+  </div>
 </template>

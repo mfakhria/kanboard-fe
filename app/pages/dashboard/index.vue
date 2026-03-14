@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowUpRight, Upload, Mail, CheckCircle2, X, FolderKanban, CheckCheck, Zap, Hourglass, TrendingUp } from 'lucide-vue-next'
+import { ArrowUpRight, Upload, Mail, CheckCircle2, X, FolderKanban, CheckCheck, Zap, Hourglass, TrendingUp, ChevronRight, Timer } from 'lucide-vue-next'
 
 definePageMeta({
   layout: 'dashboard',
@@ -32,13 +32,15 @@ const statsCards = computed(() => [
     note: 'Increased from last month',
     highlighted: true,
     icon: FolderKanban,
+    trendIcon: TrendingUp,
   },
   {
     title: 'Ended Projects',
     value: analyticsStore.stats.endedProjects,
     note: 'Increased from last month',
     highlighted: false,
-    icon: CheckCheck,
+    icon: CheckCircle2,
+    trendIcon: TrendingUp,
   },
   {
     title: 'Running Projects',
@@ -46,13 +48,15 @@ const statsCards = computed(() => [
     note: 'Increased from last month',
     highlighted: false,
     icon: Zap,
+    trendIcon: TrendingUp,
   },
   {
     title: 'Pending Project',
     value: analyticsStore.stats.pendingProjects,
     note: 'On Discuss',
     highlighted: false,
-    icon: Hourglass,
+    icon: Timer,
+    trendIcon: ChevronRight,
   },
 ])
 
@@ -78,95 +82,86 @@ async function handleAcceptInvitation(token: string) {
   }
 }
 
-// ─── Dashboard Widgets ───
-interface DashboardWidget {
-  id: string
-  label: string
-  component: ReturnType<typeof resolveComponent>
-}
+// ─── Dashboard Widgets (row 1 and row 2) ───
+const widgetsRow1 = computed(() => [
+  { id: 'weekly-chart', component: resolveComponent('AnalyticsWeeklyChart') },
+  { id: 'reminders', component: resolveComponent('AnalyticsReminders') },
+  { id: 'project-list', component: resolveComponent('AnalyticsProjectList') },
+])
 
-const widgets = computed<DashboardWidget[]>(() => [
-  { id: 'weekly-chart', label: 'Weekly Chart', component: resolveComponent('AnalyticsWeeklyChart') },
-  { id: 'reminders', label: 'Reminders', component: resolveComponent('AnalyticsReminders') },
-  { id: 'project-list', label: 'Project List', component: resolveComponent('AnalyticsProjectList') },
-  { id: 'team-collaboration', label: 'Team Collaboration', component: resolveComponent('AnalyticsTeamCollaboration') },
-  { id: 'project-progress', label: 'Project Progress', component: resolveComponent('AnalyticsProjectProgress') },
-  { id: 'time-tracker', label: 'Time Tracker', component: resolveComponent('AnalyticsTimeTracker') },
+const widgetsRow2 = computed(() => [
+  { id: 'team-collaboration', component: resolveComponent('AnalyticsTeamCollaboration') },
+  { id: 'project-progress', component: resolveComponent('AnalyticsProjectProgress') },
+  { id: 'time-tracker', component: resolveComponent('AnalyticsTimeTracker') },
 ])
 </script>
 
 <template>
   <LayoutPageContainer>
     <!-- Page Header -->
-    <LayoutPageHeader title="Dashboard" subtitle="Plan, prioritize, and accomplish your tasks with ease.">
-      <template #actions>
-        <UiButton variant="outline" class="gap-2 border-gray-200 dark:border-gray-700 hover:border-[#478FC8] hover:text-[#478FC8] bg-white dark:bg-gray-900 shadow-sm">
-          <Upload class="h-3.5 w-3.5" />
-          Import Data
-        </UiButton>
-      </template>
-    </LayoutPageHeader>
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div>
+        <div class="flex items-center gap-3 mb-1">
+          <div class="w-1 h-8 rounded-full bg-gradient-to-b from-[#478FC8] to-[#3570A5]" />
+          <h1 class="text-[clamp(22px,3vw,30px)] font-black tracking-tight text-gray-900 dark:text-white leading-tight">
+            Dashboard
+          </h1>
+        </div>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 pl-4 leading-relaxed">
+          Plan, prioritize, and accomplish your tasks
+          <span class="font-semibold bg-gradient-to-r from-[#478FC8] to-[#6db3e8] bg-clip-text text-transparent">with ease</span>.
+        </p>
+      </div>
+      <UiButton variant="outline" class="gap-2 border-gray-200 dark:border-gray-700 hover:border-[#478FC8] hover:text-[#478FC8] bg-white dark:bg-gray-900 shadow-sm shrink-0">
+        <Upload class="h-3.5 w-3.5" />
+        Import Data
+      </UiButton>
+    </div>
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <div
         v-for="(stat, index) in statsCards"
         :key="index"
         :class="[
-          'relative overflow-hidden rounded-xl border-0 p-5 shadow-sm transition-all hover:shadow-md',
+          'relative flex flex-col gap-3 rounded-xl border p-5 transition-all duration-200 cursor-pointer overflow-hidden',
           stat.highlighted
-            ? 'text-white'
-            : 'bg-white dark:bg-gray-900'
+            ? 'bg-[#478FC8] border-[#478FC8] text-white shadow-md shadow-[#478FC8]/20'
+            : 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-[#478FC8]/30 hover:shadow-sm'
         ]"
-        :style="stat.highlighted ? { background: 'linear-gradient(135deg, #478FC8 0%, #3570A5 100%)' } : {}"
       >
-        <!-- Header: icon + title on left, arrow on right -->
-        <div class="flex items-start justify-between">
-          <div class="flex items-center gap-2">
-            <div
-              :class="[
-                'flex h-8 w-8 items-center justify-center rounded-xl',
-                stat.highlighted ? 'bg-white/20' : 'bg-[#EDF4FF] dark:bg-[#478FC8]/10'
-              ]"
-            >
-              <component :is="stat.icon"
-                :class="['h-4 w-4', stat.highlighted ? 'text-white' : 'text-[#478FC8]']" />
-            </div>
-            <p :class="['text-[13px]', stat.highlighted ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400']">
-              {{ stat.title }}
-            </p>
-          </div>
+        <!-- Decorative circle -->
+        <div v-if="stat.highlighted" class="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-white/10" />
+
+        <!-- Header: icon + arrow -->
+        <div class="flex items-center justify-between">
           <div
             :class="[
-              'flex h-7 w-7 items-center justify-center rounded-full',
-              stat.highlighted ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-800'
+              'flex h-9 w-9 items-center justify-center rounded-xl shrink-0',
+              stat.highlighted ? 'bg-white/20' : 'bg-[#EDF4FF] dark:bg-[#478FC8]/10'
             ]"
           >
-            <ArrowUpRight
-              :class="['h-3.5 w-3.5', stat.highlighted ? 'text-white' : 'text-gray-500 dark:text-gray-400']" />
+            <component :is="stat.icon"
+              :class="['h-[18px] w-[18px]', stat.highlighted ? 'text-blue-100' : 'text-[#478FC8]']" />
           </div>
+          <ArrowUpRight :class="['h-4 w-4', stat.highlighted ? 'text-blue-200' : 'text-gray-300 dark:text-gray-600']" />
         </div>
 
-        <!-- Value -->
-        <p :class="['mt-2 mb-3 text-4xl font-bold', stat.highlighted ? 'text-white' : 'text-gray-800 dark:text-white']">
-          {{ stat.value }}
-        </p>
+        <!-- Label + Value -->
+        <div>
+          <p :class="['text-xs font-medium leading-snug', stat.highlighted ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400']">
+            {{ stat.title }}
+          </p>
+          <span :class="['text-[28px] font-extrabold leading-tight tracking-tight', stat.highlighted ? 'text-white' : 'text-gray-900 dark:text-white']">
+            {{ stat.value }}
+          </span>
+        </div>
 
         <!-- Trend badge -->
-        <div
-          :class="[
-            'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px]',
-            stat.highlighted
-              ? 'bg-white/20 text-blue-50'
-              : 'bg-[#EDF4FF] dark:bg-[#478FC8]/10 text-[#478FC8]'
-          ]"
-        >
-          <TrendingUp class="h-3 w-3" />
+        <div :class="['flex items-center gap-1.5 text-[11.5px] font-medium', stat.highlighted ? 'text-blue-200' : 'text-green-600 dark:text-green-400']">
+          <component :is="stat.trendIcon" class="h-3 w-3" />
           <span>{{ stat.note }}</span>
         </div>
-
-        <!-- Decorative circle for highlighted card -->
-        <div v-if="stat.highlighted" class="absolute -bottom-6 -right-6 h-24 w-24 rounded-full bg-white/10" />
       </div>
     </div>
 
@@ -216,12 +211,16 @@ const widgets = computed<DashboardWidget[]>(() => [
       </div>
     </div>
 
-    <!-- Dashboard Widgets -->
-    <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <div
-        v-for="widget in widgets"
-        :key="widget.id"
-      >
+    <!-- Dashboard Widgets Row 1 -->
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div v-for="widget in widgetsRow1" :key="widget.id">
+        <component :is="widget.component" />
+      </div>
+    </div>
+
+    <!-- Dashboard Widgets Row 2 -->
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div v-for="widget in widgetsRow2" :key="widget.id">
         <component :is="widget.component" />
       </div>
     </div>
