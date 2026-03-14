@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowUpRight, Upload, Mail, CheckCircle2, X, GripVertical } from 'lucide-vue-next'
+import { ArrowUpRight, Upload, Mail, CheckCircle2, X, GripVertical, FolderKanban, CheckCheck, Zap, Hourglass, TrendingUp } from 'lucide-vue-next'
 
 definePageMeta({
   layout: 'dashboard',
@@ -24,30 +24,30 @@ const statsCards = computed(() => [
   {
     title: 'Total Projects',
     value: analyticsStore.stats.totalProjects,
-    change: 'Increased from last month',
+    note: 'Increased from last month',
     highlighted: true,
-    icon: ArrowUpRight,
+    icon: FolderKanban,
   },
   {
     title: 'Ended Projects',
     value: analyticsStore.stats.endedProjects,
-    change: 'Increased from last month',
+    note: 'Increased from last month',
     highlighted: false,
-    icon: ArrowUpRight,
+    icon: CheckCheck,
   },
   {
     title: 'Running Projects',
     value: analyticsStore.stats.runningProjects,
-    change: 'Increased from last month',
+    note: 'Increased from last month',
     highlighted: false,
-    icon: ArrowUpRight,
+    icon: Zap,
   },
   {
     title: 'Pending Project',
     value: analyticsStore.stats.pendingProjects,
-    change: 'On Discuss',
+    note: 'On Discuss',
     highlighted: false,
-    icon: ArrowUpRight,
+    icon: Hourglass,
   },
 ])
 
@@ -164,57 +164,73 @@ function onWidgetDragEnd() {
     <!-- Page Header -->
     <LayoutPageHeader title="Dashboard" subtitle="Plan, prioritize, and accomplish your tasks with ease.">
       <template #actions>
-        <UiButton variant="outline" class="gap-2">
-          <Upload class="h-4 w-4" />
+        <UiButton variant="outline" class="gap-2 border-gray-200 dark:border-gray-700 hover:border-[#478FC8] hover:text-[#478FC8] bg-white dark:bg-gray-900 shadow-sm">
+          <Upload class="h-3.5 w-3.5" />
           Import Data
         </UiButton>
       </template>
     </LayoutPageHeader>
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <div v-for="(stat, index) in statsCards" :key="index" :class="[
-        'rounded-xl border p-5 transition-shadow hover:shadow-md',
-        stat.highlighted
-          ? 'bg-[#478FC8] text-white border-[#478FC8]'
-          : 'bg-[#EDF4FF] dark:bg-gray-900 border-[#EDF4FF]'
-      ]">
-        <div class="flex items-center justify-between">
-          <p :class="['text-sm font-medium', stat.highlighted ? 'text-gray-700' : 'text-gray-500 dark:text-gray-400']">
-            {{ stat.title }}
-          </p>
-          <button
-            :class="['rounded-full p-1.5 transition', stat.highlighted ? 'bg-white/20 hover:bg-white/30' : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700']">
-            <component :is="stat.icon"
-              :class="['h-4 w-4', stat.highlighted ? 'text-white' : 'text-gray-400 dark:text-gray-500']" />
-          </button>
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div
+        v-for="(stat, index) in statsCards"
+        :key="index"
+        :class="[
+          'relative overflow-hidden rounded-xl border-0 p-5 shadow-sm transition-all hover:shadow-md',
+          stat.highlighted
+            ? 'text-white'
+            : 'bg-white dark:bg-gray-900'
+        ]"
+        :style="stat.highlighted ? { background: 'linear-gradient(135deg, #478FC8 0%, #3570A5 100%)' } : {}"
+      >
+        <!-- Header: icon + title on left, arrow on right -->
+        <div class="flex items-start justify-between">
+          <div class="flex items-center gap-2">
+            <div
+              :class="[
+                'flex h-8 w-8 items-center justify-center rounded-xl',
+                stat.highlighted ? 'bg-white/20' : 'bg-[#EDF4FF] dark:bg-[#478FC8]/10'
+              ]"
+            >
+              <component :is="stat.icon"
+                :class="['h-4 w-4', stat.highlighted ? 'text-white' : 'text-[#478FC8]']" />
+            </div>
+            <p :class="['text-[13px]', stat.highlighted ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400']">
+              {{ stat.title }}
+            </p>
+          </div>
+          <div
+            :class="[
+              'flex h-7 w-7 items-center justify-center rounded-full',
+              stat.highlighted ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-800'
+            ]"
+          >
+            <ArrowUpRight
+              :class="['h-3.5 w-3.5', stat.highlighted ? 'text-white' : 'text-gray-500 dark:text-gray-400']" />
+          </div>
         </div>
-        <p :class="['mt-2 text-3xl font-bold', stat.highlighted ? 'text-white' : 'text-gray-900 dark:text-white']">
+
+        <!-- Value -->
+        <p :class="['mt-2 mb-3 text-4xl font-bold', stat.highlighted ? 'text-white' : 'text-gray-800 dark:text-white']">
           {{ stat.value }}
         </p>
-        <div class="mt-2 flex items-center gap-1.5">
-          <span v-if="stat.change.includes('Increased')" :class="[
-            'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
-            stat.highlighted
-              ? 'bg-white/20 text-white'
-              : 'bg-[#EDF4FF] text-[#478FC8]'
-          ]">
-            <svg class="h-3 w-3" viewBox="0 0 12 12" fill="none">
-              <path d="M6 2.5v7M3.5 5L6 2.5 8.5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
-                stroke-linejoin="round" />
-            </svg>
-            {{ stat.change }}
-          </span>
 
-          <span v-else :class="[
-            'text-xs',
+        <!-- Trend badge -->
+        <div
+          :class="[
+            'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px]',
             stat.highlighted
-              ? 'text-white/80'
-              : 'text-gray-400 dark:text-gray-500'
-          ]">
-            {{ stat.change }}
-          </span>
+              ? 'bg-white/20 text-blue-50'
+              : 'bg-[#EDF4FF] dark:bg-[#478FC8]/10 text-[#478FC8]'
+          ]"
+        >
+          <TrendingUp class="h-3 w-3" />
+          <span>{{ stat.note }}</span>
         </div>
+
+        <!-- Decorative circle for highlighted card -->
+        <div v-if="stat.highlighted" class="absolute -bottom-6 -right-6 h-24 w-24 rounded-full bg-white/10" />
       </div>
     </div>
 
@@ -265,16 +281,18 @@ function onWidgetDragEnd() {
     </div>
 
     <!-- Dashboard Widgets (Draggable) -->
-    <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
       <div
         v-for="(widget, idx) in orderedWidgets"
         :key="widget.id"
         draggable="true"
-        class="xl:col-span-1 relative group transition-all"
-        :class="{
-          'opacity-50 scale-95': widgetDragIndex === idx,
-          'ring-2 ring-[#478FC8] ring-offset-2 rounded-xl': widgetDragOverIndex === idx && widgetDragIndex !== idx,
-        }"
+        class="relative group transition-all"
+        :class="[
+          {
+            'opacity-50 scale-95': widgetDragIndex === idx,
+            'ring-2 ring-[#478FC8] ring-offset-2 rounded-xl': widgetDragOverIndex === idx && widgetDragIndex !== idx,
+          },
+        ]"
         @dragstart="onWidgetDragStart(idx, $event)"
         @dragover="onWidgetDragOver(idx, $event)"
         @dragend="onWidgetDragEnd"
