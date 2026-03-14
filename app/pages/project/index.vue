@@ -99,7 +99,7 @@ const projectCards = computed<ProjectCard[]>(() => {
       icon: p.icon || 'FolderKanban',
       iconBg: p.color ? '' : (iconBgOptions[idx % iconBgOptions.length] ?? 'bg-blue-100 dark:bg-blue-900/30'),
       color: p.color || '',
-      gradientColor: gradientOptions[idx % gradientOptions.length],
+      gradientColor: gradientOptions[idx % gradientOptions.length] ?? gradientOptions[0] ?? 'from-[#478FC8] to-indigo-600',
     }
   })
 })

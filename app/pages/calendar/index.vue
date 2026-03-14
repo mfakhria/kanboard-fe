@@ -566,7 +566,7 @@ const filterTabs = [
                 :class="['uppercase', isToday(d) ? 'text-[#478FC8]' : 'text-gray-400 dark:text-gray-500']"
                 style="font-size: 10px; font-weight: 600; letter-spacing: 0.06em;"
               >
-                {{ DAY_NAMES[i].slice(0, 3) }}
+                {{ (DAY_NAMES[i] ?? '').slice(0, 3) }}
               </span>
               <div
                 :class="[
