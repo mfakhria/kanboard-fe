@@ -13,6 +13,12 @@ import {
   FolderKanban,
   Loader2,
   GripVertical,
+  ExternalLink,
+  Pencil,
+  MoreHorizontal,
+  ArrowUpRight,
+  SlidersHorizontal,
+  TrendingUp,
 } from 'lucide-vue-next'
 
 definePageMeta({ layout: 'dashboard' })
@@ -31,19 +37,13 @@ const viewMode = ref<'card' | 'list'>('card')
 // ─── Search & filters ───
 const searchQuery = ref('')
 const statusFilter = ref('')
-const picFilter = ref('')
-const departmentFilter = ref('')
-const progressFilter = ref('')
-const deadlineFilter = ref('')
 
-// ─── Mock project data removed — uses real API data ───
+// ─── Project card data from API ───
 interface ProjectCard {
   id: string
   name: string
   status: 'completed' | 'in_progress' | 'pending' | 'overdue'
   pic: { name: string; avatar: string }
-  department: string
-  role: string
   completedTasks: number
   totalTasks: number
   deadline: string
@@ -51,22 +51,31 @@ interface ProjectCard {
   icon: string
   iconBg: string
   color: string
+  gradientColor: string
 }
 
 const iconBgOptions = [
-  'bg-orange-100 dark:bg-orange-900/30',
-  'bg-emerald-100 dark:bg-emerald-900/30',
   'bg-blue-100 dark:bg-blue-900/30',
-  'bg-teal-100 dark:bg-teal-900/30',
+  'bg-emerald-100 dark:bg-emerald-900/30',
   'bg-amber-100 dark:bg-amber-900/30',
   'bg-violet-100 dark:bg-violet-900/30',
+  'bg-orange-100 dark:bg-orange-900/30',
+  'bg-teal-100 dark:bg-teal-900/30',
+]
+
+const gradientOptions = [
+  'from-[#478FC8] to-indigo-600',
+  'from-emerald-500 to-teal-600',
+  'from-amber-500 to-orange-600',
+  'from-violet-500 to-purple-600',
+  'from-rose-500 to-red-600',
+  'from-cyan-500 to-blue-600',
 ]
 
 // ─── Combine API data ───
 const projectCards = computed<ProjectCard[]>(() => {
   const now = new Date()
-  return projectStore.projects.map((p) => {
-    // Derive status: overdue if ACTIVE with past dueDate
+  return projectStore.projects.map((p, idx) => {
     let status: ProjectCard['status'] = 'pending'
     if (p.status === 'COMPLETED') {
       status = 'completed'
@@ -83,15 +92,14 @@ const projectCards = computed<ProjectCard[]>(() => {
       name: p.name,
       status,
       pic: { name: p.pic?.name || '-', avatar: p.pic?.avatar || '' },
-      department: '-',
-      role: '-',
       completedTasks: p.completedTasks ?? 0,
       totalTasks: p.totalTasks ?? 0,
       deadline: p.dueDate ? new Date(p.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-',
       progress: (p.totalTasks ?? 0) > 0 ? Math.round(((p.completedTasks ?? 0) / (p.totalTasks ?? 0)) * 100) : 0,
       icon: p.icon || 'FolderKanban',
-      iconBg: p.color ? '' : (iconBgOptions[projectStore.projects.indexOf(p) % iconBgOptions.length] ?? 'bg-blue-100 dark:bg-blue-900/30'),
+      iconBg: p.color ? '' : (iconBgOptions[idx % iconBgOptions.length] ?? 'bg-blue-100 dark:bg-blue-900/30'),
       color: p.color || '',
+      gradientColor: gradientOptions[idx % gradientOptions.length],
     }
   })
 })
@@ -127,32 +135,89 @@ const stats = computed(() => {
   }
 })
 
+const activeStatFilter = ref('')
+
+function toggleStatFilter(status: string) {
+  if (activeStatFilter.value === status) {
+    activeStatFilter.value = ''
+    statusFilter.value = ''
+  } else {
+    activeStatFilter.value = status
+    statusFilter.value = status
+  }
+}
+
+const statCards = computed(() => [
+  {
+    key: '',
+    title: 'Total Projects',
+    value: stats.value.total,
+    note: 'All projects',
+    highlighted: activeStatFilter.value === '',
+    icon: FolderKanban,
+    iconBg: 'bg-[#EDF4FF] dark:bg-[#478FC8]/10',
+    iconColor: 'text-[#478FC8]',
+  },
+  {
+    key: 'completed',
+    title: 'Completed',
+    value: stats.value.completed,
+    note: 'Finished projects',
+    highlighted: activeStatFilter.value === 'completed',
+    icon: CheckCircle2,
+    iconBg: 'bg-emerald-50 dark:bg-emerald-900/20',
+    iconColor: 'text-emerald-500',
+  },
+  {
+    key: 'in_progress',
+    title: 'In Progress',
+    value: stats.value.inProgress,
+    note: 'Increased from last month',
+    highlighted: activeStatFilter.value === 'in_progress',
+    icon: Loader2,
+    iconBg: 'bg-[#EDF4FF] dark:bg-[#478FC8]/10',
+    iconColor: 'text-[#478FC8]',
+  },
+  {
+    key: 'pending',
+    title: 'Pending',
+    value: stats.value.pending,
+    note: 'On Discuss',
+    highlighted: activeStatFilter.value === 'pending',
+    icon: Clock,
+    iconBg: 'bg-gray-100 dark:bg-gray-800',
+    iconColor: 'text-gray-500',
+  },
+  {
+    key: 'overdue',
+    title: 'Overdue',
+    value: stats.value.overdue,
+    note: 'Need attention',
+    highlighted: activeStatFilter.value === 'overdue',
+    icon: AlertTriangle,
+    iconBg: 'bg-red-50 dark:bg-red-900/20',
+    iconColor: 'text-red-500',
+  },
+])
+
 // ─── Pagination ───
 const currentPage = ref(1)
 const perPage = 6
+const showAll = ref(false)
 
 const totalPages = computed(() => Math.max(1, Math.ceil(filteredOrderedProjects.value.length / perPage)))
 
 const paginatedProjects = computed(() => {
+  if (showAll.value) return filteredOrderedProjects.value
   const start = (currentPage.value - 1) * perPage
   return filteredOrderedProjects.value.slice(start, start + perPage)
 })
 
-const visiblePages = computed(() => {
-  const pages: (number | '...')[] = []
-  const total = totalPages.value
-  if (total <= 5) {
-    for (let i = 1; i <= total; i++) pages.push(i)
-  } else {
-    pages.push(1, 2, 3)
-    if (currentPage.value > 4) pages.push('...')
-    if (!pages.includes(total)) pages.push(total)
-  }
-  return pages
-})
-
 function goToPage(page: number) {
-  if (page >= 1 && page <= totalPages.value) currentPage.value = page
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+    showAll.value = false
+  }
 }
 
 // ─── Status helpers ───
@@ -164,8 +229,8 @@ const statusConfig: Record<string, { label: string; class: string; dotClass: str
   },
   in_progress: {
     label: 'In progress',
-    class: 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400',
-    dotClass: 'bg-amber-500',
+    class: 'bg-[#EDF4FF] text-[#478FC8] dark:bg-[#478FC8]/15 dark:text-[#6db3e8]',
+    dotClass: 'bg-[#478FC8]',
   },
   pending: {
     label: 'Pending',
@@ -196,6 +261,7 @@ function getProgressTextColor(progress: number) {
 // Reset page on filter
 watch([searchQuery, statusFilter], () => {
   currentPage.value = 1
+  showAll.value = false
 })
 
 // ─── Drag & Drop reorder ───
@@ -217,12 +283,10 @@ const projectOrder = ref<string[]>(loadProjectOrder())
 const dragIndex = ref<number | null>(null)
 const dragOverIndex = ref<number | null>(null)
 
-// Reload order when user changes
 watch(PROJECT_ORDER_KEY, () => {
   projectOrder.value = loadProjectOrder()
 })
 
-// Keep order in sync when projects change (merge saved + new)
 watch(() => projectStore.projects, (projects) => {
   const newIds = projects.map(p => p.id)
   const savedOrder = projectOrder.value.filter(id => newIds.includes(id))
@@ -230,12 +294,10 @@ watch(() => projectStore.projects, (projects) => {
   projectOrder.value = [...savedOrder, ...newProjects]
 }, { immediate: true })
 
-// Persist order to localStorage
 watch(projectOrder, (order) => {
   localStorage.setItem(PROJECT_ORDER_KEY.value, JSON.stringify(order))
 }, { deep: true })
 
-// Override projectCards to respect custom order
 const orderedProjectCards = computed<ProjectCard[]>(() => {
   const cardMap = new Map(projectCards.value.map(c => [c.id, c]))
   const ordered: ProjectCard[] = []
@@ -243,7 +305,6 @@ const orderedProjectCards = computed<ProjectCard[]>(() => {
     const card = cardMap.get(id)
     if (card) ordered.push(card)
   }
-  // Add any cards not in order (newly created)
   for (const card of projectCards.value) {
     if (!projectOrder.value.includes(card.id)) ordered.push(card)
   }
@@ -261,7 +322,6 @@ function onDragOver(index: number, e: DragEvent) {
 
 function onDragEnd() {
   if (dragIndex.value !== null && dragOverIndex.value !== null && dragIndex.value !== dragOverIndex.value) {
-    // Work with filtered+paginated indices mapped back to the order array
     const currentItems = filteredOrderedProjects.value
     const fromId = currentItems[dragIndex.value]?.id
     const toId = currentItems[dragOverIndex.value]?.id
@@ -291,7 +351,6 @@ const newProjectIcon = ref('FolderKanban')
 const newProjectVisibility = ref<'PUBLIC' | 'PRIVATE'>('PUBLIC')
 const isCreatingProject = ref(false)
 
-// Workspace members for PIC dropdown
 const wsMembers = computed(() => workspaceStore.members)
 
 function resetCreateForm() {
@@ -331,179 +390,171 @@ async function handleCreateProject() {
     isCreatingProject.value = false
   }
 }
+
+function getInitials(name: string): string {
+  return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+}
 </script>
 
 <template>
   <LayoutPageContainer>
     <!-- ═══ Page Header ═══ -->
-    <LayoutPageHeader title="Projects" subtitle="Manage and track all your projects in one place." />
+    <div class="flex items-start justify-between gap-4 flex-wrap">
+      <div>
+        <div class="flex items-center gap-3 mb-1">
+          <div class="w-1 h-8 rounded-full bg-gradient-to-b from-[#478FC8] to-[#3a7bb3]" />
+          <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-gray-900 dark:text-white">Projects</h1>
+        </div>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 pl-4">
+          Manage and track <span class="font-semibold text-[#478FC8]">all</span> your projects in one place.
+        </p>
+      </div>
+      <UiButton
+        class="gap-2 bg-[#478FC8] hover:bg-[#3a7bb3] text-white shadow-sm shadow-[#478FC8]/20 hover:shadow-md transition-all shrink-0"
+        @click="showCreateProject = true"
+      >
+        <Plus class="h-4 w-4" />
+        Add Project
+      </UiButton>
+    </div>
 
-    <!-- ═══ Stats Cards ═══ -->
-    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-      <!-- Total -->
-      <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 flex items-center gap-3">
-        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EDF4FF] dark:bg-[#478FC8]/20">
-          <FolderKanban class="h-5 w-5 text-[#478FC8]" />
+    <!-- ═══ Stats Cards (same style as Dashboard) ═══ -->
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <button
+        v-for="stat in statCards"
+        :key="stat.key"
+        :class="[
+          'relative overflow-hidden rounded-xl border-0 p-5 shadow-sm transition-all hover:shadow-md text-left cursor-pointer',
+          stat.highlighted
+            ? 'text-white'
+            : 'bg-white dark:bg-gray-900'
+        ]"
+        :style="stat.highlighted ? { background: 'linear-gradient(135deg, #478FC8 0%, #3570A5 100%)' } : {}"
+        @click="toggleStatFilter(stat.key)"
+      >
+        <!-- Header: icon + title on left, arrow on right -->
+        <div class="flex items-start justify-between">
+          <div class="flex items-center gap-2">
+            <div
+              :class="[
+                'flex h-8 w-8 items-center justify-center rounded-xl',
+                stat.highlighted ? 'bg-white/20' : stat.iconBg
+              ]"
+            >
+              <component :is="stat.icon"
+                :class="['h-4 w-4', stat.highlighted ? 'text-white' : stat.iconColor]" />
+            </div>
+            <p :class="['text-[13px]', stat.highlighted ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400']">
+              {{ stat.title }}
+            </p>
+          </div>
+          <div
+            :class="[
+              'flex h-7 w-7 items-center justify-center rounded-full',
+              stat.highlighted ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-800'
+            ]"
+          >
+            <ArrowUpRight
+              :class="['h-3.5 w-3.5', stat.highlighted ? 'text-white' : 'text-gray-500 dark:text-gray-400']" />
+          </div>
         </div>
-        <div>
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Total Projects</p>
-          <p class="text-xl font-bold text-gray-900 dark:text-white">{{ stats.total }}</p>
+
+        <!-- Value -->
+        <p :class="['mt-2 mb-3 text-4xl font-bold', stat.highlighted ? 'text-white' : 'text-gray-800 dark:text-white']">
+          {{ stat.value }}
+        </p>
+
+        <!-- Trend badge -->
+        <div
+          :class="[
+            'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px]',
+            stat.highlighted
+              ? 'bg-white/20 text-blue-50'
+              : 'bg-[#EDF4FF] dark:bg-[#478FC8]/10 text-[#478FC8]'
+          ]"
+        >
+          <TrendingUp class="h-3 w-3" />
+          <span>{{ stat.note }}</span>
         </div>
-      </div>
-      <!-- Completed -->
-      <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 flex items-center gap-3">
-        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-900/20">
-          <CheckCircle2 class="h-5 w-5 text-emerald-500" />
-        </div>
-        <div>
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Completed Projects</p>
-          <p class="text-xl font-bold text-gray-900 dark:text-white">{{ stats.completed }}</p>
-        </div>
-      </div>
-      <!-- In Progress -->
-      <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 flex items-center gap-3">
-        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-900/20">
-          <Loader2 class="h-5 w-5 text-amber-500" />
-        </div>
-        <div>
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">In Progress</p>
-          <p class="text-xl font-bold text-gray-900 dark:text-white">{{ stats.inProgress }}</p>
-        </div>
-      </div>
-      <!-- Pending -->
-      <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 flex items-center gap-3">
-        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
-          <Clock class="h-5 w-5 text-gray-500 dark:text-gray-400" />
-        </div>
-        <div>
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Pending Projects</p>
-          <p class="text-xl font-bold text-gray-900 dark:text-white">{{ stats.pending }}</p>
-        </div>
-      </div>
-      <!-- Overdue -->
-      <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 flex items-center gap-3">
-        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 dark:bg-red-900/20">
-          <AlertTriangle class="h-5 w-5 text-red-500" />
-        </div>
-        <div>
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Overdue</p>
-          <p class="text-xl font-bold text-gray-900 dark:text-white">{{ stats.overdue }}</p>
-        </div>
-      </div>
+
+        <!-- Decorative circle for highlighted card -->
+        <div v-if="stat.highlighted" class="absolute -bottom-6 -right-6 h-24 w-24 rounded-full bg-white/10" />
+      </button>
     </div>
 
     <!-- ═══ Filters & View Toggle ═══ -->
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-      <!-- Left: Search + Filters -->
-      <div class="flex flex-wrap items-center gap-2">
-        <!-- Search -->
-        <div class="relative">
-          <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Search project..."
-            class="h-9 w-48 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 pl-9 pr-3 text-sm text-gray-700 dark:text-gray-300 placeholder:text-gray-400 focus:border-[#478FC8] focus:outline-none focus:ring-1 focus:ring-[#478FC8]"
-          />
-        </div>
-        <!-- Status -->
-        <div class="relative">
-          <select
-            v-model="statusFilter"
-            class="h-9 appearance-none rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 pl-3 pr-8 text-sm text-gray-600 dark:text-gray-400 focus:border-[#478FC8] focus:outline-none focus:ring-1 focus:ring-[#478FC8]"
-          >
-            <option value="">Status</option>
-            <option value="completed">Completed</option>
-            <option value="in_progress">In Progress</option>
-            <option value="pending">Pending</option>
-            <option value="overdue">Overdue</option>
-          </select>
-          <ChevronDown class="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-        </div>
-        <!-- PIC -->
-        <div class="relative">
-          <select
-            v-model="picFilter"
-            class="h-9 appearance-none rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 pl-3 pr-8 text-sm text-gray-600 dark:text-gray-400 focus:border-[#478FC8] focus:outline-none focus:ring-1 focus:ring-[#478FC8]"
-          >
-            <option value="">PIC</option>
-          </select>
-          <ChevronDown class="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-        </div>
-        <!-- Department -->
-        <div class="relative">
-          <select
-            v-model="departmentFilter"
-            class="h-9 appearance-none rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 pl-3 pr-8 text-sm text-gray-600 dark:text-gray-400 focus:border-[#478FC8] focus:outline-none focus:ring-1 focus:ring-[#478FC8]"
-          >
-            <option value="">Department</option>
-          </select>
-          <ChevronDown class="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-        </div>
-        <!-- Progress -->
-        <div class="relative">
-          <select
-            v-model="progressFilter"
-            class="h-9 appearance-none rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 pl-3 pr-8 text-sm text-gray-600 dark:text-gray-400 focus:border-[#478FC8] focus:outline-none focus:ring-1 focus:ring-[#478FC8]"
-          >
-            <option value="">Progress</option>
-          </select>
-          <ChevronDown class="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-        </div>
-        <!-- Deadline -->
-        <div class="relative">
-          <select
-            v-model="deadlineFilter"
-            class="h-9 appearance-none rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 pl-3 pr-8 text-sm text-gray-600 dark:text-gray-400 focus:border-[#478FC8] focus:outline-none focus:ring-1 focus:ring-[#478FC8]"
-          >
-            <option value="">Deadline</option>
-          </select>
-          <ChevronDown class="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-        </div>
+    <div class="flex flex-wrap items-center gap-2.5">
+      <!-- Search -->
+      <div class="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 focus-within:border-[#478FC8] transition-all min-w-[200px]">
+        <Search class="h-3.5 w-3.5 text-gray-400 shrink-0" />
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Search project..."
+          class="flex-1 bg-transparent text-[13px] text-gray-700 dark:text-gray-300 outline-none placeholder:text-gray-400"
+        />
       </div>
 
-      <!-- Right: View Toggle + Add Project -->
-      <div class="flex items-center gap-2">
-        <div class="flex items-center rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-0.5">
-          <button
-            :class="[
-              'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-              viewMode === 'list'
-                ? 'bg-[#478FC8] text-white shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            ]"
-            @click="viewMode = 'list'"
-          >
-            <List class="h-4 w-4" />
-            List
-          </button>
-          <button
-            :class="[
-              'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-              viewMode === 'card'
-                ? 'bg-[#478FC8] text-white shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            ]"
-            @click="viewMode = 'card'"
-          >
-            <LayoutGrid class="h-4 w-4" />
-            Card
-          </button>
-        </div>
-        <UiButton class="gap-2 bg-[#478FC8] hover:bg-[#3a7bb3] text-white shadow-sm hover:shadow-md transition-all" @click="showCreateProject = true">
-          <Plus class="h-4 w-4" />
-          Add Project
-        </UiButton>
+      <!-- Status filter -->
+      <div class="relative">
+        <select
+          v-model="statusFilter"
+          class="h-9 appearance-none rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 pl-3.5 pr-8 text-[13px] font-medium text-gray-600 dark:text-gray-400 focus:border-[#478FC8] focus:outline-none transition-all cursor-pointer"
+        >
+          <option value="">Status</option>
+          <option value="completed">Completed</option>
+          <option value="in_progress">In Progress</option>
+          <option value="pending">Pending</option>
+          <option value="overdue">Overdue</option>
+        </select>
+        <ChevronDown class="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+      </div>
+
+      <!-- More filters -->
+      <button class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 text-[13px] font-medium text-gray-500 dark:text-gray-400 hover:border-[#478FC8] hover:text-[#478FC8] transition-all">
+        <SlidersHorizontal class="h-3.5 w-3.5" />
+        More filters
+      </button>
+
+      <!-- Spacer -->
+      <div class="flex-1" />
+
+      <!-- View Toggle -->
+      <div class="flex items-center gap-1 rounded-lg bg-gray-100 dark:bg-gray-800 p-1">
+        <button
+          :class="[
+            'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium transition-all',
+            viewMode === 'list'
+              ? 'bg-white dark:bg-gray-900 shadow-sm text-gray-800 dark:text-white'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+          ]"
+          @click="viewMode = 'list'"
+        >
+          <List class="h-3.5 w-3.5" />
+          List
+        </button>
+        <button
+          :class="[
+            'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium transition-all',
+            viewMode === 'card'
+              ? 'bg-white dark:bg-gray-900 shadow-sm text-gray-800 dark:text-white'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+          ]"
+          @click="viewMode = 'card'"
+        >
+          <LayoutGrid class="h-3.5 w-3.5" />
+          Card
+        </button>
       </div>
     </div>
 
     <!-- ═══ Project Cards Grid ═══ -->
-    <div v-if="viewMode === 'card'" class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-      <UiCard
+    <div v-if="viewMode === 'card'" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div
         v-for="(project, idx) in paginatedProjects"
         :key="project.id"
         draggable="true"
-        class="flex flex-col p-5 transition-all hover:shadow-md"
+        class="group flex flex-col overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:shadow-md hover:border-gray-200 dark:hover:border-gray-700 transition-all"
         :class="{
           'opacity-50 scale-95': dragIndex === idx,
           'ring-2 ring-[#478FC8] ring-offset-2': dragOverIndex === idx && dragIndex !== idx,
@@ -512,25 +563,137 @@ async function handleCreateProject() {
         @dragover="onDragOver(idx, $event)"
         @dragend="onDragEnd"
       >
-        <!-- Card Header: Icon + Name + Status -->
-        <div class="flex items-start justify-between mb-4">
-          <div class="flex items-center gap-3">
-            <div class="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 transition-colors -ml-1">
-              <GripVertical class="h-5 w-5" />
+        <!-- Gradient top bar -->
+        <div :class="['h-1.5 w-full bg-gradient-to-r', project.gradientColor]" />
+
+        <div class="flex flex-col gap-4 p-5 flex-1">
+          <!-- Title Row -->
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center gap-3">
+              <div
+                :class="['flex h-9 w-9 items-center justify-center rounded-xl shrink-0', project.iconBg]"
+                :style="project.color ? { backgroundColor: project.color + '20' } : {}"
+              >
+                <UiLucideIcon :name="project.icon" :size="18" :style="project.color ? { color: project.color } : {}" />
+              </div>
+              <h3 class="text-[15px] font-bold text-gray-900 dark:text-white leading-tight truncate max-w-[180px]">
+                {{ project.name }}
+              </h3>
             </div>
-            <div
-              :class="['flex h-10 w-10 items-center justify-center rounded-lg text-lg', project.iconBg]"
-              :style="project.color ? { backgroundColor: project.color + '20' } : {}"
-            >
-              <UiLucideIcon :name="project.icon" :size="20" :style="project.color ? { color: project.color } : {}" />
+            <div class="flex items-center gap-2">
+              <span
+                :class="[
+                  'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap',
+                  statusConfig[project.status]?.class
+                ]"
+              >
+                <span :class="['h-1.5 w-1.5 rounded-full', statusConfig[project.status]?.dotClass]" />
+                {{ statusConfig[project.status]?.label }}
+              </span>
+              <button class="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-all">
+                <MoreHorizontal class="h-4 w-4" />
+              </button>
             </div>
-            <h3 class="text-sm font-semibold text-gray-900 dark:text-white leading-tight max-w-[160px] truncate">
-              {{ project.name }}
-            </h3>
           </div>
+
+          <!-- Meta Grid -->
+          <div class="grid grid-cols-2 gap-x-4 gap-y-3">
+            <div>
+              <p class="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">PIC</p>
+              <div class="flex items-center gap-2">
+                <div class="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-[10px] font-bold text-white shrink-0">
+                  {{ getInitials(project.pic.name) }}
+                </div>
+                <span class="text-[12.5px] font-medium text-gray-700 dark:text-gray-300 truncate">
+                  {{ project.pic.name.split(' ').slice(0, 2).join(' ') }}
+                </span>
+              </div>
+            </div>
+            <div>
+              <p class="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Deadline</p>
+              <span class="text-[12.5px] font-medium text-gray-700 dark:text-gray-300">{{ project.deadline }}</span>
+            </div>
+            <div>
+              <p class="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Tasks</p>
+              <span class="text-[12.5px] font-semibold text-gray-700 dark:text-gray-300">
+                {{ project.completedTasks }}<span class="text-gray-400 dark:text-gray-500">/{{ project.totalTasks }}</span>
+              </span>
+            </div>
+            <div>
+              <p class="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Progress</p>
+              <span :class="['text-[13px] font-bold', getProgressTextColor(project.progress)]">{{ project.progress }}%</span>
+            </div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div>
+            <div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+              <div
+                :class="['h-full rounded-full transition-all duration-500', getProgressColor(project.progress)]"
+                :style="{ width: `${project.progress}%` }"
+              />
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center gap-2 mt-auto pt-3 border-t border-gray-50 dark:border-gray-800">
+            <NuxtLink :to="`/project/${project.id}`" class="flex-1">
+              <button class="flex w-full items-center justify-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 py-2 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                <ExternalLink class="h-3.5 w-3.5" />
+                View Details
+              </button>
+            </NuxtLink>
+            <NuxtLink :to="`/project/${project.id}`">
+              <button class="flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-[13px] font-semibold text-[#478FC8] hover:bg-[#EDF4FF] dark:hover:bg-[#478FC8]/10 transition-all">
+                <Pencil class="h-3 w-3" />
+                Edit
+              </button>
+            </NuxtLink>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ Project List View ═══ -->
+    <div v-else class="space-y-2">
+      <!-- List header -->
+      <div class="flex items-center gap-4 px-5 py-2">
+        <div class="w-8" />
+        <div class="flex-1 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Name</div>
+        <div class="w-28 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden lg:block">Status</div>
+        <div class="w-28 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden md:block">PIC</div>
+        <div class="w-32 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden lg:block">Progress</div>
+        <div class="w-20 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden sm:block">Deadline</div>
+        <div class="w-16" />
+      </div>
+
+      <!-- List rows -->
+      <div
+        v-for="(project, idx) in paginatedProjects"
+        :key="project.id"
+        draggable="true"
+        class="group flex items-center gap-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-3.5 hover:border-gray-200 dark:hover:border-gray-700 hover:shadow-sm transition-all"
+        :class="{
+          'opacity-50': dragIndex === idx,
+          'ring-2 ring-[#478FC8]': dragOverIndex === idx && dragIndex !== idx,
+        }"
+        @dragstart="onDragStart(idx)"
+        @dragover="onDragOver(idx, $event)"
+        @dragend="onDragEnd"
+      >
+        <div
+          :class="['flex h-8 w-8 items-center justify-center rounded-lg shrink-0', project.iconBg]"
+          :style="project.color ? { backgroundColor: project.color + '20' } : {}"
+        >
+          <UiLucideIcon :name="project.icon" :size="16" :style="project.color ? { color: project.color } : {}" />
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ project.name }}</p>
+        </div>
+        <div class="w-28 hidden lg:block">
           <span
             :class="[
-              'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap',
+              'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold',
               statusConfig[project.status]?.class
             ]"
           >
@@ -538,208 +701,88 @@ async function handleCreateProject() {
             {{ statusConfig[project.status]?.label }}
           </span>
         </div>
-
-        <!-- PIC & Department -->
-        <div class="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mb-1.5">PIC:</p>
-            <div class="flex items-center gap-2">
-              <div class="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-[10px] font-bold text-white shrink-0">
-                {{ project.pic.name.split(' ').map(n => n[0]).join('').slice(0, 2) }}
-              </div>
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{{ project.pic.name }}</span>
-            </div>
+        <div class="w-28 hidden md:flex items-center gap-2">
+          <div class="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-[9px] font-bold text-white shrink-0">
+            {{ getInitials(project.pic.name) }}
           </div>
-          <div>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mb-1.5">Department/Role:</p>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ project.department }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">{{ project.role }}</p>
-          </div>
+          <span class="text-xs text-gray-600 dark:text-gray-400 truncate">{{ project.pic.name.split(' ')[0] }}</span>
         </div>
-
-        <!-- Tasks & Deadline -->
-        <div class="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">Completed Tasks:</p>
-            <p class="text-sm text-gray-700 dark:text-gray-300">
-              <span class="font-bold text-gray-900 dark:text-white">{{ project.completedTasks }}</span>
-              <span class="text-gray-400"> / {{ project.totalTasks }}</span>
-            </p>
+        <div class="w-32 hidden lg:block">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[11px] text-gray-500">{{ project.progress }}%</span>
           </div>
-          <div>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">Deadline:</p>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ project.deadline }}</p>
-          </div>
-        </div>
-
-        <!-- Progress bar -->
-        <div class="mb-5">
-          <div class="flex items-center justify-between mb-1.5">
-            <p class="text-xs text-gray-400 dark:text-gray-500">Progress:</p>
-            <p :class="['text-xs font-semibold', getProgressTextColor(project.progress)]">{{ project.progress }}%</p>
-          </div>
-          <div class="h-2 w-full rounded-full bg-gray-100 dark:bg-gray-800">
+          <div class="h-1.5 w-full rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
             <div
               :class="['h-full rounded-full transition-all', getProgressColor(project.progress)]"
               :style="{ width: `${project.progress}%` }"
             />
           </div>
         </div>
-
-        <!-- Actions -->
-        <div class="flex items-center gap-2 mt-auto pt-2 border-t border-gray-100 dark:border-gray-800">
-          <NuxtLink
-            :to="`/project/${project.id}`"
-            class="flex-1"
-          >
-            <UiButton variant="outline" size="sm" class="w-full text-xs">
-              View Details
-            </UiButton>
+        <span class="text-xs text-gray-500 text-right hidden sm:block min-w-[80px]">{{ project.deadline }}</span>
+        <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+          <NuxtLink :to="`/project/${project.id}`">
+            <button class="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-[#478FC8] transition-all">
+              <ExternalLink class="h-3.5 w-3.5" />
+            </button>
           </NuxtLink>
-          <NuxtLink :to="`/project/${project.id}`" class="flex-1">
-            <UiButton variant="ghost" size="sm" class="w-full text-xs text-[#478FC8]">
-              Edit Project Info
-            </UiButton>
+          <NuxtLink :to="`/project/${project.id}`">
+            <button class="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-300 transition-all">
+              <Pencil class="h-3.5 w-3.5" />
+            </button>
           </NuxtLink>
         </div>
-      </UiCard>
-    </div>
-
-    <!-- ═══ Project List View ═══ -->
-    <div v-else>
-      <UiCard class="overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="border-b border-gray-100 dark:border-gray-800">
-                <th class="w-10 px-2 py-3"></th>
-                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Project</th>
-                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">PIC</th>
-                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Department</th>
-                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Progress</th>
-                <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Deadline</th>
-                <th class="px-5 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(project, idx) in paginatedProjects"
-                :key="project.id"
-                draggable="true"
-                class="border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors"
-                :class="{
-                  'opacity-50': dragIndex === idx,
-                  'bg-[#478FC8]/5': dragOverIndex === idx && dragIndex !== idx,
-                }"
-                @dragstart="onDragStart(idx)"
-                @dragover="onDragOver(idx, $event)"
-                @dragend="onDragEnd"
-              >
-                <td class="px-2 py-4">
-                  <div class="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 transition-colors">
-                    <GripVertical class="h-4 w-4" />
-                  </div>
-                </td>
-                <td class="px-5 py-4">
-                  <div class="flex items-center gap-3">
-                    <div
-                      :class="['flex h-9 w-9 items-center justify-center rounded-lg text-base', project.iconBg]"
-                      :style="project.color ? { backgroundColor: project.color + '20' } : {}"
-                    >
-                      <UiLucideIcon :name="project.icon" :size="18" :style="project.color ? { color: project.color } : {}" />
-                    </div>
-                    <span class="font-medium text-gray-900 dark:text-white">{{ project.name }}</span>
-                  </div>
-                </td>
-                <td class="px-5 py-4">
-                  <span
-                    :class="[
-                      'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
-                      statusConfig[project.status]?.class
-                    ]"
-                  >
-                    <span :class="['h-1.5 w-1.5 rounded-full', statusConfig[project.status]?.dotClass]" />
-                    {{ statusConfig[project.status]?.label }}
-                  </span>
-                </td>
-                <td class="px-5 py-4">
-                  <div class="flex items-center gap-2">
-                    <div class="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-[10px] font-bold text-white shrink-0">
-                      {{ project.pic.name.split(' ').map(n => n[0]).join('').slice(0, 2) }}
-                    </div>
-                    <span class="text-gray-700 dark:text-gray-300">{{ project.pic.name }}</span>
-                  </div>
-                </td>
-                <td class="px-5 py-4 text-gray-600 dark:text-gray-400">{{ project.department }}</td>
-                <td class="px-5 py-4">
-                  <div class="flex items-center gap-3 min-w-[120px]">
-                    <div class="flex-1 h-2 rounded-full bg-gray-100 dark:bg-gray-800">
-                      <div
-                        :class="['h-full rounded-full transition-all', getProgressColor(project.progress)]"
-                        :style="{ width: `${project.progress}%` }"
-                      />
-                    </div>
-                    <span :class="['text-xs font-semibold whitespace-nowrap', getProgressTextColor(project.progress)]">{{ project.progress }}%</span>
-                  </div>
-                </td>
-                <td class="px-5 py-4 text-gray-600 dark:text-gray-400 whitespace-nowrap">{{ project.deadline }}</td>
-                <td class="px-5 py-4 text-right">
-                  <NuxtLink :to="`/project/${project.id}`">
-                    <UiButton variant="ghost" size="sm" class="text-xs text-[#478FC8]">View</UiButton>
-                  </NuxtLink>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </UiCard>
+      </div>
     </div>
 
     <!-- ═══ Pagination ═══ -->
-    <div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
-      <p class="text-sm text-gray-500 dark:text-gray-400">
-        Showing {{ (currentPage - 1) * perPage + 1 }} to {{ Math.min(currentPage * perPage, filteredOrderedProjects.length) }} of {{ filteredOrderedProjects.length }} entries
+    <div class="flex items-center justify-between pt-2">
+      <p class="text-[13px] text-gray-500 dark:text-gray-400">
+        Showing
+        <span class="font-semibold text-gray-800 dark:text-white">
+          {{ showAll ? 1 : (currentPage - 1) * perPage + 1 }} to {{ showAll ? filteredOrderedProjects.length : Math.min(currentPage * perPage, filteredOrderedProjects.length) }}
+        </span>
+        of
+        <span class="font-semibold text-gray-800 dark:text-white">{{ filteredOrderedProjects.length }}</span>
+        entries
       </p>
-      <div class="flex items-center gap-1">
+
+      <div class="flex items-center gap-2">
         <button
-          :disabled="currentPage === 1"
-          class="flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition"
+          :disabled="currentPage <= 1 || showAll"
+          class="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 text-gray-400 hover:border-gray-300 hover:text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           @click="goToPage(currentPage - 1)"
         >
-          <ChevronLeft class="h-4 w-4" />
-          Previous
+          <ChevronLeft class="h-3.5 w-3.5" />
         </button>
-        <template v-for="page in visiblePages" :key="page">
-          <span v-if="page === '...'" class="px-2 text-sm text-gray-400">...</span>
+        <template v-if="!showAll">
           <button
-            v-else
+            v-for="page in Math.min(totalPages, 5)"
+            :key="page"
             :class="[
-              'h-8 w-8 rounded-lg text-sm font-medium transition-colors',
+              'flex h-8 w-8 items-center justify-center rounded-lg text-[13px] font-bold transition-all',
               currentPage === page
-                ? 'bg-[#478FC8] text-white shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                ? 'bg-[#478FC8] text-white shadow-sm shadow-[#478FC8]/20'
+                : 'border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 hover:text-gray-800'
             ]"
-            @click="goToPage(page as number)"
+            @click="goToPage(page)"
           >
             {{ page }}
           </button>
         </template>
         <button
-          :disabled="currentPage === totalPages"
-          class="flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition"
+          :disabled="currentPage >= totalPages || showAll"
+          class="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 text-gray-400 hover:border-gray-300 hover:text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           @click="goToPage(currentPage + 1)"
         >
-          Next
-          <ChevronRight class="h-4 w-4" />
+          <ChevronRight class="h-3.5 w-3.5" />
+        </button>
+        <button
+          class="rounded-lg px-3 py-1.5 text-[13px] font-semibold text-[#478FC8] hover:bg-[#EDF4FF] dark:hover:bg-[#478FC8]/10 transition-all"
+          @click="showAll = !showAll"
+        >
+          {{ showAll ? 'Paginate' : 'Show All' }}
         </button>
       </div>
-      <button
-        class="text-sm text-[#478FC8] hover:underline"
-        @click="currentPage = 1; /* show all handled by perPage */"
-      >
-        Show All
-      </button>
     </div>
   </LayoutPageContainer>
 
