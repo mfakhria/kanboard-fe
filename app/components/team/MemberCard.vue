@@ -61,10 +61,10 @@ const accentGradient = computed(() => {
 
 const roleBadge = computed(() => {
   switch (props.member.rawRole) {
-    case 'OWNER': return { bg: 'bg-amber-50 border border-amber-200', text: 'text-amber-700', icon: Crown }
-    case 'ADMIN': return { bg: 'bg-blue-50 border border-blue-200', text: 'text-blue-700', icon: Shield }
-    case 'VIEWER': return { bg: 'bg-gray-50 border border-gray-200', text: 'text-gray-600', icon: Eye }
-    default: return { bg: 'bg-indigo-50 border border-indigo-200', text: 'text-indigo-700', icon: Star }
+    case 'OWNER': return { bg: 'bg-amber-50 border border-amber-200 dark:bg-amber-500/15 dark:border-amber-400/30', text: 'text-amber-700 dark:text-amber-300', icon: Crown }
+    case 'ADMIN': return { bg: 'bg-blue-50 border border-blue-200 dark:bg-blue-500/15 dark:border-blue-400/30', text: 'text-blue-700 dark:text-blue-300', icon: Shield }
+    case 'VIEWER': return { bg: 'bg-gray-50 border border-gray-200 dark:bg-slate-500/15 dark:border-slate-400/30', text: 'text-gray-600 dark:text-slate-300', icon: Eye }
+    default: return { bg: 'bg-indigo-50 border border-indigo-200 dark:bg-indigo-500/15 dark:border-indigo-400/30', text: 'text-indigo-700 dark:text-indigo-300', icon: Star }
   }
 })
 
@@ -93,7 +93,7 @@ function formatDate(date: string) {
 
 <template>
   <div
-    class="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group flex flex-col"
+    class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden shadow-sm dark:shadow-black/20 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group flex flex-col"
   >
     <!-- Top accent bar -->
     <div class="h-1 w-full" :style="{ background: accentGradient }" />
@@ -117,7 +117,7 @@ function formatDate(date: string) {
         <!-- Online dot -->
         <div
           :class="[
-            'absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white',
+            'absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-gray-900',
             member.online ? 'bg-green-400' : 'bg-gray-300',
           ]"
         />
@@ -126,7 +126,7 @@ function formatDate(date: string) {
       <!-- Name + role + email -->
       <div class="flex flex-col items-center gap-1.5">
         <p
-          class="text-gray-900 text-center"
+          class="text-gray-900 dark:text-gray-100 text-center"
           style="font-size: 15px; font-weight: 700; letter-spacing: -0.3px"
         >
           {{ member.name }}
@@ -138,26 +138,26 @@ function formatDate(date: string) {
           <component :is="roleBadge.icon" :size="10" />
           {{ member.role }}
         </span>
-        <p class="text-gray-400" style="font-size: 12.5px">
+        <p class="text-gray-400 dark:text-gray-500" style="font-size: 12.5px">
           {{ member.email }}
         </p>
       </div>
 
       <!-- Stats row -->
-      <div class="w-full flex items-center divide-x divide-gray-100 bg-gray-50 rounded-xl mt-1">
+      <div class="w-full flex items-center divide-x divide-gray-100 dark:divide-gray-800 bg-gray-50 dark:bg-gray-800/70 rounded-xl mt-1">
         <div class="flex-1 flex flex-col items-center py-3">
-          <p class="text-gray-900" style="font-size: 16px; font-weight: 800">
+          <p class="text-gray-900 dark:text-gray-100" style="font-size: 16px; font-weight: 800">
             {{ member.projects ?? 0 }}
           </p>
-          <p class="text-gray-400" style="font-size: 11px; font-weight: 500">
+          <p class="text-gray-400 dark:text-gray-500" style="font-size: 11px; font-weight: 500">
             Projects
           </p>
         </div>
         <div class="flex-1 flex flex-col items-center py-3">
-          <p class="text-gray-900" style="font-size: 16px; font-weight: 800">
+          <p class="text-gray-900 dark:text-gray-100" style="font-size: 16px; font-weight: 800">
             {{ member.tasks ?? 0 }}
           </p>
-          <p class="text-gray-400" style="font-size: 11px; font-weight: 500">
+          <p class="text-gray-400 dark:text-gray-500" style="font-size: 11px; font-weight: 500">
             Tasks
           </p>
         </div>
@@ -165,8 +165,8 @@ function formatDate(date: string) {
     </div>
 
     <!-- Footer -->
-    <div class="flex items-center justify-between px-5 py-3.5 border-t border-gray-50">
-      <div class="flex items-center gap-1.5 text-gray-400">
+    <div class="flex items-center justify-between px-5 py-3.5 border-t border-gray-50 dark:border-gray-800">
+      <div class="flex items-center gap-1.5 text-gray-400 dark:text-gray-500">
         <CalendarDays :size="12" />
         <span style="font-size: 11.5px">Joined {{ formatDate(member.joinedAt) }}</span>
       </div>
@@ -174,14 +174,14 @@ function formatDate(date: string) {
       <div class="flex items-center gap-1">
         <!-- Message -->
         <button
-          class="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-blue-50 hover:text-[#478FC8] transition-all"
+          class="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 dark:text-gray-500 hover:bg-blue-50 dark:hover:bg-blue-500/15 hover:text-[#478FC8] dark:hover:text-blue-300 transition-all"
         >
           <MessageSquare :size="13" />
         </button>
         <!-- More menu -->
         <div ref="menuRef" class="relative">
           <button
-            class="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-all"
+            class="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-200 transition-all"
             @click.stop="menuOpen = !menuOpen"
           >
             <MoreHorizontal :size="13" />
@@ -196,11 +196,11 @@ function formatDate(date: string) {
           >
             <div
               v-if="menuOpen"
-              class="absolute right-0 bottom-8 bg-white border border-gray-100 rounded-xl shadow-xl shadow-gray-100 py-1.5 z-20 min-w-[130px]"
+              class="absolute right-0 bottom-8 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-xl shadow-gray-100/80 dark:shadow-black/40 py-1.5 z-20 min-w-[130px]"
             >
               <button
                 v-if="member.rawRole !== 'OWNER'"
-                class="w-full flex items-center gap-2.5 px-3.5 py-2 text-gray-600 hover:bg-gray-50 transition-colors"
+                class="w-full flex items-center gap-2.5 px-3.5 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 style="font-size: 13px"
                 @click="emit('editRole', member); closeMenu()"
               >
@@ -209,7 +209,7 @@ function formatDate(date: string) {
               </button>
               <button
                 v-if="member.rawRole !== 'OWNER'"
-                class="w-full flex items-center gap-2.5 px-3.5 py-2 text-red-500 hover:bg-red-50 transition-colors"
+                class="w-full flex items-center gap-2.5 px-3.5 py-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/15 transition-colors"
                 style="font-size: 13px"
                 @click="emit('remove', member); closeMenu()"
               >

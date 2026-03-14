@@ -11,7 +11,7 @@ const { sidebarCollapsed } = useLayoutState()
     <LayoutMobileDrawer />
 
     <!-- Main Content -->
-    <div :class="['transition-all duration-300', sidebarCollapsed ? 'lg:ml-[60px]' : 'lg:ml-[220px]']">
+    <div :class="['transition-all duration-300', sidebarCollapsed ? 'lg:ml-[70px]' : 'lg:ml-[230px]']">
       <LayoutHeader />
       <main class="px-4 py-6 lg:px-8 lg:py-8">
         <slot />

@@ -11,8 +11,35 @@ import {
 ChartJS.register(Title, Tooltip, Legend, ArcElement)
 
 const analyticsStore = useAnalyticsStore()
+const colorMode = useColorMode()
+const isDark = computed(() => colorMode.value === 'dark')
 
-const distColors = ['#3b82f6', '#1e293b', '#6366f1', '#e2e8f0']
+const distColors = computed(() => {
+  if (isDark.value) {
+    return ['#60a5fa', '#22d3ee', '#a78bfa', '#475569']
+  }
+  return ['#3b82f6', '#1e293b', '#6366f1', '#e2e8f0']
+})
+
+const chartTheme = computed(() => {
+  if (isDark.value) {
+    return {
+      tooltipBg: '#0f172a',
+      tooltipTitle: '#e2e8f0',
+      tooltipBody: '#94a3b8',
+      tooltipBorder: '#334155',
+      segmentBorder: '#0f172a',
+    }
+  }
+
+  return {
+    tooltipBg: '#ffffff',
+    tooltipTitle: '#1e293b',
+    tooltipBody: '#64748b',
+    tooltipBorder: '#f1f5f9',
+    segmentBorder: '#ffffff',
+  }
+})
 
 const distributionItems = computed(() => {
   const dist = analyticsStore.overviewStats?.taskDistribution
@@ -20,7 +47,7 @@ const distributionItems = computed(() => {
     return dist.map((d, i) => ({
       name: d.label,
       value: d.percentage,
-      color: distColors[i % distColors.length],
+      color: distColors.value[i % distColors.value.length],
     }))
   }
   return [
@@ -39,7 +66,8 @@ const chartData = computed(() => {
       {
         data: items.map(d => d.value),
         backgroundColor: items.map(d => d.color),
-        borderWidth: 0,
+        borderColor: chartTheme.value.segmentBorder,
+        borderWidth: 2,
         hoverOffset: 6,
         spacing: 3,
       },
@@ -54,10 +82,10 @@ const chartOptions = computed(() => ({
   plugins: {
     legend: { display: false },
     tooltip: {
-      backgroundColor: '#fff',
-      titleColor: '#1e293b',
-      bodyColor: '#64748b',
-      borderColor: '#f1f5f9',
+      backgroundColor: chartTheme.value.tooltipBg,
+      titleColor: chartTheme.value.tooltipTitle,
+      bodyColor: chartTheme.value.tooltipBody,
+      borderColor: chartTheme.value.tooltipBorder,
       borderWidth: 1,
       cornerRadius: 12,
       padding: 12,
@@ -70,12 +98,12 @@ const chartOptions = computed(() => ({
 </script>
 
 <template>
-  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 flex flex-col gap-4">
+  <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm dark:shadow-black/20 p-5 flex flex-col gap-4">
     <div>
-      <p class="text-gray-900" style="font-size: 15px; font-weight: 800; letter-spacing: -0.3px">
+      <p class="text-gray-900 dark:text-gray-100" style="font-size: 15px; font-weight: 800; letter-spacing: -0.3px">
         Task Distribution Chart
       </p>
-      <p class="text-gray-400 mt-0.5" style="font-size: 12px">
+      <p class="text-gray-400 dark:text-gray-500 mt-0.5" style="font-size: 12px">
         Breakdown of tasks by current status
       </p>
     </div>
@@ -85,7 +113,7 @@ const chartOptions = computed(() => ({
       <ClientOnly>
         <Doughnut :data="chartData" :options="chartOptions" />
         <template #fallback>
-          <div class="flex h-full items-center justify-center text-sm text-gray-400">Loading chart...</div>
+          <div class="flex h-full items-center justify-center text-sm text-gray-400 dark:text-gray-500">Loading chart...</div>
         </template>
       </ClientOnly>
     </div>
@@ -95,17 +123,17 @@ const chartOptions = computed(() => ({
       <div
         v-for="item in distributionItems"
         :key="item.name"
-        class="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2.5"
+        class="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/70 rounded-xl px-3 py-2.5"
       >
         <div
           class="w-3 h-3 rounded-full flex-shrink-0"
           :style="{ background: item.color }"
         />
         <div class="flex-1 min-w-0">
-          <p class="text-gray-700 truncate" style="font-size: 12px; font-weight: 600">
+          <p class="text-gray-700 dark:text-gray-200 truncate" style="font-size: 12px; font-weight: 600">
             {{ item.name }}
           </p>
-          <p class="text-gray-400" style="font-size: 11px">
+          <p class="text-gray-400 dark:text-gray-500" style="font-size: 11px">
             {{ item.value }}%
           </p>
         </div>

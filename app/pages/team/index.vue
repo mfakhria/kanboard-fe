@@ -163,7 +163,7 @@ function filterLabel(r: string) {
 
 <template>
   <LayoutPageContainer>
-    <div class="flex flex-col gap-6">
+    <div class="team-page flex flex-col gap-6">
       <!-- Header -->
       <div class="flex items-start justify-between gap-4 flex-wrap">
         <div>
@@ -173,12 +173,12 @@ function filterLabel(r: string) {
               style="background: linear-gradient(to bottom, #478FC8, #3570A5)"
             />
             <h1
-              style="font-size: clamp(20px, 2.5vw, 28px); font-weight: 900; letter-spacing: -0.8px; color: #0f172a; line-height: 1.15"
+              style="font-size: clamp(20px, 2.5vw, 28px); font-weight: 900; letter-spacing: -0.8px; color: var(--team-title); line-height: 1.15"
             >
               Team
             </h1>
           </div>
-          <p class="text-gray-500 pl-4" style="font-size: 13.5px; line-height: 1.6">
+          <p class="pl-4" style="font-size: 13.5px; line-height: 1.6; color: var(--team-subtitle)">
             Manage workspace
             <span
               style="font-weight: 600; background: linear-gradient(90deg, #478FC8, #5BA3D9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text"
@@ -200,7 +200,7 @@ function filterLabel(r: string) {
       <!-- Stat cards -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <!-- Total Members -->
-        <div class="bg-white border border-gray-100 rounded-2xl px-6 py-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+        <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-6 py-5 flex items-center gap-4 shadow-sm dark:shadow-black/20 hover:shadow-md transition-shadow">
           <div
             class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
             style="background: linear-gradient(135deg, #dbeafe, #eff6ff)"
@@ -208,15 +208,15 @@ function filterLabel(r: string) {
             <Users :size="20" class="text-[#478FC8]" />
           </div>
           <div>
-            <p class="text-gray-400" style="font-size: 12.5px; font-weight: 500">Total Members</p>
-            <p class="text-gray-900" style="font-size: 26px; font-weight: 800; letter-spacing: -0.8px; line-height: 1.2">
+            <p class="text-gray-400 dark:text-gray-500" style="font-size: 12.5px; font-weight: 500">Total Members</p>
+            <p class="text-gray-900 dark:text-gray-100" style="font-size: 26px; font-weight: 800; letter-spacing: -0.8px; line-height: 1.2">
               {{ totalMembers }}
             </p>
           </div>
         </div>
 
         <!-- Admins & Owners -->
-        <div class="bg-white border border-gray-100 rounded-2xl px-6 py-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+        <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-6 py-5 flex items-center gap-4 shadow-sm dark:shadow-black/20 hover:shadow-md transition-shadow">
           <div
             class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
             style="background: linear-gradient(135deg, #ede9fe, #f5f3ff)"
@@ -224,15 +224,15 @@ function filterLabel(r: string) {
             <Shield :size="20" class="text-purple-600" />
           </div>
           <div>
-            <p class="text-gray-400" style="font-size: 12.5px; font-weight: 500">Admins & Owners</p>
-            <p class="text-gray-900" style="font-size: 26px; font-weight: 800; letter-spacing: -0.8px; line-height: 1.2">
+            <p class="text-gray-400 dark:text-gray-500" style="font-size: 12.5px; font-weight: 500">Admins & Owners</p>
+            <p class="text-gray-900 dark:text-gray-100" style="font-size: 26px; font-weight: 800; letter-spacing: -0.8px; line-height: 1.2">
               {{ totalAdmins }}
             </p>
           </div>
         </div>
 
         <!-- Online Now -->
-        <div class="bg-white border border-gray-100 rounded-2xl px-6 py-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+        <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-6 py-5 flex items-center gap-4 shadow-sm dark:shadow-black/20 hover:shadow-md transition-shadow">
           <div
             class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 relative"
             style="background: linear-gradient(135deg, #d1fae5, #ecfdf5)"
@@ -241,8 +241,8 @@ function filterLabel(r: string) {
             <Users :size="20" class="text-emerald-600" />
           </div>
           <div>
-            <p class="text-gray-400" style="font-size: 12.5px; font-weight: 500">Online Now</p>
-            <p class="text-gray-900" style="font-size: 26px; font-weight: 800; letter-spacing: -0.8px; line-height: 1.2">
+            <p class="text-gray-400 dark:text-gray-500" style="font-size: 12.5px; font-weight: 500">Online Now</p>
+            <p class="text-gray-900 dark:text-gray-100" style="font-size: 26px; font-weight: 800; letter-spacing: -0.8px; line-height: 1.2">
               {{ onlineCount }}
             </p>
           </div>
@@ -253,18 +253,18 @@ function filterLabel(r: string) {
       <div class="flex items-center gap-3 flex-wrap">
         <!-- Search -->
         <div class="flex-1 min-w-[200px] relative flex items-center">
-          <Search class="absolute left-3.5 z-10 text-gray-400 pointer-events-none" :size="14" />
+          <Search class="absolute left-3.5 z-10 text-gray-400 dark:text-gray-500 pointer-events-none" :size="14" />
           <input
             v-model="searchQuery"
             type="text"
             placeholder="Search members by name, role, or email…"
-            class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 placeholder:text-gray-400 outline-none focus:border-[#478FC8] focus:ring-4 focus:ring-[#478FC8]/10 transition-all shadow-sm"
+            class="w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 outline-none focus:border-[#478FC8] focus:ring-4 focus:ring-[#478FC8]/10 transition-all shadow-sm"
             style="font-size: 13.5px"
           />
         </div>
 
         <!-- Role filter pills -->
-        <div class="flex items-center gap-1.5 p-1 bg-white border border-gray-100 rounded-xl shadow-sm">
+        <div class="flex items-center gap-1.5 p-1 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-sm">
           <button
             v-for="r in filterRoles"
             :key="r"
@@ -272,7 +272,7 @@ function filterLabel(r: string) {
               'px-3 py-1.5 rounded-lg transition-all',
               roleFilter === r
                 ? 'bg-[#478FC8] text-white shadow-sm'
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50',
+                : 'text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800/80',
             ]"
             :style="{ fontSize: '12.5px', fontWeight: roleFilter === r ? 700 : 500 }"
             @click="roleFilter = r"
@@ -298,10 +298,10 @@ function filterLabel(r: string) {
 
         <!-- Invite placeholder card -->
         <button
-          class="bg-white border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center gap-3 py-12 px-6 text-gray-400 hover:border-[#478FC8]/50 hover:text-[#478FC8] hover:bg-[#478FC8]/5 transition-all group"
+          class="bg-white dark:bg-gray-900 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl flex flex-col items-center justify-center gap-3 py-12 px-6 text-gray-400 dark:text-gray-500 hover:border-[#478FC8]/50 hover:text-[#478FC8] hover:bg-[#478FC8]/5 dark:hover:bg-[#478FC8]/10 transition-all group"
           @click="showInvite = true"
         >
-          <div class="w-12 h-12 rounded-xl border-2 border-dashed border-gray-300 group-hover:border-[#478FC8]/50 flex items-center justify-center transition-all">
+          <div class="w-12 h-12 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 group-hover:border-[#478FC8]/50 flex items-center justify-center transition-all">
             <UserPlus :size="20" />
           </div>
           <span style="font-size: 13.5px; font-weight: 600">Invite member</span>
@@ -311,7 +311,7 @@ function filterLabel(r: string) {
       <!-- Empty state -->
       <div
         v-else
-        class="flex flex-col items-center justify-center py-20 text-gray-400 gap-3"
+        class="flex flex-col items-center justify-center py-20 text-gray-400 dark:text-gray-500 gap-3"
       >
         <Users :size="36" style="opacity: 0.4" />
         <p style="font-size: 15px; font-weight: 600">No members found</p>
@@ -331,32 +331,32 @@ function filterLabel(r: string) {
       >
         <div v-if="showInvite" class="fixed inset-0 z-50 flex items-center justify-center">
           <!-- Backdrop -->
-          <div class="absolute inset-0 bg-black/20 backdrop-blur-sm" @click="showInvite = false" />
+          <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" @click="showInvite = false" />
 
           <div
-            class="relative bg-white rounded-2xl shadow-2xl border border-gray-100 w-full mx-4 flex flex-col gap-6 p-7"
+            class="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 w-full mx-4 flex flex-col gap-6 p-7"
             style="max-width: 420px"
           >
             <!-- Header -->
             <div class="flex flex-col gap-1">
-              <h2 class="text-gray-900" style="font-size: 18px; font-weight: 800; letter-spacing: -0.4px">
+              <h2 class="text-gray-900 dark:text-gray-100" style="font-size: 18px; font-weight: 800; letter-spacing: -0.4px">
                 Invite member
               </h2>
-              <p class="text-gray-400" style="font-size: 13.5px">
+              <p class="text-gray-400 dark:text-gray-500" style="font-size: 13.5px">
                 Send an invitation link to join your workspace.
               </p>
             </div>
 
             <!-- Email input -->
             <div class="flex flex-col gap-2">
-              <label class="text-gray-600" style="font-size: 13px; font-weight: 600">Email address</label>
+              <label class="text-gray-600 dark:text-gray-300" style="font-size: 13px; font-weight: 600">Email address</label>
               <div class="relative flex items-center">
-                <Mail class="absolute left-3.5 z-10 text-gray-400 pointer-events-none" :size="14" />
+                <Mail class="absolute left-3.5 z-10 text-gray-400 dark:text-gray-500 pointer-events-none" :size="14" />
                 <input
                   v-model="inviteEmail"
                   type="email"
                   placeholder="colleague@example.com"
-                  class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-800 placeholder:text-gray-400 outline-none focus:border-[#478FC8] focus:bg-white focus:ring-4 focus:ring-[#478FC8]/10 transition-all"
+                  class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 outline-none focus:border-[#478FC8] focus:bg-white dark:focus:bg-gray-900 focus:ring-4 focus:ring-[#478FC8]/10 transition-all"
                   style="font-size: 13.5px"
                 />
               </div>
@@ -372,8 +372,8 @@ function filterLabel(r: string) {
                   :class="[
                     'flex-1 py-2.5 rounded-xl border transition-all',
                     inviteRole === r
-                      ? 'border-[#478FC8] bg-[#EDF4FF] text-[#478FC8]'
-                      : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300',
+                      ? 'border-[#478FC8] bg-[#EDF4FF] dark:bg-[#478FC8]/15 text-[#478FC8]'
+                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
                   ]"
                   :style="{ fontSize: '13px', fontWeight: inviteRole === r ? 700 : 500 }"
                   @click="inviteRole = r"
@@ -386,7 +386,7 @@ function filterLabel(r: string) {
             <!-- Actions -->
             <div class="flex items-center gap-3">
               <button
-                class="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all"
+                class="flex-1 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
                 style="font-size: 14px; font-weight: 600"
                 @click="showInvite = false"
               >
@@ -463,3 +463,15 @@ function filterLabel(r: string) {
     </UiDialog>
   </LayoutPageContainer>
 </template>
+
+<style scoped>
+.team-page {
+  --team-title: #0f172a;
+  --team-subtitle: #64748b;
+}
+
+:root.dark .team-page {
+  --team-title: #e5e7eb;
+  --team-subtitle: #94a3b8;
+}
+</style>

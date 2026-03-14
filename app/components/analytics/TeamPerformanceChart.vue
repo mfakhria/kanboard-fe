@@ -13,6 +13,32 @@ import {
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 const analyticsStore = useAnalyticsStore()
+const colorMode = useColorMode()
+const isDark = computed(() => colorMode.value === 'dark')
+
+const chartTheme = computed(() => {
+  if (isDark.value) {
+    return {
+      grid: 'rgba(148, 163, 184, 0.18)',
+      tick: '#94a3b8',
+      axisText: '#cbd5e1',
+      tooltipBg: '#0f172a',
+      tooltipTitle: '#e2e8f0',
+      tooltipBody: '#94a3b8',
+      tooltipBorder: '#334155',
+    }
+  }
+
+  return {
+    grid: '#f1f5f9',
+    tick: '#94a3b8',
+    axisText: '#64748b',
+    tooltipBg: '#ffffff',
+    tooltipTitle: '#1e293b',
+    tooltipBody: '#64748b',
+    tooltipBorder: '#f1f5f9',
+  }
+})
 
 // Team member data (from store or fallback)
 const teamData = computed(() => {
@@ -73,10 +99,10 @@ const priorityChartOptions = computed(() => ({
   plugins: {
     legend: { display: false },
     tooltip: {
-      backgroundColor: '#fff',
-      titleColor: '#1e293b',
-      bodyColor: '#64748b',
-      borderColor: '#f1f5f9',
+      backgroundColor: chartTheme.value.tooltipBg,
+      titleColor: chartTheme.value.tooltipTitle,
+      bodyColor: chartTheme.value.tooltipBody,
+      borderColor: chartTheme.value.tooltipBorder,
       borderWidth: 1,
       cornerRadius: 12,
       padding: 12,
@@ -91,10 +117,10 @@ const priorityChartOptions = computed(() => ({
       border: { display: false },
       ticks: {
         font: { size: 10 },
-        color: '#94a3b8',
+        color: chartTheme.value.tick,
       },
       grid: {
-        color: '#f1f5f9',
+        color: chartTheme.value.grid,
       },
     },
     y: {
@@ -102,7 +128,7 @@ const priorityChartOptions = computed(() => ({
       border: { display: false },
       ticks: {
         font: { size: 10, weight: 'bold' as const },
-        color: '#64748b',
+        color: chartTheme.value.axisText,
       },
     },
   },
@@ -114,12 +140,12 @@ function getPercent(completed: number, total: number) {
 </script>
 
 <template>
-  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 flex flex-col gap-4">
+  <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm dark:shadow-black/20 p-5 flex flex-col gap-4">
     <div>
-      <p class="text-gray-900" style="font-size: 15px; font-weight: 800; letter-spacing: -0.3px">
+      <p class="text-gray-900 dark:text-gray-100" style="font-size: 15px; font-weight: 800; letter-spacing: -0.3px">
         Team Performance
       </p>
-      <p class="text-gray-400 mt-0.5" style="font-size: 12px">
+      <p class="text-gray-400 dark:text-gray-500 mt-0.5" style="font-size: 12px">
         Tasks completed vs. assigned per member
       </p>
     </div>
@@ -135,12 +161,12 @@ function getPercent(completed: number, total: number) {
             >
               {{ member.initial }}
             </div>
-            <span class="text-gray-700" style="font-size: 13px; font-weight: 600">
+            <span class="text-gray-700 dark:text-gray-200" style="font-size: 13px; font-weight: 600">
               {{ member.name }}
             </span>
           </div>
           <div class="flex items-center gap-2">
-            <span class="text-gray-400" style="font-size: 12px">
+            <span class="text-gray-400 dark:text-gray-500" style="font-size: 12px">
               {{ member.completed }}/{{ member.tasks }}
             </span>
             <span
@@ -157,7 +183,7 @@ function getPercent(completed: number, total: number) {
           </div>
         </div>
         <!-- Progress bar -->
-        <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div class="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
           <div
             class="h-full rounded-full transition-all duration-500"
             :style="{ width: `${getPercent(member.completed, member.tasks)}%`, background: member.fill }"
@@ -171,7 +197,7 @@ function getPercent(completed: number, total: number) {
       <ClientOnly>
         <Bar :data="priorityChartData" :options="priorityChartOptions" />
         <template #fallback>
-          <div class="flex h-full items-center justify-center text-sm text-gray-400">Loading chart...</div>
+          <div class="flex h-full items-center justify-center text-sm text-gray-400 dark:text-gray-500">Loading chart...</div>
         </template>
       </ClientOnly>
     </div>

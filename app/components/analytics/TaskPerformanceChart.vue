@@ -15,6 +15,38 @@ import {
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale, Filler)
 
 const analyticsStore = useAnalyticsStore()
+const colorMode = useColorMode()
+const isDark = computed(() => colorMode.value === 'dark')
+
+const chartTheme = computed(() => {
+  if (isDark.value) {
+    return {
+      completedFill: 'rgba(59, 130, 246, 0.22)',
+      ongoingFill: 'rgba(34, 197, 94, 0.2)',
+      grid: 'rgba(148, 163, 184, 0.18)',
+      tick: '#94a3b8',
+      legend: '#cbd5e1',
+      tooltipBg: '#0f172a',
+      tooltipTitle: '#e2e8f0',
+      tooltipBody: '#94a3b8',
+      tooltipBorder: '#334155',
+      pointBorder: '#0f172a',
+    }
+  }
+
+  return {
+    completedFill: 'rgba(59, 130, 246, 0.08)',
+    ongoingFill: 'rgba(34, 197, 94, 0.06)',
+    grid: '#f1f5f9',
+    tick: '#94a3b8',
+    legend: '#64748b',
+    tooltipBg: '#ffffff',
+    tooltipTitle: '#1e293b',
+    tooltipBody: '#64748b',
+    tooltipBorder: '#f1f5f9',
+    pointBorder: '#ffffff',
+  }
+})
 
 const chartData = computed(() => {
   const trend = analyticsStore.overviewStats?.weeklyTrend
@@ -30,23 +62,27 @@ const chartData = computed(() => {
         label: 'Completed',
         data: completedData,
         borderColor: '#3b82f6',
-        backgroundColor: 'rgba(59, 130, 246, 0.08)',
+        backgroundColor: chartTheme.value.completedFill,
         fill: true,
         tension: 0.4,
         borderWidth: 2.5,
         pointRadius: 3,
         pointBackgroundColor: '#3b82f6',
+        pointBorderColor: chartTheme.value.pointBorder,
+        pointBorderWidth: 2,
       },
       {
         label: 'Ongoing',
         data: createdData,
         borderColor: '#22c55e',
-        backgroundColor: 'rgba(34, 197, 94, 0.06)',
+        backgroundColor: chartTheme.value.ongoingFill,
         fill: true,
         tension: 0.4,
         borderWidth: 2.5,
         pointRadius: 3,
         pointBackgroundColor: '#22c55e',
+        pointBorderColor: chartTheme.value.pointBorder,
+        pointBorderWidth: 2,
       },
       {
         label: 'Overdue',
@@ -58,6 +94,8 @@ const chartData = computed(() => {
         borderWidth: 2.5,
         pointRadius: 3,
         pointBackgroundColor: '#ef4444',
+        pointBorderColor: chartTheme.value.pointBorder,
+        pointBorderWidth: 2,
       },
     ],
   }
@@ -77,13 +115,14 @@ const chartOptions = computed(() => ({
         boxHeight: 8,
         padding: 20,
         font: { size: 12, family: 'Inter' },
+        color: chartTheme.value.legend,
       },
     },
     tooltip: {
-      backgroundColor: '#fff',
-      titleColor: '#1e293b',
-      bodyColor: '#64748b',
-      borderColor: '#f1f5f9',
+      backgroundColor: chartTheme.value.tooltipBg,
+      titleColor: chartTheme.value.tooltipTitle,
+      bodyColor: chartTheme.value.tooltipBody,
+      borderColor: chartTheme.value.tooltipBorder,
       borderWidth: 1,
       cornerRadius: 12,
       padding: 12,
@@ -97,7 +136,7 @@ const chartOptions = computed(() => ({
       border: { display: false },
       ticks: {
         font: { size: 11 },
-        color: '#94a3b8',
+        color: chartTheme.value.tick,
       },
     },
     y: {
@@ -105,10 +144,10 @@ const chartOptions = computed(() => ({
       border: { display: false },
       ticks: {
         font: { size: 11 },
-        color: '#94a3b8',
+        color: chartTheme.value.tick,
       },
       grid: {
-        color: '#f1f5f9',
+        color: chartTheme.value.grid,
       },
     },
   },
@@ -116,12 +155,12 @@ const chartOptions = computed(() => ({
 </script>
 
 <template>
-  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 flex flex-col gap-4">
+  <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm dark:shadow-black/20 p-5 flex flex-col gap-4">
     <div>
-      <p class="text-gray-900" style="font-size: 15px; font-weight: 800; letter-spacing: -0.3px">
+      <p class="text-gray-900 dark:text-gray-100" style="font-size: 15px; font-weight: 800; letter-spacing: -0.3px">
         Task Performance Chart
       </p>
-      <p class="text-gray-400 mt-0.5" style="font-size: 12px">
+      <p class="text-gray-400 dark:text-gray-500 mt-0.5" style="font-size: 12px">
         Weekly task breakdown by status
       </p>
     </div>
@@ -129,7 +168,7 @@ const chartOptions = computed(() => ({
       <ClientOnly>
         <Line :data="chartData" :options="chartOptions" />
         <template #fallback>
-          <div class="flex h-full items-center justify-center text-sm text-gray-400">Loading chart...</div>
+          <div class="flex h-full items-center justify-center text-sm text-gray-400 dark:text-gray-500">Loading chart...</div>
         </template>
       </ClientOnly>
     </div>

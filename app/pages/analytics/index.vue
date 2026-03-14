@@ -133,7 +133,7 @@ const quickMetrics = computed(() => [
 
 <template>
   <LayoutPageContainer>
-    <div class="flex flex-col gap-6">
+    <div class="analytics-page flex flex-col gap-6">
       <!-- Header -->
       <div class="flex items-start justify-between gap-4 flex-wrap">
         <div>
@@ -143,12 +143,12 @@ const quickMetrics = computed(() => [
               style="background: linear-gradient(to bottom, #478FC8, #3570A5)"
             />
             <h1
-              style="font-size: clamp(20px, 2.5vw, 28px); font-weight: 900; letter-spacing: -0.8px; color: #0f172a; line-height: 1.15"
+              style="font-size: clamp(20px, 2.5vw, 28px); font-weight: 900; letter-spacing: -0.8px; color: var(--analytics-title); line-height: 1.15"
             >
               Overview
             </h1>
           </div>
-          <p class="text-gray-500 pl-4" style="font-size: 13.5px; line-height: 1.6">
+          <p class="pl-4" style="font-size: 13.5px; line-height: 1.6; color: var(--analytics-subtitle)">
             Track your team's
             <span
               style="font-weight: 600; background: linear-gradient(90deg, #478FC8, #5BA3D9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text"
@@ -160,7 +160,7 @@ const quickMetrics = computed(() => [
         <!-- Controls -->
         <div class="flex items-center gap-3 flex-wrap">
           <!-- Period toggle -->
-          <div class="flex items-center gap-1 p-1 bg-white border border-gray-100 rounded-xl shadow-sm">
+          <div class="flex items-center gap-1 p-1 rounded-xl shadow-sm border" style="background: var(--analytics-control-bg); border-color: var(--analytics-control-border)">
             <button
               v-for="p in (['Week', 'Month', 'Year'] as Period[])"
               :key="p"
@@ -168,9 +168,9 @@ const quickMetrics = computed(() => [
                 'px-3.5 py-1.5 rounded-lg transition-all',
                 selectedPeriod === p
                   ? 'bg-[#478FC8] text-white shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50',
+                  : 'hover:bg-gray-50 dark:hover:bg-gray-800/80',
               ]"
-              :style="{ fontSize: '13px', fontWeight: selectedPeriod === p ? 700 : 500 }"
+              :style="{ fontSize: '13px', fontWeight: selectedPeriod === p ? 700 : 500, color: selectedPeriod === p ? '#fff' : 'var(--analytics-control-text)' }"
               @click="selectedPeriod = p"
             >
               {{ p }}
@@ -178,7 +178,7 @@ const quickMetrics = computed(() => [
           </div>
 
           <!-- Date range -->
-          <div class="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-3 py-2 shadow-sm text-gray-500">
+          <div class="flex items-center gap-2 rounded-xl px-3 py-2 shadow-sm border" style="background: var(--analytics-control-bg); border-color: var(--analytics-control-border); color: var(--analytics-control-text)">
             <CalendarDays :size="14" />
             <span style="font-size: 13px">{{ periodLabel }}</span>
           </div>
@@ -199,7 +199,7 @@ const quickMetrics = computed(() => [
         <div
           v-for="(stat, idx) in statsCards"
           :key="idx"
-          class="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col"
+          class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden shadow-sm dark:shadow-black/20 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col"
         >
           <!-- Accent bar -->
           <div class="h-1" :style="{ background: stat.accent }" />
@@ -214,7 +214,7 @@ const quickMetrics = computed(() => [
               <span
                 :class="[
                   'flex items-center gap-1 px-2 py-0.5 rounded-full',
-                  stat.trendUp ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500',
+                  stat.trendUp ? 'bg-green-50 text-green-600 dark:bg-emerald-500/20 dark:text-emerald-300' : 'bg-red-50 text-red-500 dark:bg-red-500/20 dark:text-red-300',
                 ]"
                 style="font-size: 11.5px; font-weight: 700"
               >
@@ -226,15 +226,15 @@ const quickMetrics = computed(() => [
 
             <div>
               <p
-                class="text-gray-900"
+                class="text-gray-900 dark:text-gray-100"
                 style="font-size: 32px; font-weight: 900; letter-spacing: -1px; line-height: 1.1"
               >
                 {{ stat.value }}
               </p>
-              <p class="text-gray-500 mt-1" style="font-size: 13px; font-weight: 600">
+              <p class="text-gray-500 dark:text-gray-300 mt-1" style="font-size: 13px; font-weight: 600">
                 {{ stat.label }}
               </p>
-              <p class="text-gray-400 mt-1" style="font-size: 12px; line-height: 1.5">
+              <p class="text-gray-400 dark:text-gray-500 mt-1" style="font-size: 12px; line-height: 1.5">
                 {{ stat.description }}
               </p>
             </div>
@@ -259,7 +259,7 @@ const quickMetrics = computed(() => [
         <div
           v-for="(card, idx) in quickMetrics"
           :key="idx"
-          class="bg-white border border-gray-100 rounded-2xl px-4 py-4 flex items-center gap-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+          class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-4 py-4 flex items-center gap-3 shadow-sm dark:shadow-black/20 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
         >
           <div
             class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -269,15 +269,15 @@ const quickMetrics = computed(() => [
           </div>
           <div class="min-w-0">
             <p
-              class="text-gray-900"
+              class="text-gray-900 dark:text-gray-100"
               style="font-size: 18px; font-weight: 900; letter-spacing: -0.5px; line-height: 1.2"
             >
               {{ card.value }}
             </p>
-            <p class="text-gray-600 truncate" style="font-size: 12px; font-weight: 600">
+            <p class="text-gray-600 dark:text-gray-300 truncate" style="font-size: 12px; font-weight: 600">
               {{ card.label }}
             </p>
-            <p class="text-gray-400 truncate" style="font-size: 11px">
+            <p class="text-gray-400 dark:text-gray-500 truncate" style="font-size: 11px">
               {{ card.sub }}
             </p>
           </div>
@@ -286,3 +286,21 @@ const quickMetrics = computed(() => [
     </div>
   </LayoutPageContainer>
 </template>
+
+<style scoped>
+.analytics-page {
+  --analytics-title: #0f172a;
+  --analytics-subtitle: #64748b;
+  --analytics-control-bg: #ffffff;
+  --analytics-control-border: #f3f4f6;
+  --analytics-control-text: #6b7280;
+}
+
+:root.dark .analytics-page {
+  --analytics-title: #e5e7eb;
+  --analytics-subtitle: #94a3b8;
+  --analytics-control-bg: #0f172a;
+  --analytics-control-border: #1f2937;
+  --analytics-control-text: #cbd5e1;
+}
+</style>
