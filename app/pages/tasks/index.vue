@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import {
+  CheckSquare, CheckCircle2, Clock, AlertTriangle, Loader2,
+  Search, SlidersHorizontal, LayoutGrid, List, Plus, ChevronDown,
+  MoreHorizontal, Flag, CalendarDays, ArrowUpRight, User,
+  FolderKanban, ChevronLeft, ChevronRight, Pencil, Trash2, Eye,
+} from 'lucide-vue-next'
 import { kanbanApi } from '~/features/kanban/services/task.api'
 
 definePageMeta({ layout: 'dashboard' })
@@ -15,6 +21,9 @@ interface TaskItem {
   columnName?: string
   columnId?: string
   projectId?: string
+  projectName?: string
+  projectColor?: string
+  tags?: string[]
 }
 
 const workspaceStore = useWorkspaceStore()
@@ -23,6 +32,7 @@ const filterOpen = ref(false)
 const selectedPriority = ref<string | null>(null)
 const selectedStatus = ref<string | null>(null)
 const isLoading = ref(false)
+const viewMode = ref<'list' | 'card'>('list')
 
 const tasks = ref<TaskItem[]>([])
 
@@ -47,6 +57,9 @@ function mapApiTask(t: any): TaskItem {
     columnName: t.column?.name,
     columnId: t.column?.id,
     projectId: t.column?.board?.projectId,
+    projectName: t.column?.board?.project?.name || '',
+    projectColor: t.column?.board?.project?.color || '#478FC8',
+    tags: t.labels?.map((l: any) => l.name) || [],
   }
 }
 
@@ -94,53 +107,85 @@ function clearFilters() {
   selectedStatus.value = null
 }
 
-function priorityVariant(priority: string) {
-  switch (priority) {
-    case 'high': return 'destructive' as const
-    case 'medium': return 'warning' as const
-    case 'low': return 'success' as const
-    default: return 'secondary' as const
-  }
+// ─── Stats ───
+const taskStats = computed(() => ({
+  total: tasks.value.length,
+  completed: tasks.value.filter(t => t.status === 'completed').length,
+  inProgress: tasks.value.filter(t => t.status === 'in_progress').length,
+  todo: tasks.value.filter(t => t.status === 'not_started').length,
+  overdue: tasks.value.filter(t => {
+    if (t.status === 'completed') return false
+    return t.dueDate && new Date(t.dueDate) < new Date()
+  }).length,
+}))
+
+const statsCards = computed(() => [
+  {
+    title: 'Total Tasks',
+    value: taskStats.value.total,
+    icon: CheckSquare,
+    iconBg: 'bg-[#EDF4FF] dark:bg-[#478FC8]/10',
+    iconColor: 'text-blue-100',
+    highlighted: true,
+    trend: `${taskStats.value.total} total`,
+  },
+  {
+    title: 'Completed',
+    value: taskStats.value.completed,
+    icon: CheckCircle2,
+    iconBg: 'bg-green-50 dark:bg-green-900/20',
+    iconColor: 'text-green-600',
+    highlighted: false,
+    trend: taskStats.value.completed > 0 ? `+${taskStats.value.completed} done` : undefined,
+  },
+  {
+    title: 'In Progress',
+    value: taskStats.value.inProgress,
+    icon: Loader2,
+    iconBg: 'bg-[#EDF4FF] dark:bg-[#478FC8]/10',
+    iconColor: 'text-[#478FC8]',
+    highlighted: false,
+    trend: undefined,
+  },
+  {
+    title: 'To Do',
+    value: taskStats.value.todo,
+    icon: Clock,
+    iconBg: 'bg-gray-50 dark:bg-gray-800',
+    iconColor: 'text-gray-500',
+    highlighted: false,
+    trend: undefined,
+  },
+  {
+    title: 'Overdue',
+    value: taskStats.value.overdue,
+    icon: AlertTriangle,
+    iconBg: 'bg-red-50 dark:bg-red-900/20',
+    iconColor: 'text-red-500',
+    highlighted: false,
+    trend: undefined,
+  },
+])
+
+// ─── Config Maps ───
+const priorityMap: Record<string, { label: string; bg: string; text: string }> = {
+  high: { label: 'High', bg: 'bg-red-500', text: 'text-white' },
+  medium: { label: 'Medium', bg: 'bg-amber-400', text: 'text-white' },
+  low: { label: 'Low', bg: 'bg-gray-400', text: 'text-white' },
+}
+
+const statusMap: Record<string, { label: string; bg: string; text: string; dot: string }> = {
+  completed: { label: 'Completed', bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400', dot: 'bg-green-500' },
+  in_progress: { label: 'In Progress', bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400', dot: 'bg-blue-500' },
+  not_started: { label: 'To Do', bg: 'bg-gray-100 dark:bg-gray-800/50', text: 'text-gray-600 dark:text-gray-400', dot: 'bg-gray-400' },
 }
 
 function priorityLabel(priority: string) {
-  return priority.charAt(0).toUpperCase() + priority.slice(1)
-}
-
-function statusClasses(status: string) {
-  switch (status) {
-    case 'completed':
-      return 'border-transparent bg-lime-100 dark:bg-lime-900/30 text-lime-800 dark:text-lime-400'
-    case 'in_progress':
-      return 'border-transparent bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400'
-    case 'not_started':
-      return 'border-transparent bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400'
-    default:
-      return ''
-  }
+  return priorityMap[priority]?.label || priority.charAt(0).toUpperCase() + priority.slice(1)
 }
 
 function statusLabel(status: string) {
-  switch (status) {
-    case 'completed': return 'Completed'
-    case 'in_progress': return 'In Progress'
-    case 'not_started': return 'Not Started'
-    default: return status
-  }
-}
-
-function progressColor(progress: number) {
-  if (progress === 100) return 'bg-[#478FC8]'
-  if (progress >= 60) return 'bg-blue-500'
-  if (progress >= 30) return 'bg-yellow-500'
-  return 'bg-gray-400 dark:bg-gray-500'
-}
-
-function progressTrack(progress: number) {
-  if (progress === 100) return 'bg-[#478FC8]/20'
-  if (progress >= 60) return 'bg-blue-500/20'
-  if (progress >= 30) return 'bg-yellow-500/20'
-  return 'bg-gray-200 dark:bg-gray-700'
+  return statusMap[status]?.label || status
 }
 
 function formatDate(dateStr: string) {
@@ -148,13 +193,26 @@ function formatDate(dateStr: string) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-function visibleAssignees(assignees: TaskItem['assignees']) {
-  return assignees.slice(0, 2)
+function getAssigneeInitials(name: string) {
+  return name.split(' ').map(n => n.charAt(0)).join('').slice(0, 2)
 }
 
-function extraAssigneeCount(assignees: TaskItem['assignees']) {
-  return assignees.length > 2 ? assignees.length - 2 : 0
+const assigneeColors = ['bg-orange-400', 'bg-purple-500', 'bg-blue-500', 'bg-emerald-500', 'bg-rose-500']
+
+// ─── Card menu ───
+const openMenuId = ref<string | null>(null)
+function toggleMenu(taskId: string) {
+  openMenuId.value = openMenuId.value === taskId ? null : taskId
 }
+
+// ─── Pagination ───
+const currentPage = ref(1)
+const perPage = 10
+const paginatedTasks = computed(() => {
+  const start = (currentPage.value - 1) * perPage
+  return filteredTasks.value.slice(start, start + perPage)
+})
+const totalPages = computed(() => Math.ceil(filteredTasks.value.length / perPage) || 1)
 
 // ─── Create Task Dialog ───
 const showCreateTask = ref(false)
@@ -335,237 +393,527 @@ async function confirmDeleteTask() {
 <template>
   <LayoutPageContainer>
     <!-- Page Header -->
-    <LayoutPageHeader title="All Tasks" subtitle="Manage and track all your tasks across projects">
-      <template #actions>
-        <UiButton v-if="hasEditableProjects" variant="success" class="shrink-0" @click="openCreateTask">
-          <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-          Create Task
-        </UiButton>
-      </template>
-    </LayoutPageHeader>
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div>
+        <div class="flex items-center gap-3 mb-1">
+          <div class="w-1 h-8 rounded-full bg-gradient-to-b from-[#478FC8] to-[#3570A5]" />
+          <h1 class="text-[clamp(22px,3vw,30px)] font-black tracking-tight text-gray-900 dark:text-white leading-tight">
+            All Tasks
+          </h1>
+        </div>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 pl-4 leading-relaxed">
+          Manage and track
+          <span class="font-semibold bg-gradient-to-r from-[#478FC8] to-[#6db3e8] bg-clip-text text-transparent">all</span>
+          your tasks across projects.
+        </p>
+      </div>
+      <button
+        v-if="hasEditableProjects"
+        class="flex items-center gap-2 px-4 py-2.5 bg-[#478FC8] text-white rounded-xl hover:bg-[#3a7bb3] transition-all shadow-sm shrink-0"
+        style="font-size: 13.5px; font-weight: 600;"
+        @click="openCreateTask"
+      >
+        <Plus class="h-[15px] w-[15px]" />
+        Create Task
+      </button>
+    </div>
 
-    <!-- Toolbar -->
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-      <div class="relative flex-1">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div
+        v-for="(stat, index) in statsCards"
+        :key="index"
+        :class="[
+          'relative flex flex-col gap-3 px-5 py-4 rounded-xl border transition-all duration-200 cursor-pointer overflow-hidden',
+          stat.highlighted
+            ? 'bg-[#478FC8] border-[#478FC8] text-white shadow-md shadow-[#478FC8]/20'
+            : 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-[#478FC8]/30 hover:shadow-sm'
+        ]"
+      >
+        <div v-if="stat.highlighted" class="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-white/10" />
+        <div class="flex items-center justify-between">
+          <div
+            :class="[
+              'flex h-9 w-9 items-center justify-center rounded-xl shrink-0',
+              stat.highlighted ? 'bg-white/20' : stat.iconBg
+            ]"
+          >
+            <component :is="stat.icon" :class="['h-[18px] w-[18px]', stat.highlighted ? 'text-blue-100' : stat.iconColor]" />
+          </div>
+          <ArrowUpRight :class="['h-4 w-4', stat.highlighted ? 'text-blue-200' : 'text-gray-300 dark:text-gray-600']" />
+        </div>
+        <div>
+          <p :class="['leading-snug', stat.highlighted ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400']" style="font-size: 12px; font-weight: 500;">
+            {{ stat.title }}
+          </p>
+          <span :class="['leading-tight tracking-tight', stat.highlighted ? 'text-white' : 'text-gray-900 dark:text-white']" style="font-size: 26px; font-weight: 800; letter-spacing: -1px; line-height: 1.2;">
+            {{ stat.value }}
+          </span>
+        </div>
+        <div
+          v-if="stat.trend"
+          :class="['flex items-center gap-1', stat.highlighted ? 'text-blue-200' : 'text-green-600 dark:text-green-400']"
+          style="font-size: 11.5px; font-weight: 500;"
         >
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-        <UiInput
+          <ArrowUpRight class="h-3 w-3" />
+          <span>{{ stat.trend }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="flex flex-wrap items-center gap-2.5">
+      <!-- Search -->
+      <div class="flex items-center gap-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 focus-within:border-[#478FC8] transition-all min-w-[220px]">
+        <Search class="h-3.5 w-3.5 text-gray-400 shrink-0" />
+        <input
           v-model="searchQuery"
+          type="text"
           placeholder="Search tasks..."
-          class="pl-10"
+          class="bg-transparent flex-1 outline-none text-gray-700 dark:text-gray-200 placeholder:text-gray-400"
+          style="font-size: 13px;"
         />
       </div>
-      <div class="flex items-center gap-2">
-        <UiDropdown v-model:open="filterOpen">
-          <template #trigger>
-            <UiButton variant="outline" class="relative">
-              <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>
-              Filter
-              <span
-                v-if="hasActiveFilters"
-                class="ml-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground"
-              >
-                {{ (selectedPriority ? 1 : 0) + (selectedStatus ? 1 : 0) }}
-              </span>
-            </UiButton>
+
+      <!-- Filter buttons -->
+      <UiDropdown v-model:open="filterOpen">
+        <template #trigger>
+          <button class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all" style="font-size: 13px; font-weight: 500;">
+            Status
+            <ChevronDown class="h-[13px] w-[13px] text-gray-400" />
+            <span
+              v-if="selectedStatus"
+              class="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#478FC8] text-[9px] font-bold text-white"
+            >1</span>
+          </button>
+        </template>
+        <template #default="{ close }">
+          <div class="w-44 p-2">
+            <button
+              v-for="s in ['completed', 'in_progress', 'not_started']"
+              :key="s"
+              class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all hover:bg-gray-50 dark:hover:bg-gray-800"
+              :class="selectedStatus === s ? 'text-[#478FC8] font-semibold' : 'text-gray-700 dark:text-gray-300'"
+              style="font-size: 13px;"
+              @click="selectedStatus = selectedStatus === s ? null : s; close()"
+            >
+              <span :class="['w-1.5 h-1.5 rounded-full shrink-0', statusMap[s]?.dot]" />
+              {{ statusLabel(s) }}
+            </button>
+          </div>
+        </template>
+      </UiDropdown>
+
+      <UiDropdown>
+        <template #trigger>
+          <button class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all" style="font-size: 13px; font-weight: 500;">
+            Priority
+            <ChevronDown class="h-[13px] w-[13px] text-gray-400" />
+            <span
+              v-if="selectedPriority"
+              class="ml-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#478FC8] text-[9px] font-bold text-white"
+            >1</span>
+          </button>
+        </template>
+        <template #default="{ close }">
+          <div class="w-36 p-2">
+            <button
+              v-for="p in ['high', 'medium', 'low']"
+              :key="p"
+              class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all hover:bg-gray-50 dark:hover:bg-gray-800"
+              :class="selectedPriority === p ? 'text-[#478FC8] font-semibold' : 'text-gray-700 dark:text-gray-300'"
+              style="font-size: 13px;"
+              @click="selectedPriority = selectedPriority === p ? null : p; close()"
+            >
+              <Flag class="h-[10px] w-[10px]" :class="priorityMap[p]?.bg.replace('bg-', 'text-')" />
+              {{ priorityLabel(p) }}
+            </button>
+          </div>
+        </template>
+      </UiDropdown>
+
+      <button
+        v-if="hasActiveFilters"
+        class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 hover:border-[#478FC8] hover:text-[#478FC8] transition-all"
+        style="font-size: 13px; font-weight: 500;"
+        @click="clearFilters"
+      >
+        <SlidersHorizontal class="h-[13px] w-[13px]" />
+        Clear filters
+      </button>
+
+      <div class="flex-1" />
+
+      <!-- Task count -->
+      <span class="text-gray-500 dark:text-gray-400 hidden md:block" style="font-size: 13px;">
+        <span class="text-gray-800 dark:text-white" style="font-weight: 600;">{{ filteredTasks.length }}</span> tasks
+      </span>
+
+      <!-- View toggle -->
+      <div class="flex items-center gap-1 p-1 rounded-lg bg-gray-100 dark:bg-gray-800">
+        <button
+          :class="[
+            'flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all',
+            viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-800 dark:text-white' : 'text-gray-500 hover:text-gray-700'
+          ]"
+          style="font-size: 13px; font-weight: 500;"
+          @click="viewMode = 'list'"
+        >
+          <List class="h-[14px] w-[14px]" />
+          List
+        </button>
+        <button
+          :class="[
+            'flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all',
+            viewMode === 'card' ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-800 dark:text-white' : 'text-gray-500 hover:text-gray-700'
+          ]"
+          style="font-size: 13px; font-weight: 500;"
+          @click="viewMode = 'card'"
+        >
+          <LayoutGrid class="h-[14px] w-[14px]" />
+          Card
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══ LIST VIEW ═══ -->
+    <div v-if="viewMode === 'list'" class="flex flex-col gap-2">
+      <!-- List header -->
+      <div class="flex items-center gap-4 px-5 py-2">
+        <div class="w-8" />
+        <div class="flex-1 text-gray-400 dark:text-gray-500 uppercase" style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em;">Task</div>
+        <div class="w-40 text-gray-400 dark:text-gray-500 uppercase hidden md:block" style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em;">Assignee</div>
+        <div class="w-20 text-gray-400 dark:text-gray-500 uppercase hidden sm:block" style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em;">Priority</div>
+        <div class="w-24 text-gray-400 dark:text-gray-500 uppercase hidden sm:block" style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em;">Status</div>
+        <div class="w-28 text-gray-400 dark:text-gray-500 uppercase hidden lg:block" style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em;">Due Date</div>
+        <div class="w-32 text-gray-400 dark:text-gray-500 uppercase hidden xl:block" style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em;">Progress</div>
+        <div class="w-24 text-gray-400 dark:text-gray-500 uppercase" style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em;">Actions</div>
+      </div>
+
+      <!-- Empty state -->
+      <div v-if="paginatedTasks.length === 0" class="flex flex-col items-center justify-center gap-3 py-20">
+        <CheckSquare class="h-12 w-12 text-gray-200 dark:text-gray-700" />
+        <p class="text-gray-500 dark:text-gray-400" style="font-size: 14px; font-weight: 600;">No tasks found</p>
+        <p class="text-gray-400 dark:text-gray-500" style="font-size: 13px;">Try adjusting your search or filters</p>
+      </div>
+
+      <!-- Task Rows -->
+      <div
+        v-for="(task, idx) in paginatedTasks"
+        :key="task.id"
+        class="flex items-center gap-4 px-5 py-3.5 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl hover:border-gray-200 dark:hover:border-gray-700 hover:shadow-sm transition-all group"
+      >
+        <!-- Status icon -->
+        <div :class="['w-8 h-8 rounded-lg flex items-center justify-center shrink-0', statusMap[task.status]?.bg]">
+          <CheckSquare class="h-[15px] w-[15px]" :class="statusMap[task.status]?.text" />
+        </div>
+
+        <!-- Title + project -->
+        <div class="flex-1 min-w-0">
+          <p class="text-gray-900 dark:text-white truncate" style="font-size: 13.5px; font-weight: 600;">{{ task.title }}</p>
+          <div class="flex items-center gap-1.5 mt-0.5">
+            <span class="w-1.5 h-1.5 rounded-full shrink-0" :style="{ backgroundColor: task.projectColor || '#478FC8' }" />
+            <span class="text-gray-400 dark:text-gray-500" style="font-size: 11.5px;">{{ task.projectName || 'No project' }}</span>
+          </div>
+        </div>
+
+        <!-- Assignee -->
+        <div class="hidden md:flex items-center gap-2 w-40 shrink-0">
+          <template v-if="task.assignees.length > 0">
+            <UiAvatar v-if="task.assignees[0].avatar" :src="task.assignees[0].avatar" :alt="task.assignees[0].name" size="xs" />
+            <div
+              v-else
+              :class="['w-6 h-6 rounded-full flex items-center justify-center text-white shrink-0', assigneeColors[idx % assigneeColors.length]]"
+              style="font-size: 10px; font-weight: 700;"
+            >
+              {{ getAssigneeInitials(task.assignees[0].name) }}
+            </div>
+            <span class="text-gray-600 dark:text-gray-300 truncate" style="font-size: 12.5px;">{{ task.assignees[0].name.split(' ')[0] }}</span>
           </template>
-          <template #default="{ close }">
-            <div class="w-56 p-2">
-              <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Priority</p>
-              <div class="mb-3 flex flex-wrap gap-1">
-                <button
-                  v-for="p in ['high', 'medium', 'low']"
-                  :key="p"
-                  class="rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors"
-                  :class="selectedPriority === p
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border text-muted-foreground hover:border-primary/50'"
-                  @click="selectedPriority = selectedPriority === p ? null : p"
-                >
-                  {{ p.charAt(0).toUpperCase() + p.slice(1) }}
-                </button>
-              </div>
-              <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</p>
-              <div class="mb-3 flex flex-wrap gap-1">
-                <button
-                  v-for="s in ['completed', 'in_progress', 'not_started']"
-                  :key="s"
-                  class="rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors"
-                  :class="selectedStatus === s
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border text-muted-foreground hover:border-primary/50'"
-                  @click="selectedStatus = selectedStatus === s ? null : s"
-                >
-                  {{ statusLabel(s) }}
-                </button>
-              </div>
-              <div v-if="hasActiveFilters" class="border-t border-border pt-2">
-                <button
-                  class="w-full rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  @click="clearFilters(); close()"
-                >
-                  Clear filters
-                </button>
+          <span v-else class="text-gray-400 dark:text-gray-500" style="font-size: 12.5px;">Unassigned</span>
+        </div>
+
+        <!-- Priority -->
+        <div class="hidden sm:block shrink-0">
+          <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full', priorityMap[task.priority]?.bg]">
+            <Flag class="h-[10px] w-[10px]" :class="priorityMap[task.priority]?.text" />
+            <span :class="priorityMap[task.priority]?.text" style="font-size: 11.5px; font-weight: 700;">{{ priorityLabel(task.priority) }}</span>
+          </span>
+        </div>
+
+        <!-- Status -->
+        <div class="hidden sm:block shrink-0">
+          <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full', statusMap[task.status]?.bg]">
+            <span :class="['w-1.5 h-1.5 rounded-full shrink-0', statusMap[task.status]?.dot]" />
+            <span :class="statusMap[task.status]?.text" style="font-size: 11.5px; font-weight: 600;">{{ statusLabel(task.status) }}</span>
+          </span>
+        </div>
+
+        <!-- Due date -->
+        <div class="hidden lg:flex items-center gap-1.5 shrink-0 w-28">
+          <CalendarDays class="h-3 w-3 text-gray-400" />
+          <span class="text-gray-600 dark:text-gray-300" style="font-size: 12px;">{{ formatDate(task.dueDate) }}</span>
+        </div>
+
+        <!-- Progress -->
+        <div class="hidden xl:flex items-center gap-2.5 w-32 shrink-0">
+          <div class="flex-1 h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+            <div
+              :class="[
+                'h-full rounded-full bg-gradient-to-r transition-all duration-700',
+                task.progress === 100 ? 'from-green-400 to-emerald-500'
+                  : task.progress > 50 ? 'from-blue-400 to-blue-600'
+                  : task.progress > 0 ? 'from-amber-400 to-orange-400'
+                  : 'from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700',
+              ]"
+              :style="{ width: `${task.progress}%` }"
+            />
+          </div>
+          <span
+            :class="[
+              'shrink-0',
+              task.progress === 100 ? 'text-green-600' : 'text-[#478FC8]',
+            ]"
+            style="font-size: 12px; font-weight: 700;"
+          >
+            {{ task.progress }}%
+          </span>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+          <button
+            class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-[#478FC8] transition-all"
+            @click="handleViewDetails(task)"
+          >
+            <Eye class="h-[13px] w-[13px]" />
+          </button>
+          <template v-if="canEditTask(task)">
+            <button
+              class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 transition-all"
+              @click="handleEditTask(task)"
+            >
+              <Pencil class="h-[13px] w-[13px]" />
+            </button>
+            <button
+              class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-all"
+              @click="handleDeleteTask(task)"
+            >
+              <Trash2 class="h-[13px] w-[13px]" />
+            </button>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ CARD VIEW ═══ -->
+    <div v-else class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+      <!-- Empty state -->
+      <div v-if="paginatedTasks.length === 0" class="col-span-3 flex flex-col items-center justify-center gap-3 py-20">
+        <CheckSquare class="h-12 w-12 text-gray-200 dark:text-gray-700" />
+        <p class="text-gray-500 dark:text-gray-400" style="font-size: 14px; font-weight: 600;">No tasks found</p>
+      </div>
+
+      <!-- Task Cards -->
+      <div
+        v-for="(task, idx) in paginatedTasks"
+        :key="task.id"
+        class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden hover:shadow-md hover:border-gray-200 dark:hover:border-gray-700 transition-all duration-200 group flex flex-col"
+      >
+        <!-- Top color stripe -->
+        <div
+          :class="[
+            'h-1.5 w-full bg-gradient-to-r',
+            task.status === 'completed' ? 'from-green-400 to-emerald-500'
+              : task.status === 'in_progress' ? 'from-blue-400 to-blue-600'
+              : 'from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700',
+          ]"
+        />
+
+        <div class="p-5 flex flex-col gap-4 flex-1">
+          <!-- Title + menu -->
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0">
+              <h3 class="text-gray-900 dark:text-white leading-snug" style="font-size: 14px; font-weight: 700;">{{ task.title }}</h3>
+              <div class="flex items-center gap-1.5 mt-1.5">
+                <span class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: task.projectColor || '#478FC8' }" />
+                <span class="text-gray-500 dark:text-gray-400" style="font-size: 12px; font-weight: 500;">{{ task.projectName || 'No project' }}</span>
               </div>
             </div>
-          </template>
-        </UiDropdown>
-      </div>
-    </div>
+            <div class="relative shrink-0">
+              <button
+                class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-all"
+                @click="toggleMenu(task.id)"
+              >
+                <MoreHorizontal class="h-[15px] w-[15px]" />
+              </button>
+              <div
+                v-if="openMenuId === task.id"
+                class="absolute right-0 top-8 z-10 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-lg py-1 w-32"
+                @mouseleave="openMenuId = null"
+              >
+                <button class="w-full flex items-center gap-2 px-3 py-2 text-left transition-all hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300" style="font-size: 13px; font-weight: 500;" @click="openMenuId = null; handleViewDetails(task)">
+                  <Eye class="h-[13px] w-[13px]" />
+                  View
+                </button>
+                <template v-if="canEditTask(task)">
+                  <button class="w-full flex items-center gap-2 px-3 py-2 text-left transition-all hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300" style="font-size: 13px; font-weight: 500;" @click="openMenuId = null; handleEditTask(task)">
+                    <Pencil class="h-[13px] w-[13px]" />
+                    Edit
+                  </button>
+                  <button class="w-full flex items-center gap-2 px-3 py-2 text-left transition-all hover:bg-gray-50 dark:hover:bg-gray-800 text-red-500" style="font-size: 13px; font-weight: 500;" @click="openMenuId = null; handleDeleteTask(task)">
+                    <Trash2 class="h-[13px] w-[13px]" />
+                    Delete
+                  </button>
+                </template>
+              </div>
+            </div>
+          </div>
 
-    <!-- Task Count -->
-    <div class="flex items-center gap-2 text-sm text-muted-foreground">
-      <span>{{ filteredTasks.length }} task{{ filteredTasks.length !== 1 ? 's' : '' }}</span>
-      <span v-if="hasActiveFilters" class="text-xs">
-        &middot;
-        <button class="text-primary hover:underline" @click="clearFilters">Clear filters</button>
-      </span>
-    </div>
-
-    <!-- Tasks Table -->
-    <UiCard class="overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b border-border bg-muted/50">
-              <th class="px-6 py-4 text-left text-sm font-medium text-muted-foreground">Task</th>
-              <th class="px-6 py-4 text-left text-sm font-medium text-muted-foreground">Assignee</th>
-              <th class="px-6 py-4 text-left text-sm font-medium text-muted-foreground">Priority</th>
-              <th class="px-6 py-4 text-left text-sm font-medium text-muted-foreground">Status</th>
-              <th class="px-6 py-4 text-left text-sm font-medium text-muted-foreground">Due Date</th>
-              <th class="px-6 py-4 text-left text-sm font-medium text-muted-foreground">Progress</th>
-              <th class="px-6 py-4 text-right text-sm font-medium text-muted-foreground">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="task in filteredTasks"
-              :key="task.id"
-              class="border-b border-border last:border-0 transition-colors hover:bg-muted/30"
+          <!-- Tags -->
+          <div v-if="task.tags && task.tags.length > 0" class="flex flex-wrap gap-1.5">
+            <span
+              v-for="tag in task.tags"
+              :key="tag"
+              class="px-2 py-0.5 rounded-md bg-[#EDF4FF] dark:bg-[#478FC8]/10 text-[#478FC8]"
+              style="font-size: 10.5px; font-weight: 600;"
             >
-              <!-- Task Name -->
-              <td class="px-6 py-4">
-                <span class="font-medium text-foreground">{{ task.title }}</span>
-              </td>
+              {{ tag }}
+            </span>
+          </div>
 
-              <!-- Assignee -->
-              <td class="px-6 py-4">
-                <div class="flex items-center gap-2">
-                  <div class="flex -space-x-2">
-                    <UiAvatar
-                      v-for="assignee in visibleAssignees(task.assignees)"
-                      :key="assignee.id"
-                      :alt="assignee.name"
-                      :src="assignee.avatar"
-                      size="sm"
-                      class="ring-2 ring-card"
-                    />
-                    <span
-                      v-if="extraAssigneeCount(task.assignees) > 0"
-                      class="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground ring-2 ring-card"
-                    >
-                      +{{ extraAssigneeCount(task.assignees) }}
-                    </span>
+          <!-- Meta grid -->
+          <div class="grid grid-cols-2 gap-x-4 gap-y-3">
+            <div>
+              <p class="text-gray-400 dark:text-gray-500 mb-1" style="font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;">Assignee</p>
+              <div class="flex items-center gap-2">
+                <template v-if="task.assignees.length > 0">
+                  <UiAvatar v-if="task.assignees[0].avatar" :src="task.assignees[0].avatar" :alt="task.assignees[0].name" size="xs" />
+                  <div
+                    v-else
+                    :class="['w-6 h-6 rounded-full flex items-center justify-center text-white shrink-0', assigneeColors[idx % assigneeColors.length]]"
+                    style="font-size: 10px; font-weight: 700;"
+                  >
+                    {{ getAssigneeInitials(task.assignees[0].name) }}
                   </div>
-                  <span class="hidden text-sm text-muted-foreground lg:inline">
-                    {{ task.assignees[0]?.name }}
-                  </span>
-                </div>
-              </td>
+                  <span class="text-gray-700 dark:text-gray-300 truncate" style="font-size: 12.5px; font-weight: 500;">{{ task.assignees[0].name.split(' ')[0] }}</span>
+                </template>
+                <span v-else class="text-gray-400" style="font-size: 12.5px;">Unassigned</span>
+              </div>
+            </div>
+            <div>
+              <p class="text-gray-400 dark:text-gray-500 mb-1" style="font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;">Priority</p>
+              <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full', priorityMap[task.priority]?.bg]">
+                <Flag class="h-[10px] w-[10px]" :class="priorityMap[task.priority]?.text" />
+                <span :class="priorityMap[task.priority]?.text" style="font-size: 11.5px; font-weight: 700;">{{ priorityLabel(task.priority) }}</span>
+              </span>
+            </div>
+            <div>
+              <p class="text-gray-400 dark:text-gray-500 mb-1" style="font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;">Status</p>
+              <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full', statusMap[task.status]?.bg]">
+                <span :class="['w-1.5 h-1.5 rounded-full shrink-0', statusMap[task.status]?.dot]" />
+                <span :class="statusMap[task.status]?.text" style="font-size: 11.5px; font-weight: 600;">{{ statusLabel(task.status) }}</span>
+              </span>
+            </div>
+            <div>
+              <p class="text-gray-400 dark:text-gray-500 mb-1" style="font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;">Due Date</p>
+              <div class="flex items-center gap-1.5">
+                <CalendarDays class="h-3 w-3 text-gray-400" />
+                <span class="text-gray-700 dark:text-gray-300" style="font-size: 12.5px; font-weight: 500;">{{ formatDate(task.dueDate) }}</span>
+              </div>
+            </div>
+          </div>
 
-              <!-- Priority -->
-              <td class="px-6 py-4">
-                <UiBadge :variant="priorityVariant(task.priority)">
-                  {{ priorityLabel(task.priority) }}
-                </UiBadge>
-              </td>
+          <!-- Progress -->
+          <div class="flex flex-col gap-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-gray-500 dark:text-gray-400" style="font-size: 12px; font-weight: 500;">Progress</span>
+              <span
+                :class="[
+                  task.progress === 100 ? 'text-green-600' : task.progress > 0 ? 'text-[#478FC8]' : 'text-gray-400',
+                ]"
+                style="font-size: 13px; font-weight: 700;"
+              >
+                {{ task.progress }}%
+              </span>
+            </div>
+            <div class="w-full h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+              <div
+                :class="[
+                  'h-full rounded-full bg-gradient-to-r transition-all duration-700',
+                  task.progress === 100 ? 'from-green-400 to-emerald-500'
+                    : task.progress > 50 ? 'from-blue-400 to-blue-600'
+                    : task.progress > 0 ? 'from-amber-400 to-orange-400'
+                    : 'from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700',
+                ]"
+                :style="{ width: `${task.progress}%` }"
+              />
+            </div>
+          </div>
 
-              <!-- Status -->
-              <td class="px-6 py-4">
-                <span
-                  class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold"
-                  :class="statusClasses(task.status)"
-                >
-                  {{ statusLabel(task.status) }}
-                </span>
-              </td>
-
-              <!-- Due Date -->
-              <td class="px-6 py-4">
-                <span class="text-sm text-muted-foreground whitespace-nowrap">{{ formatDate(task.dueDate) }}</span>
-              </td>
-
-              <!-- Progress -->
-              <td class="px-6 py-4">
-                <div class="flex items-center gap-3 min-w-[140px]">
-                  <UiProgress
-                    :model-value="task.progress"
-                    :class="progressTrack(task.progress)"
-                    :indicator-class="progressColor(task.progress)"
-                    class="flex-1"
-                  />
-                  <span class="w-10 text-right text-xs font-medium text-muted-foreground">{{ task.progress }}%</span>
-                </div>
-              </td>
-
-              <!-- Actions -->
-              <td class="px-6 py-4 text-right">
-                <UiDropdown>
-                  <template #trigger>
-                    <button class="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1" /><circle cx="12" cy="5" r="1" /><circle cx="12" cy="19" r="1" /></svg>
-                    </button>
-                  </template>
-                  <template #default="{ close }">
-                    <UiDropdownItem @click="close(); handleViewDetails(task)">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-                      View Details
-                    </UiDropdownItem>
-                    <template v-if="canEditTask(task)">
-                    <UiDropdownItem @click="close(); handleEditTask(task)">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                      Edit Task
-                    </UiDropdownItem>
-                    <UiDropdownItem @click="close(); handleMoveToBoard(task)">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>
-                      Move to Board
-                    </UiDropdownItem>
-                    <div class="my-1 border-t border-border" />
-                    <UiDropdownItem class="text-destructive hover:!bg-destructive/10 hover:!text-destructive" @click="close(); handleDeleteTask(task)">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
-                      Delete Task
-                    </UiDropdownItem>
-                    </template>
-                  </template>
-                </UiDropdown>
-              </td>
-            </tr>
-
-            <!-- Empty State -->
-            <tr v-if="filteredTasks.length === 0">
-              <td colspan="7" class="px-6 py-16 text-center">
-                <div class="flex flex-col items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-muted-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>
-                  <p class="text-sm font-medium text-muted-foreground">No tasks found</p>
-                  <p class="text-xs text-muted-foreground/70">Try adjusting your search or filters</p>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+          <!-- Actions -->
+          <div class="flex items-center gap-2 mt-auto pt-2 border-t border-gray-50 dark:border-gray-800">
+            <button
+              class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 transition-all"
+              style="font-size: 13px; font-weight: 600;"
+              @click="handleViewDetails(task)"
+            >
+              <Eye class="h-[13px] w-[13px]" />
+              View Task
+            </button>
+            <button
+              v-if="canEditTask(task)"
+              class="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-[#478FC8] hover:bg-[#EDF4FF] dark:hover:bg-[#478FC8]/10 transition-all"
+              style="font-size: 13px; font-weight: 600;"
+              @click="handleEditTask(task)"
+            >
+              <Pencil class="h-3 w-3" />
+              Edit
+            </button>
+          </div>
+        </div>
       </div>
-    </UiCard>
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex items-center justify-between pt-2">
+      <p class="text-gray-500 dark:text-gray-400" style="font-size: 13px;">
+        Showing
+        <span class="text-gray-800 dark:text-white" style="font-weight: 600;">{{ (currentPage - 1) * perPage + 1 }} to {{ Math.min(currentPage * perPage, filteredTasks.length) }}</span>
+        of
+        <span class="text-gray-800 dark:text-white" style="font-weight: 600;">{{ filteredTasks.length }}</span> entries
+      </p>
+      <div class="flex items-center gap-2">
+        <button
+          class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 text-gray-400 disabled:opacity-40 transition-all"
+          :disabled="currentPage <= 1"
+          @click="currentPage--"
+        >
+          <ChevronLeft class="h-[14px] w-[14px]" />
+        </button>
+        <template v-for="page in totalPages" :key="page">
+          <button
+            :class="[
+              'w-8 h-8 flex items-center justify-center rounded-lg transition-all',
+              page === currentPage
+                ? 'bg-[#478FC8] text-white shadow-sm'
+                : 'border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800',
+            ]"
+            style="font-size: 13px; font-weight: 700;"
+            @click="currentPage = page"
+          >
+            {{ page }}
+          </button>
+        </template>
+        <button
+          class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 text-gray-400 disabled:opacity-40 transition-all"
+          :disabled="currentPage >= totalPages"
+          @click="currentPage++"
+        >
+          <ChevronRight class="h-[14px] w-[14px]" />
+        </button>
+      </div>
+    </div>
   </LayoutPageContainer>
 
   <!-- Create Task Dialog -->
@@ -615,52 +963,68 @@ async function confirmDeleteTask() {
     <template #default="{ close }">
       <div v-if="viewTask" class="space-y-4">
         <div>
-          <p class="text-xs font-medium uppercase text-muted-foreground">Title</p>
-          <p class="mt-1 text-sm font-semibold text-foreground">{{ viewTask.title }}</p>
+          <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">Title</p>
+          <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ viewTask.title }}</p>
         </div>
         <div>
-          <p class="text-xs font-medium uppercase text-muted-foreground">Description</p>
-          <p class="mt-1 text-sm text-foreground whitespace-pre-wrap">{{ viewTask.description || 'No description' }}</p>
+          <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">Description</p>
+          <p class="mt-1 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ viewTask.description || 'No description' }}</p>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <p class="text-xs font-medium uppercase text-muted-foreground">Priority</p>
-            <UiBadge :variant="priorityVariant(viewTask.priority)" class="mt-1">
-              {{ priorityLabel(viewTask.priority) }}
-            </UiBadge>
+            <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">Priority</p>
+            <span :class="['mt-1 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full', priorityMap[viewTask.priority]?.bg]">
+              <Flag class="h-[10px] w-[10px]" :class="priorityMap[viewTask.priority]?.text" />
+              <span :class="priorityMap[viewTask.priority]?.text" style="font-size: 11.5px; font-weight: 700;">{{ priorityLabel(viewTask.priority) }}</span>
+            </span>
           </div>
           <div>
-            <p class="text-xs font-medium uppercase text-muted-foreground">Status</p>
-            <span class="mt-1 inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold" :class="statusClasses(viewTask.status)">
-              {{ statusLabel(viewTask.status) }}
+            <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">Status</p>
+            <span :class="['mt-1 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full', statusMap[viewTask.status]?.bg]">
+              <span :class="['w-1.5 h-1.5 rounded-full shrink-0', statusMap[viewTask.status]?.dot]" />
+              <span :class="statusMap[viewTask.status]?.text" style="font-size: 11.5px; font-weight: 600;">{{ statusLabel(viewTask.status) }}</span>
             </span>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <p class="text-xs font-medium uppercase text-muted-foreground">Due Date</p>
-            <p class="mt-1 text-sm text-foreground">{{ formatDate(viewTask.dueDate) }}</p>
+            <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">Due Date</p>
+            <div class="mt-1 flex items-center gap-1.5">
+              <CalendarDays class="h-3 w-3 text-gray-400" />
+              <span class="text-sm text-gray-700 dark:text-gray-300">{{ formatDate(viewTask.dueDate) }}</span>
+            </div>
           </div>
           <div>
-            <p class="text-xs font-medium uppercase text-muted-foreground">Column</p>
-            <p class="mt-1 text-sm text-foreground">{{ viewTask.columnName || '-' }}</p>
+            <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">Column</p>
+            <p class="mt-1 text-sm text-gray-700 dark:text-gray-300">{{ viewTask.columnName || '-' }}</p>
           </div>
         </div>
         <div>
-          <p class="text-xs font-medium uppercase text-muted-foreground">Assignee</p>
+          <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">Assignee</p>
           <div class="mt-1 flex items-center gap-2">
             <template v-if="viewTask.assignees.length">
               <UiAvatar v-for="a in viewTask.assignees" :key="a.id" :alt="a.name" :src="a.avatar" size="sm" />
-              <span class="text-sm text-foreground">{{ viewTask.assignees.map(a => a.name).join(', ') }}</span>
+              <span class="text-sm text-gray-700 dark:text-gray-300">{{ viewTask.assignees.map(a => a.name).join(', ') }}</span>
             </template>
-            <span v-else class="text-sm text-muted-foreground">Unassigned</span>
+            <span v-else class="text-sm text-gray-400 dark:text-gray-500">Unassigned</span>
           </div>
         </div>
         <div>
-          <p class="text-xs font-medium uppercase text-muted-foreground">Progress</p>
+          <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">Progress</p>
           <div class="mt-1 flex items-center gap-3">
-            <UiProgress :model-value="viewTask.progress" :class="progressTrack(viewTask.progress)" :indicator-class="progressColor(viewTask.progress)" class="flex-1" />
-            <span class="text-xs font-medium text-muted-foreground">{{ viewTask.progress }}%</span>
+            <div class="flex-1 h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+              <div
+                :class="[
+                  'h-full rounded-full bg-gradient-to-r transition-all duration-700',
+                  viewTask.progress === 100 ? 'from-green-400 to-emerald-500'
+                    : viewTask.progress > 50 ? 'from-blue-400 to-blue-600'
+                    : viewTask.progress > 0 ? 'from-amber-400 to-orange-400'
+                    : 'from-gray-200 to-gray-300',
+                ]"
+                :style="{ width: `${viewTask.progress}%` }"
+              />
+            </div>
+            <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ viewTask.progress }}%</span>
           </div>
         </div>
         <div class="flex justify-end pt-2">
