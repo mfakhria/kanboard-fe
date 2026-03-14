@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  ChevronLeft, ChevronRight, Flag, Clock, CalendarDays, Circle,
+  ChevronLeft, ChevronRight, Flag, Clock, CalendarDays,
 } from 'lucide-vue-next'
 import { kanbanApi } from '~/features/kanban/services/task.api'
 
@@ -49,10 +49,6 @@ const weekDays = computed(() =>
 
 function isToday(d: Date) {
   return d.toDateString() === today.toDateString()
-}
-
-function isDaySelected(d: Date) {
-  return d.toDateString() === selectedDate.value.toDateString()
 }
 
 function prevWeek() {
@@ -171,7 +167,7 @@ const priorityEventColors: Record<string, { color: string; borderColor: string; 
   LOW: { color: 'bg-amber-100 dark:bg-amber-900/30', borderColor: 'border-amber-400', textColor: 'text-amber-800 dark:text-amber-300' },
 }
 
-function getEventTime(dayTasks: any[], index: number) {
+function getEventTime(_dayTasks: any[], index: number) {
   const baseHour = 8
   const hour = baseHour + (index * 2) % 10
   return { startHour: hour, endHour: hour + 1 }

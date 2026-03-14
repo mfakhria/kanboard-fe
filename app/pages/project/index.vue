@@ -12,7 +12,6 @@ import {
   AlertTriangle,
   FolderKanban,
   Loader2,
-  GripVertical,
   ExternalLink,
   Pencil,
   MoreHorizontal,

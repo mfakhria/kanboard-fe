@@ -4,14 +4,6 @@ import { Zap } from 'lucide-vue-next'
 const analyticsStore = useAnalyticsStore()
 const progress = computed(() => analyticsStore.projectProgress)
 
-const total = computed(() => {
-  const t = analyticsStore.stats.totalProjects
-  return t > 0 ? t : 0
-})
-const completedCount = computed(() => analyticsStore.stats.endedProjects)
-const runningCount = computed(() => analyticsStore.stats.runningProjects)
-const pendingCount = computed(() => Math.max(0, total.value - completedCount.value - runningCount.value))
-
 const pct = computed(() => progress.value.completed)
 
 // Donut chart calculations

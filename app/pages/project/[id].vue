@@ -5,7 +5,6 @@ import {
   Trash2,
   User,
   CalendarDays,
-  FolderKanban,
   CheckCircle2,
   Clock,
   AlertTriangle,
@@ -13,17 +12,12 @@ import {
   Users,
   UserPlus,
   Mail,
-  Shield,
-  MoreHorizontal,
   X,
   ClipboardList,
   Sparkles,
-  Plus,
   ChevronDown,
-  Palette,
   Crown,
 } from 'lucide-vue-next'
-import type { ProjectMember, ProjectInvitation } from '~/features/project/types'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -220,13 +214,6 @@ async function handleCancelInvitation(invitationId: string) {
   }
 }
 
-const roleColors: Record<string, string> = {
-  OWNER: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-  ADMIN: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  MEMBER: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  VIEWER: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-}
-
 const avatarColors = [
   'bg-gradient-to-br from-amber-400 to-orange-500',
   'bg-gradient-to-br from-purple-400 to-pink-500',
@@ -234,19 +221,6 @@ const avatarColors = [
   'bg-gradient-to-br from-emerald-400 to-teal-500',
   'bg-gradient-to-br from-rose-400 to-red-500',
 ]
-
-// ─── Overview fields (dynamic) ───
-const overviewFields = computed(() => {
-  const p = project.value as any
-  return [
-    { label: 'Project Name', value: p?.name || '-' },
-    { label: 'Status', value: statusConfig[p?.status || 'ACTIVE']?.label || '-' },
-    { label: 'PIC', value: p?.pic?.name || '-' },
-    { label: 'Deadline', value: p?.dueDate ? new Date(p.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-' },
-    { label: 'Tasks', value: `${taskStats.value.completed} / ${taskStats.value.total}` },
-    { label: 'Created', value: p?.createdAt ? new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-' },
-  ]
-})
 
 // ─── Member task count from kanban data ───
 function getMemberTaskCount(userId: string): number {

@@ -5,8 +5,6 @@ const projectStore = useProjectStore()
 
 const topProjects = computed(() => projectStore.allProjects.slice(0, 5))
 
-const progressColors = ['#22c55e', '#f59e0b', '#3b82f6', '#ef4444', '#8b5cf6']
-
 function getProgress(project: { totalTasks?: number; completedTasks?: number }): number {
   const total = project.totalTasks ?? 0
   const completed = project.completedTasks ?? 0
@@ -44,7 +42,7 @@ function formatDueDate(d?: string) {
 
       <div v-else class="flex flex-col divide-y divide-gray-50 dark:divide-gray-800/60 px-5 py-2">
         <NuxtLink
-          v-for="(project, idx) in topProjects"
+          v-for="project in topProjects"
           :key="project.id"
           :to="`/project/${project.id}`"
           class="flex items-center gap-3 py-3 group"

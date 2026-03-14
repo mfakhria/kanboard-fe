@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowUpRight, Upload, Mail, CheckCircle2, X, FolderKanban, CheckCheck, Zap, Hourglass, TrendingUp, ChevronRight, Timer } from 'lucide-vue-next'
+import { ArrowUpRight, Upload, Mail, CheckCircle2, X, FolderKanban, Zap, TrendingUp, ChevronRight, Timer } from 'lucide-vue-next'
 
 definePageMeta({
   layout: 'dashboard',
