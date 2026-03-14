@@ -4,9 +4,6 @@ import {
   UserPlus,
   Search,
   Shield,
-  Crown,
-  Eye,
-  UserCog,
   Mail,
 } from 'lucide-vue-next'
 
@@ -155,15 +152,6 @@ async function submitRemove() {
 // Helpers
 function formatRole(role: string) {
   return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase()
-}
-
-function getRoleIcon(role: string) {
-  switch (role) {
-    case 'OWNER': return Crown
-    case 'ADMIN': return Shield
-    case 'VIEWER': return Eye
-    default: return UserCog
-  }
 }
 
 const filterRoles = ['All', 'OWNER', 'ADMIN', 'MEMBER', 'VIEWER'] as const

@@ -12,49 +12,54 @@ ChartJS.register(Title, Tooltip, Legend, ArcElement)
 
 const analyticsStore = useAnalyticsStore()
 
-const distColors = ['#334155', '#478FC8', '#84cc16', '#7c3aed', '#dc2626', '#f59e0b']
+const distColors = ['#3b82f6', '#1e293b', '#6366f1', '#e2e8f0']
+
+const distributionItems = computed(() => {
+  const dist = analyticsStore.overviewStats?.taskDistribution
+  if (dist && dist.length > 0) {
+    return dist.map((d, i) => ({
+      name: d.label,
+      value: d.percentage,
+      color: distColors[i % distColors.length],
+    }))
+  }
+  return [
+    { name: 'Done', value: 38, color: '#3b82f6' },
+    { name: 'In Review', value: 22, color: '#1e293b' },
+    { name: 'In Progress', value: 25, color: '#6366f1' },
+    { name: 'Todo', value: 15, color: '#e2e8f0' },
+  ]
+})
 
 const chartData = computed(() => {
-  const dist = analyticsStore.overviewStats?.taskDistribution
-  const labels = dist?.map(d => d.label) ?? ['To Do', 'Completed', 'Ongoing', 'Overdue']
-  const data = dist?.map(d => d.percentage) ?? [0, 0, 0, 0]
-
+  const items = distributionItems.value
   return {
-  labels,
-  datasets: [
-    {
-      data,
-      backgroundColor: labels.map((_, i) => distColors[i % distColors.length]),
-      borderWidth: 0,
-      hoverOffset: 6,
-    },
-  ],
-}})
+    labels: items.map(d => d.name),
+    datasets: [
+      {
+        data: items.map(d => d.value),
+        backgroundColor: items.map(d => d.color),
+        borderWidth: 0,
+        hoverOffset: 6,
+        spacing: 3,
+      },
+    ],
+  }
+})
 
 const chartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
-  cutout: '60%',
+  cutout: '65%',
   plugins: {
-    legend: {
-      display: true,
-      position: 'right' as const,
-      labels: {
-        usePointStyle: true,
-        pointStyle: 'circle',
-        boxWidth: 8,
-        boxHeight: 8,
-        padding: 16,
-        font: { size: 12, family: 'Inter' },
-      },
-    },
+    legend: { display: false },
     tooltip: {
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      backgroundColor: '#fff',
       titleColor: '#1e293b',
       bodyColor: '#64748b',
-      borderColor: '#e2e8f0',
+      borderColor: '#f1f5f9',
       borderWidth: 1,
-      cornerRadius: 8,
+      cornerRadius: 12,
       padding: 12,
       callbacks: {
         label: (ctx: any) => `${ctx.label}: ${ctx.raw}%`,
@@ -65,19 +70,46 @@ const chartOptions = computed(() => ({
 </script>
 
 <template>
-  <UiCard class="h-full">
-    <UiCardHeader class="pb-2">
-      <UiCardTitle class="text-base">Task Distribution Chart</UiCardTitle>
-    </UiCardHeader>
-    <UiCardContent>
-      <div class="h-64">
-        <ClientOnly>
-          <Doughnut :data="chartData" :options="chartOptions" />
-          <template #fallback>
-            <div class="flex h-full items-center justify-center text-sm text-muted-foreground">Loading chart...</div>
-          </template>
-        </ClientOnly>
+  <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-5 flex flex-col gap-4">
+    <div>
+      <p class="text-gray-900" style="font-size: 15px; font-weight: 800; letter-spacing: -0.3px">
+        Task Distribution Chart
+      </p>
+      <p class="text-gray-400 mt-0.5" style="font-size: 12px">
+        Breakdown of tasks by current status
+      </p>
+    </div>
+
+    <!-- Doughnut chart -->
+    <div class="flex items-center justify-center" style="height: 240px">
+      <ClientOnly>
+        <Doughnut :data="chartData" :options="chartOptions" />
+        <template #fallback>
+          <div class="flex h-full items-center justify-center text-sm text-gray-400">Loading chart...</div>
+        </template>
+      </ClientOnly>
+    </div>
+
+    <!-- Custom legend grid -->
+    <div class="grid grid-cols-2 gap-2 mt-1">
+      <div
+        v-for="item in distributionItems"
+        :key="item.name"
+        class="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2.5"
+      >
+        <div
+          class="w-3 h-3 rounded-full flex-shrink-0"
+          :style="{ background: item.color }"
+        />
+        <div class="flex-1 min-w-0">
+          <p class="text-gray-700 truncate" style="font-size: 12px; font-weight: 600">
+            {{ item.name }}
+          </p>
+          <p class="text-gray-400" style="font-size: 11px">
+            {{ item.value }}%
+          </p>
+        </div>
       </div>
-    </UiCardContent>
-  </UiCard>
+    </div>
+  </div>
 </template>
