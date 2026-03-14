@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronLeft, ChevronRight, Plus, Filter, Briefcase, Users, GraduationCap, CalendarDays, MoreVertical } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, Plus, Filter, Briefcase, Users, CalendarDays, MoreVertical, Flag, Clock, FolderKanban } from 'lucide-vue-next'
 import { kanbanApi } from '~/features/kanban/services/task.api'
 
 definePageMeta({ layout: 'dashboard' })
@@ -10,10 +10,11 @@ const VueCal = defineAsyncComponent(() =>
 )
 
 const workspaceStore = useWorkspaceStore()
+const projectStore = useProjectStore()
 
 // ─── State ───
 const selectedDate = ref(new Date())
-const activeTab = ref<'all' | 'project' | 'meeting' | 'education'>('all')
+const activeTab = ref<'all' | 'high' | 'medium' | 'low'>('all')
 const viewMode = ref<'day' | 'week' | 'month'>('week')
 
 // ─── Mini-calendar helpers ───
@@ -89,7 +90,8 @@ function selectDay(date: Date) {
 interface CalendarEvent {
   id: string
   title: string
-  type: 'project' | 'meeting' | 'education'
+  priority: string
+  projectName: string
   date: Date
   startHour: number
   startMinute: number
@@ -97,15 +99,24 @@ interface CalendarEvent {
   endMinute: number
   color: string
   bgColor: string
+  assigneeName?: string
 }
 
+const rawTasks = ref<any[]>([])
 const events = ref<CalendarEvent[]>([])
 
-const priorityColorMap: Record<string, { color: string; bgColor: string }> = {
-  HIGH: { color: 'border-l-red-500', bgColor: 'bg-red-500/10 dark:bg-red-500/15' },
-  URGENT: { color: 'border-l-violet-500', bgColor: 'bg-violet-500/10 dark:bg-violet-500/15' },
-  MEDIUM: { color: 'border-l-[#478FC8]', bgColor: 'bg-[#478FC8]/10 dark:bg-[#478FC8]/15' },
-  LOW: { color: 'border-l-orange-500', bgColor: 'bg-orange-500/10 dark:bg-orange-500/15' },
+const priorityColorMap: Record<string, { color: string; bgColor: string; eventClass: string }> = {
+  HIGH: { color: 'border-l-red-500', bgColor: 'bg-red-500/10 dark:bg-red-500/15', eventClass: 'event-high' },
+  URGENT: { color: 'border-l-violet-500', bgColor: 'bg-violet-500/10 dark:bg-violet-500/15', eventClass: 'event-urgent' },
+  MEDIUM: { color: 'border-l-[#478FC8]', bgColor: 'bg-[#478FC8]/10 dark:bg-[#478FC8]/15', eventClass: 'event-medium' },
+  LOW: { color: 'border-l-orange-500', bgColor: 'bg-orange-500/10 dark:bg-orange-500/15', eventClass: 'event-low' },
+}
+
+// Distribute events across different hours based on their index for the same day
+function getEventTime(dayTasks: any[], index: number) {
+  const baseHour = 8
+  const hour = baseHour + (index * 2) % 10 // distribute 8,10,12,14,16,8,10...
+  return { startHour: hour, startMinute: 0, endHour: hour + 1, endMinute: 0 }
 }
 
 async function loadCalendarEvents() {
@@ -114,24 +125,38 @@ async function loadCalendarEvents() {
   try {
     const { data } = await kanbanApi.listTasks(wsId)
     const tasks = data as any[]
-    events.value = tasks
-      .filter((t: any) => t.dueDate)
-      .map((t: any) => {
-        const due = new Date(t.dueDate)
-        const colors = priorityColorMap[t.priority] ?? priorityColorMap.MEDIUM!
-        return {
-          id: t.id,
-          title: t.title,
-          type: 'project' as const,
-          date: due,
-          startHour: 9,
-          startMinute: 0,
-          endHour: 10,
-          endMinute: 0,
-          color: colors.color,
-          bgColor: colors.bgColor,
-        }
-      })
+    rawTasks.value = tasks
+
+    // Group tasks by date to distribute times
+    const byDate = new Map<string, any[]>()
+    const tasksWithDue = tasks.filter((t: any) => t.dueDate)
+    for (const t of tasksWithDue) {
+      const key = new Date(t.dueDate).toDateString()
+      if (!byDate.has(key)) byDate.set(key, [])
+      byDate.get(key)!.push(t)
+    }
+
+    events.value = tasksWithDue.map((t: any) => {
+      const due = new Date(t.dueDate)
+      const key = due.toDateString()
+      const dayGroup = byDate.get(key) || []
+      const idx = dayGroup.indexOf(t)
+      const time = getEventTime(dayGroup, idx)
+      const colors = priorityColorMap[t.priority] ?? priorityColorMap.MEDIUM!
+      const projectName = t.column?.board?.project?.name || t.column?.board?.name || 'Project'
+
+      return {
+        id: t.id,
+        title: t.title,
+        priority: (t.priority || 'MEDIUM').toUpperCase(),
+        projectName,
+        date: due,
+        ...time,
+        color: colors.color,
+        bgColor: colors.bgColor,
+        assigneeName: t.assignee?.name,
+      }
+    })
   } catch (error) {
     console.error('Failed to load calendar events:', error)
   }
@@ -141,6 +166,7 @@ onMounted(async () => {
   if (!workspaceStore.allWorkspaces.length) {
     await workspaceStore.fetchWorkspaces()
   }
+  await projectStore.fetchProjects()
   await loadCalendarEvents()
 })
 
@@ -156,24 +182,22 @@ function toDateTimeStr(date: Date, h: number, m: number) {
   return `${y}-${mo}-${d} ${hh}:${mm}` as `${number}${number}${number}${number}-${number}${number}-${number}${number} ${number}${number}:${number}${number}`
 }
 
-const typeClassMap: Record<string, string> = {
-  project: 'event-project',
-  meeting: 'event-meeting',
-  education: 'event-education',
-}
-
 const vueCalEvents = computed(() => {
-  const filtered = activeTab.value === 'all'
-    ? events.value
-    : events.value.filter(e => e.type === activeTab.value)
+  let filtered = events.value
+  if (activeTab.value !== 'all') {
+    filtered = filtered.filter(e => e.priority === activeTab.value.toUpperCase())
+  }
 
-  return filtered.map(e => ({
-    start: toDateTimeStr(e.date, e.startHour, e.startMinute),
-    end: toDateTimeStr(e.date, e.endHour, e.endMinute),
-    title: e.title,
-    class: typeClassMap[e.type] || '',
-    content: '',
-  }))
+  return filtered.map(e => {
+    const colors = priorityColorMap[e.priority] ?? priorityColorMap.MEDIUM!
+    return {
+      start: toDateTimeStr(e.date, e.startHour, e.startMinute),
+      end: toDateTimeStr(e.date, e.endHour, e.endMinute),
+      title: e.title,
+      class: colors.eventClass,
+      content: '',
+    }
+  })
 })
 
 // ─── Vue-Cal view / date sync ───
@@ -213,29 +237,85 @@ function formatEventTime(event: CalendarEvent): string {
   return `${fmtShort(event.startHour, event.startMinute)} - ${fmtShort(event.endHour, event.endMinute)}`
 }
 
-const upcomingEvents = computed(() => {
+// ─── Dynamic: Upcoming Schedule (events for selected day) ───
+const selectedDayEvents = computed(() => {
   return [...events.value]
     .filter(e => e.date.toDateString() === selectedDate.value.toDateString())
     .sort((a, b) => a.startHour - b.startHour || a.startMinute - b.startMinute)
 })
 
-const teams = [
-  { name: 'All Team', color: 'bg-violet-500' },
-  { name: 'Team Project', color: 'bg-blue-500' },
-]
+// ─── Dynamic: Upcoming (next 7 days from today) ───
+const upcomingEvents = computed(() => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const next7 = new Date(today)
+  next7.setDate(next7.getDate() + 7)
 
-const timeBreakdown = [
-  { label: 'Project', color: 'bg-red-500', width: 'w-3/4' },
-  { label: 'Meeting', color: 'bg-amber-500', width: 'w-1/2' },
-  { label: 'Education', color: 'bg-[#478FC8]', width: 'w-1/3' },
-]
+  return [...events.value]
+    .filter(e => {
+      const d = new Date(e.date)
+      d.setHours(0, 0, 0, 0)
+      return d >= today && d <= next7
+    })
+    .sort((a, b) => a.date.getTime() - b.date.getTime() || a.startHour - b.startHour)
+    .slice(0, 5)
+})
 
+// ─── Dynamic: Projects from workspace (replaces hardcoded teams) ───
+const projectColors = ['bg-[#478FC8]', 'bg-violet-500', 'bg-emerald-500', 'bg-orange-500', 'bg-rose-500']
+const activeProjects = computed(() => projectStore.runningProjects)
+
+// ─── Dynamic: Task breakdown by priority (replaces hardcoded timeBreakdown) ───
+const taskBreakdown = computed(() => {
+  const total = rawTasks.value.length || 1
+  const counts = { HIGH: 0, MEDIUM: 0, LOW: 0, URGENT: 0 }
+
+  for (const t of rawTasks.value) {
+    const p = (t.priority || 'MEDIUM').toUpperCase()
+    if (p in counts) counts[p as keyof typeof counts]++
+  }
+
+  return [
+    { label: 'Urgent', color: 'bg-violet-500', count: counts.URGENT, pct: Math.round((counts.URGENT / total) * 100) },
+    { label: 'High', color: 'bg-red-500', count: counts.HIGH, pct: Math.round((counts.HIGH / total) * 100) },
+    { label: 'Medium', color: 'bg-[#478FC8]', count: counts.MEDIUM, pct: Math.round((counts.MEDIUM / total) * 100) },
+    { label: 'Low', color: 'bg-orange-500', count: counts.LOW, pct: Math.round((counts.LOW / total) * 100) },
+  ].filter(i => i.count > 0)
+})
+
+// ─── Dynamic: Events count per day for mini-calendar dots ───
+const eventCountByDate = computed(() => {
+  const map = new Map<string, number>()
+  for (const e of events.value) {
+    const key = e.date.toDateString()
+    map.set(key, (map.get(key) || 0) + 1)
+  }
+  return map
+})
+
+function getEventCount(date: Date) {
+  return eventCountByDate.value.get(date.toDateString()) || 0
+}
+
+// ─── Tabs (filter by priority) ───
 const tabs = [
-  { key: 'all' as const, label: 'All Event', icon: CalendarDays },
-  { key: 'project' as const, label: 'Project', icon: Briefcase },
-  { key: 'meeting' as const, label: 'Meeting', icon: Users },
-  { key: 'education' as const, label: 'Education', icon: GraduationCap },
+  { key: 'all' as const, label: 'All Tasks', icon: CalendarDays },
+  { key: 'high' as const, label: 'High', icon: Flag },
+  { key: 'medium' as const, label: 'Medium', icon: Clock },
+  { key: 'low' as const, label: 'Low', icon: Briefcase },
 ]
+
+function formatRelativeDate(date: Date): string {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  const diff = Math.round((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  if (diff === 0) return 'Today'
+  if (diff === 1) return 'Tomorrow'
+  if (diff < 7) return d.toLocaleDateString('en-US', { weekday: 'short' })
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
 </script>
 
 <template>
@@ -294,7 +374,7 @@ const tabs = [
                 <tr v-for="(week, wi) in calendarWeeks" :key="wi">
                   <td v-for="(cell, ci) in week" :key="ci" class="p-0 text-center">
                     <button :class="[
-                      'mx-auto flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium transition-colors',
+                      'relative mx-auto flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium transition-colors',
                       !cell.current && 'text-gray-300 dark:text-gray-600',
                       cell.current && !isSelected(cell.date) && !isToday(cell.date) &&
                       'text-gray-700 dark:text-gray-300 hover:bg-[#EDF4FF]',
@@ -304,6 +384,14 @@ const tabs = [
                       'bg-[#478FC8] text-white font-bold shadow-sm'
                     ]" @click="selectDay(cell.date)">
                       {{ cell.day }}
+                      <!-- Event dot indicator -->
+                      <span
+                        v-if="getEventCount(cell.date) > 0"
+                        :class="[
+                          'absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full',
+                          isSelected(cell.date) ? 'bg-white' : 'bg-[#478FC8]'
+                        ]"
+                      />
                     </button>
                   </td>
                 </tr>
@@ -313,56 +401,94 @@ const tabs = [
 
           <UiSeparator class="my-4" />
 
-          <!-- Team -->
+          <!-- Projects (dynamic, replaces hardcoded Teams) -->
           <div class="mb-5">
             <div class="flex items-center justify-between mb-3">
-              <h3 class="text-sm font-bold text-gray-900 dark:text-white">Team</h3>
-              <button class="rounded-md p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition">
-                <Plus class="h-4 w-4" />
-              </button>
+              <h3 class="text-sm font-bold text-gray-900 dark:text-white">Projects</h3>
+              <span class="text-xs text-gray-400 dark:text-gray-500">{{ activeProjects.length }}</span>
             </div>
-            <ul class="space-y-2">
-              <li v-for="team in teams" :key="team.name" class="flex items-center gap-2">
-                <span :class="['h-2 w-2 rounded-full', team.color]" />
-                <span class="text-sm text-gray-600 dark:text-gray-400">{{ team.name }}</span>
+            <ul v-if="activeProjects.length" class="space-y-2">
+              <li v-for="(project, idx) in activeProjects.slice(0, 5)" :key="project.id" class="flex items-center gap-2">
+                <span :class="['h-2 w-2 rounded-full shrink-0', projectColors[idx % projectColors.length]]" />
+                <span class="text-sm text-gray-600 dark:text-gray-400 truncate">{{ project.name }}</span>
+                <span class="ml-auto text-[11px] text-gray-400 dark:text-gray-500">
+                  {{ project.totalTasks ?? 0 }} tasks
+                </span>
               </li>
             </ul>
+            <p v-else class="text-xs text-gray-400 dark:text-gray-500">No active projects</p>
           </div>
 
           <UiSeparator class="my-4" />
 
-          <!-- Time Breakdown -->
+          <!-- Task Breakdown by Priority (dynamic, replaces hardcoded timeBreakdown) -->
           <div class="mb-5">
-            <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-3">Time Breakdown</h3>
-            <ul class="space-y-2.5">
-              <li v-for="item in timeBreakdown" :key="item.label" class="flex items-center gap-3">
+            <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-3">Task Breakdown</h3>
+            <ul v-if="taskBreakdown.length" class="space-y-2.5">
+              <li v-for="item in taskBreakdown" :key="item.label" class="flex items-center gap-3">
                 <span :class="['h-2 w-2 shrink-0 rounded-full', item.color]" />
-                <span class="w-20 text-sm text-gray-600 dark:text-gray-400">{{ item.label }}</span>
+                <span class="w-16 text-sm text-gray-600 dark:text-gray-400">{{ item.label }}</span>
                 <div class="flex-1 h-2 rounded-full bg-gray-100 dark:bg-gray-800">
-                  <div :class="['h-full rounded-full', item.color, item.width]" />
+                  <div
+                    :class="['h-full rounded-full transition-all', item.color]"
+                    :style="{ width: item.pct + '%' }"
+                  />
                 </div>
+                <span class="text-[11px] text-gray-400 dark:text-gray-500 w-6 text-right">{{ item.count }}</span>
               </li>
             </ul>
+            <p v-else class="text-xs text-gray-400 dark:text-gray-500">No tasks yet</p>
           </div>
 
           <UiSeparator class="my-4" />
 
-          <!-- Upcoming Schedule -->
-          <div>
-            <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-3">Upcoming Schedule</h3>
+          <!-- Selected Day Events -->
+          <div class="mb-5">
+            <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-3">
+              {{ isToday(selectedDate) ? "Today's Tasks" : formattedDate }}
+            </h3>
             <ul class="space-y-2">
-              <li v-for="event in upcomingEvents" :key="event.id"
-                :class="['flex items-center gap-3 rounded-lg border border-gray-100 dark:border-gray-700 p-3 border-l-[3px]', event.color]">
+              <li v-for="event in selectedDayEvents" :key="event.id"
+                :class="['flex items-start gap-3 rounded-lg border border-gray-100 dark:border-gray-700 p-3 border-l-[3px]', event.color]">
                 <div class="flex-1 min-w-0">
                   <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ event.title }}</p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ formatEventTime(event) }}</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ formatEventTime(event) }}</p>
+                  <p v-if="event.assigneeName" class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+                    {{ event.assigneeName }}
+                  </p>
                 </div>
-                <button class="shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                  <MoreVertical class="h-4 w-4" />
-                </button>
               </li>
-              <li v-if="upcomingEvents.length === 0" class="text-center py-4">
-                <p class="text-xs text-gray-400 dark:text-gray-500">No events for this day</p>
+              <li v-if="selectedDayEvents.length === 0" class="text-center py-4">
+                <CalendarDays class="h-8 w-8 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
+                <p class="text-xs text-gray-400 dark:text-gray-500">No tasks for this day</p>
+              </li>
+            </ul>
+          </div>
+
+          <UiSeparator class="my-4" />
+
+          <!-- Upcoming (next 7 days) -->
+          <div>
+            <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-3">Upcoming</h3>
+            <ul class="space-y-2">
+              <li v-for="event in upcomingEvents" :key="event.id"
+                class="flex items-center gap-2.5 py-1.5">
+                <span
+                  :class="['h-1.5 w-1.5 rounded-full shrink-0',
+                    event.priority === 'URGENT' ? 'bg-violet-500' :
+                    event.priority === 'HIGH' ? 'bg-red-500' :
+                    event.priority === 'MEDIUM' ? 'bg-[#478FC8]' : 'bg-orange-500'
+                  ]"
+                />
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm text-gray-700 dark:text-gray-300 truncate">{{ event.title }}</p>
+                </div>
+                <span class="text-[11px] text-gray-400 dark:text-gray-500 shrink-0">
+                  {{ formatRelativeDate(event.date) }}
+                </span>
+              </li>
+              <li v-if="upcomingEvents.length === 0" class="text-center py-3">
+                <p class="text-xs text-gray-400 dark:text-gray-500">No upcoming tasks</p>
               </li>
             </ul>
           </div>
@@ -374,7 +500,7 @@ const tabs = [
         <UiCard class="p-5 lg:p-6">
           <!-- Tabs & Date nav -->
           <div class="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <!-- Event type tabs -->
+            <!-- Priority filter tabs -->
             <div class="flex items-center gap-1 overflow-x-auto">
               <button v-for="tab in tabs" :key="tab.key" :class="[
                 'flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors',
@@ -401,10 +527,6 @@ const tabs = [
                   <ChevronRight class="h-4 w-4" />
                 </button>
               </div>
-              <UiButton variant="outline" size="sm" class="gap-1.5">
-                <Filter class="h-3.5 w-3.5" />
-                Filter
-              </UiButton>
             </div>
           </div>
 
@@ -420,7 +542,7 @@ const tabs = [
               <div class="flex items-center justify-center h-[600px]">
                 <div class="text-center">
                   <div
-                    class="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-lime-500" />
+                    class="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-[#478FC8]" />
                   <p class="text-sm text-gray-400 dark:text-gray-500">Loading calendar...</p>
                 </div>
               </div>
@@ -464,12 +586,12 @@ const tabs = [
 
 /* Today's header highlight */
 .vuecal-wrapper .vuecal .vuecal__heading .vuecal__heading-cell--today {
-  color: rgb(101 163 13);
+  color: #478FC8;
   font-weight: 700;
 }
 
 .dark .vuecal-wrapper .vuecal .vuecal__heading .vuecal__heading-cell--today {
-  color: rgb(163 230 53);
+  color: #6db3e8;
 }
 
 /* Time column */
@@ -500,16 +622,16 @@ const tabs = [
 
 /* Today cell */
 .vuecal-wrapper .vuecal .vuecal__cell--today {
-  background: rgba(163, 230, 53, 0.04);
+  background: rgba(71, 143, 200, 0.04);
 }
 
 .dark .vuecal-wrapper .vuecal .vuecal__cell--today {
-  background: rgba(163, 230, 53, 0.06);
+  background: rgba(71, 143, 200, 0.06);
 }
 
 /* Current time line */
-.vuecal-wrapper .vuecal .vuecal__now-line { 
-  border-color: rgb(132 204 22);
+.vuecal-wrapper .vuecal .vuecal__now-line {
+  border-color: #478FC8;
   z-index: 10;
 }
 
@@ -531,39 +653,51 @@ const tabs = [
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
 }
 
-/* Event type: Project */
-.vuecal-wrapper .vuecal .vuecal__event.event-project {
-  border-left-color: rgb(132 204 22);
-  background: rgba(132, 204, 22, 0.1);
+/* Event type: High priority */
+.vuecal-wrapper .vuecal .vuecal__event.event-high {
+  border-left-color: rgb(239 68 68);
+  background: rgba(239, 68, 68, 0.1);
   color: rgb(17 24 39);
 }
 
-.dark .vuecal-wrapper .vuecal .vuecal__event.event-project {
-  background: rgba(132, 204, 22, 0.15);
+.dark .vuecal-wrapper .vuecal .vuecal__event.event-high {
+  background: rgba(239, 68, 68, 0.15);
   color: rgb(255 255 255);
 }
 
-/* Event type: Meeting */
-.vuecal-wrapper .vuecal .vuecal__event.event-meeting {
-  border-left-color: rgb(245 158 11);
-  background: rgba(245, 158, 11, 0.1);
+/* Event type: Urgent */
+.vuecal-wrapper .vuecal .vuecal__event.event-urgent {
+  border-left-color: rgb(139 92 246);
+  background: rgba(139, 92, 246, 0.1);
   color: rgb(17 24 39);
 }
 
-.dark .vuecal-wrapper .vuecal .vuecal__event.event-meeting {
-  background: rgba(245, 158, 11, 0.15);
+.dark .vuecal-wrapper .vuecal .vuecal__event.event-urgent {
+  background: rgba(139, 92, 246, 0.15);
   color: rgb(255 255 255);
 }
 
-/* Event type: Education */
-.vuecal-wrapper .vuecal .vuecal__event.event-education {
-  border-left-color: rgb(59 130 246);
-  background: rgba(59, 130, 246, 0.1);
+/* Event type: Medium priority */
+.vuecal-wrapper .vuecal .vuecal__event.event-medium {
+  border-left-color: #478FC8;
+  background: rgba(71, 143, 200, 0.1);
   color: rgb(17 24 39);
 }
 
-.dark .vuecal-wrapper .vuecal .vuecal__event.event-education {
-  background: rgba(59, 130, 246, 0.15);
+.dark .vuecal-wrapper .vuecal .vuecal__event.event-medium {
+  background: rgba(71, 143, 200, 0.15);
+  color: rgb(255 255 255);
+}
+
+/* Event type: Low priority */
+.vuecal-wrapper .vuecal .vuecal__event.event-low {
+  border-left-color: rgb(249 115 22);
+  background: rgba(249, 115, 22, 0.1);
+  color: rgb(17 24 39);
+}
+
+.dark .vuecal-wrapper .vuecal .vuecal__event.event-low {
+  background: rgba(249, 115, 22, 0.15);
   color: rgb(255 255 255);
 }
 
@@ -632,11 +766,11 @@ const tabs = [
 
 /* Selected cell highlight */
 .vuecal-wrapper .vuecal .vuecal__cell--selected {
-  background: rgba(163, 230, 53, 0.06);
+  background: rgba(71, 143, 200, 0.06);
 }
 
 .dark .vuecal-wrapper .vuecal .vuecal__cell--selected {
-  background: rgba(163, 230, 53, 0.08);
+  background: rgba(71, 143, 200, 0.08);
 }
 
 /* Scrollable body height */
