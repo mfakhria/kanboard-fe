@@ -33,8 +33,8 @@ const menuItems = computed(() => [
   { icon: FolderKanban, label: 'Projects', href: '/project' },
   { icon: CheckSquare, label: 'Tasks', href: '/tasks', badge: badgeLabel.value },
   { icon: Calendar, label: 'Calendar', href: '/calendar' },
-  { icon: BarChart3, label: 'Analytics', href: '/dashboard/analytics' },
-  { icon: Users, label: 'Team', href: '/dashboard/team' },
+  { icon: BarChart3, label: 'Analytics', href: '/analytics' },
+  { icon: Users, label: 'Team', href: '/team' },
 ])
 
 const generalItems = [
