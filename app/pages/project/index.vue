@@ -351,6 +351,14 @@ const newProjectVisibility = ref<'PUBLIC' | 'PRIVATE'>('PUBLIC')
 const isCreatingProject = ref(false)
 
 const wsMembers = computed(() => workspaceStore.members)
+const projectPicOptions = computed(() => wsMembers.value.map(m => ({
+  label: m.user?.name || m.userId,
+  value: m.userId,
+})))
+const visibilityOptions = [
+  { label: 'Public - Visible to all workspace members', value: 'PUBLIC' },
+  { label: 'Private - Only invited members', value: 'PRIVATE' },
+]
 
 function resetCreateForm() {
   newProjectName.value = ''
@@ -815,25 +823,22 @@ function getInitials(name: string): string {
         </div>
         <div>
           <UiLabel for="project-pic">PIC (Person In Charge)</UiLabel>
-          <select
+          <UiSelect
             id="project-pic"
             v-model="newProjectPicId"
-            class="mt-1.5 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            <option value="">-- Select PIC --</option>
-            <option v-for="m in wsMembers" :key="m.userId" :value="m.userId">{{ m.user?.name || m.userId }}</option>
-          </select>
+            :options="projectPicOptions"
+            placeholder="-- Select PIC --"
+            class="mt-1.5"
+          />
         </div>
         <div>
           <UiLabel for="project-visibility">Visibility</UiLabel>
-          <select
+          <UiSelect
             id="project-visibility"
             v-model="newProjectVisibility"
-            class="mt-1.5 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            <option value="PUBLIC">Public — Visible to all workspace members</option>
-            <option value="PRIVATE">Private — Only invited members</option>
-          </select>
+            :options="visibilityOptions"
+            class="mt-1.5"
+          />
         </div>
         <div class="flex justify-end gap-3 pt-2">
           <UiButton variant="outline" type="button" @click="resetCreateForm(); close()">Cancel</UiButton>

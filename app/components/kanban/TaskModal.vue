@@ -40,8 +40,9 @@ const columns = computed(() => kanbanStore.columns)
 const selectedColumnId = ref(props.task.columnId)
 
 // ─── Assignee ───
+const initialAssigneeId = props.task.assignees[0]?.id ?? null
 const selectedAssigneeId = ref<string | null>(
-  props.task.assignees.length > 0 ? props.task.assignees[0].id : null,
+  initialAssigneeId,
 )
 const showAssigneeDropdown = ref(false)
 
@@ -83,7 +84,7 @@ const handleSave = async () => {
     })
 
     // Assign/unassign member if changed
-    const currentAssigneeIdValue = props.task.assignees.length > 0 ? props.task.assignees[0].id : null
+    const currentAssigneeIdValue = props.task.assignees[0]?.id ?? null
     if (selectedAssigneeId.value !== currentAssigneeIdValue) {
       await kanbanApi.assignTask(props.task.id, selectedAssigneeId.value)
       // Re-fetch board to get updated assignee data

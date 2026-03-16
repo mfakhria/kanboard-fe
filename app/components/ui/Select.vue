@@ -18,7 +18,7 @@ const emit = defineEmits<{
 
 const classes = computed(() =>
   cn(
-    'flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+    'flex h-9 w-full items-center justify-between rounded-md border border-input bg-background text-foreground px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 dark:[color-scheme:dark]',
     props.class,
   ),
 )
@@ -30,8 +30,8 @@ const classes = computed(() =>
     :value="modelValue"
     @change="emit('update:modelValue', ($event.target as HTMLSelectElement).value)"
   >
-    <option value="" disabled>{{ placeholder }}</option>
-    <option v-for="opt in options" :key="opt.value" :value="opt.value">
+    <option value="" disabled class="bg-white text-gray-500 dark:bg-gray-900 dark:text-gray-400">{{ placeholder }}</option>
+    <option v-for="opt in options" :key="opt.value" :value="opt.value" class="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100">
       {{ opt.label }}
     </option>
   </select>
