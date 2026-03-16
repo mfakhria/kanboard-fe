@@ -412,6 +412,16 @@ const userInitials = computed(() => {
   --md-profile-email: #94a3b8;
 }
 
+.mobile-drawer-root :deep(.overflow-y-auto) {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.mobile-drawer-root :deep(.overflow-y-auto::-webkit-scrollbar) {
+  width: 0;
+  height: 0;
+}
+
 :root.dark .mobile-drawer-root {
   --md-section-label: #64748b;
   --md-item-icon-bg: #0f172a;

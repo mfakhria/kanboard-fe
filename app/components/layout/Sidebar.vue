@@ -633,6 +633,16 @@ const userInitials = computed(() => {
   box-shadow: 2px 0 12px rgba(0, 0, 0, 0.04);
 }
 
+.sidebar-root :deep(.overflow-y-auto) {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.sidebar-root :deep(.overflow-y-auto::-webkit-scrollbar) {
+  width: 0;
+  height: 0;
+}
+
 :root.dark .sidebar-root {
   --sb-section-label: #64748b;
   --sb-item-hover-bg: #0f172a;
