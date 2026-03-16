@@ -32,7 +32,7 @@ const editForm = reactive({
   title: props.task.title,
   description: props.task.description || '',
   priority: props.task.priority,
-  dueDate: props.task.dueDate ? new Date(props.task.dueDate).toISOString().split('T')[0] : '',
+  dueDate: props.task.dueDate ? new Date(props.task.dueDate).toISOString().slice(0, 16) : '',
 })
 
 // ─── Column / Status ───
@@ -193,7 +193,7 @@ function handleClickOutside(e: MouseEvent) {
             </label>
             <input
               v-model="editForm.dueDate"
-              type="date"
+              type="datetime-local"
               class="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#478FC8] focus:border-transparent"
             />
           </div>

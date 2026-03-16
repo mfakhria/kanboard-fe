@@ -167,10 +167,19 @@ const priorityEventColors: Record<string, { color: string; borderColor: string; 
   LOW: { color: 'bg-amber-100 dark:bg-amber-900/30', borderColor: 'border-amber-400', textColor: 'text-amber-800 dark:text-amber-300' },
 }
 
-function getEventTime(_dayTasks: any[], index: number) {
+function getEventTime(task: any, _dayTasks: any[], index: number) {
+  const due = new Date(task.dueDate)
+  const hour = due.getHours()
+  const minutes = due.getMinutes()
+  // If the task has a real time set (not midnight), use it
+  if (hour !== 0 || minutes !== 0) {
+    const startHour = hour + minutes / 60
+    return { startHour, endHour: startHour + 1 }
+  }
+  // Fallback for tasks without a time: stagger them starting at 8am
   const baseHour = 8
-  const hour = baseHour + (index * 2) % 10
-  return { startHour: hour, endHour: hour + 1 }
+  const fallbackHour = baseHour + (index * 2) % 10
+  return { startHour: fallbackHour, endHour: fallbackHour + 1 }
 }
 
 async function loadCalendarEvents() {
@@ -194,7 +203,7 @@ async function loadCalendarEvents() {
       const key = due.toDateString()
       const dayGroup = byDate.get(key) || []
       const idx = dayGroup.indexOf(t)
-      const time = getEventTime(dayGroup, idx)
+      const time = getEventTime(t, dayGroup, idx)
       const priority = (t.priority || 'MEDIUM').toUpperCase()
       const colors = priorityEventColors[priority] ?? priorityEventColors.MEDIUM!
       const ws = getWeekStart(due)
