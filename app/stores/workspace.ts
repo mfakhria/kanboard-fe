@@ -96,6 +96,14 @@ export const useWorkspaceStore = defineStore('workspace', {
     async inviteMember(workspaceId: string, payload: { email: string; role?: 'ADMIN' | 'MEMBER' | 'VIEWER' }) {
       try {
         await workspaceApi.inviteMember(workspaceId, { email: payload.email, role: payload.role || 'MEMBER' })
+
+        if (import.meta.client) {
+          window.dispatchEvent(new CustomEvent('app:success-alert', {
+            detail: {
+              message: `Invitation sent to ${payload.email}.`,
+            },
+          }))
+        }
       } catch (error) {
         console.error('Failed to invite member:', error)
         throw error

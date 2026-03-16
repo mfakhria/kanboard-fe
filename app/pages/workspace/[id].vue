@@ -24,7 +24,7 @@ const form = reactive({
 function showWorkspaceAccessDenied() {
   if (!import.meta.client) return
   window.dispatchEvent(new CustomEvent('app:error-alert', {
-    detail: { message: 'Anda belum diundang ke workspace ini.' },
+    detail: { message: 'You have not been invited to this workspace.' },
   }))
 }
 
@@ -118,10 +118,10 @@ async function handleSave() {
     const message = error?.response?.data?.message
     if (status === 403) {
       saveError.value = Array.isArray(message)
-        ? String(message[0] || 'Anda tidak dapat mengedit workspace milik user lain.')
-        : String(message || 'Anda tidak dapat mengedit workspace milik user lain.')
+        ? String(message[0] || 'You cannot edit another user\'s workspace.')
+        : String(message || 'You cannot edit another user\'s workspace.')
     } else {
-      saveError.value = 'Gagal menyimpan perubahan workspace. Coba lagi.'
+      saveError.value = 'Failed to save workspace changes. Please try again.'
     }
   } finally {
     isSaving.value = false

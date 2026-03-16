@@ -27,18 +27,18 @@ function toErrorMessage(error: any): string {
   }
 
   if (status === 403) {
-    return 'Anda tidak memiliki izin untuk melakukan aksi ini.'
+    return 'You do not have permission to perform this action.'
   }
 
   if (status === 404) {
-    return 'Data atau endpoint tidak ditemukan.'
+    return 'The requested data or endpoint was not found.'
   }
 
   if (status === 500) {
-    return 'Terjadi kesalahan server. Silakan coba lagi.'
+    return 'A server error occurred. Please try again.'
   }
 
-  return 'Terjadi kesalahan. Silakan coba lagi.'
+  return 'An error occurred. Please try again.'
 }
 
 const api = axios.create({
@@ -117,7 +117,7 @@ api.interceptors.response.use(
       } catch {
         // Clear cookies and redirect to login
         if (import.meta.client) {
-          emitGlobalErrorAlert('Sesi login berakhir. Silakan login kembali.')
+          emitGlobalErrorAlert('Your session has expired. Please sign in again.')
           document.cookie = 'access_token=;path=/;max-age=0'
           document.cookie = 'refresh_token=;path=/;max-age=0'
           window.location.href = '/auth/login'

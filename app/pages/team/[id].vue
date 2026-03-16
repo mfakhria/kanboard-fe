@@ -44,7 +44,7 @@ const teamPhoto = ref('')
 function showWorkspaceAccessDenied() {
   if (!import.meta.client) return
   window.dispatchEvent(new CustomEvent('app:error-alert', {
-    detail: { message: 'Anda belum diundang ke workspace ini.' },
+    detail: { message: 'You have not been invited to this workspace.' },
   }))
 }
 
@@ -176,10 +176,10 @@ async function handleSaveEdit() {
     const message = error?.response?.data?.message
     if (status === 403) {
       editWorkspaceError.value = Array.isArray(message)
-        ? String(message[0] || 'Anda tidak dapat mengedit workspace milik user lain.')
-        : String(message || 'Anda tidak dapat mengedit workspace milik user lain.')
+        ? String(message[0] || 'You cannot edit another user\'s workspace.')
+        : String(message || 'You cannot edit another user\'s workspace.')
     } else {
-      editWorkspaceError.value = 'Gagal menyimpan perubahan workspace. Coba lagi.'
+      editWorkspaceError.value = 'Failed to save workspace changes. Please try again.'
     }
   } finally {
     isSavingEdit.value = false
