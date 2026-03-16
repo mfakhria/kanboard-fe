@@ -7,13 +7,18 @@ export function useTaskCount() {
   async function fetchTaskCount() {
     const workspaceStore = useWorkspaceStore()
     const wsId = workspaceStore.activeWorkspace?.id
-    if (!wsId) return
+    if (!wsId) {
+      taskCount.value = 0
+      loaded.value = true
+      return
+    }
     try {
       const { data } = await kanbanApi.listTasks(wsId)
       taskCount.value = (data as any[]).length
       loaded.value = true
     } catch {
-      // silently fail
+      taskCount.value = 0
+      loaded.value = true
     }
   }
 

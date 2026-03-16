@@ -11,6 +11,8 @@ import {
   LogOut,
   X,
   Grid2x2,
+  ChevronsUpDown,
+  Check,
 } from 'lucide-vue-next'
 
 const { mobileDrawerOpen, toggleMobileDrawer } = useLayoutState()
@@ -19,14 +21,51 @@ const authStore = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 const { badgeLabel, fetchTaskCount } = useTaskCount()
+const workspaceStore = useWorkspaceStore()
+const showTeamSwitcher = ref(false)
+
+const currentTeam = computed(() => workspaceStore.activeWorkspace)
+const teams = computed(() => {
+  const userId = authStore.currentUser?.id
+  if (!userId) return []
+
+  return workspaceStore.allWorkspaces.filter((workspace: any) => {
+    if (workspace?.ownerId === userId) return true
+    return (workspace?.members ?? []).some((member: any) => member?.user?.id === userId)
+  })
+})
+
+const teamInitial = computed(() => {
+  const name = currentTeam.value?.name
+  if (!name) return 'T'
+  return name.charAt(0).toUpperCase()
+})
+
+async function switchTeam(teamId: string) {
+  const canAccessTeam = teams.value.some(team => team.id === teamId)
+  if (!canAccessTeam) return
+
+  showTeamSwitcher.value = false
+  await workspaceStore.setCurrentWorkspace(teamId)
+  await fetchTaskCount()
+}
 
 onMounted(async () => {
   const workspaceStore = useWorkspaceStore()
   if (!workspaceStore.allWorkspaces.length) {
     await workspaceStore.fetchWorkspaces()
   }
-  await fetchTaskCount()
 })
+
+watch(
+  () => workspaceStore.activeWorkspace?.id,
+  async (workspaceId, prevWorkspaceId) => {
+    if (workspaceId !== prevWorkspaceId) {
+      await fetchTaskCount()
+    }
+  },
+  { immediate: true },
+)
 
 const menuItems = computed(() => [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
@@ -89,7 +128,7 @@ const userInitials = computed(() => {
       enter-to-class="translate-x-0" leave-active-class="transition-transform duration-300"
       leave-from-class="translate-x-0" leave-to-class="-translate-x-full">
       <aside v-if="mobileDrawerOpen"
-        class="fixed left-0 top-0 z-50 h-screen w-[280px] flex flex-col bg-white dark:bg-gray-900 shadow-xl lg:hidden"
+        class="mobile-drawer-root fixed left-0 top-0 z-50 h-screen w-[280px] flex flex-col bg-white dark:bg-gray-900 shadow-xl lg:hidden"
         style="border-right: 1px solid #f1f5f9;">
 
         <!-- Header -->
@@ -118,13 +157,90 @@ const userInitials = computed(() => {
           </button>
         </div>
 
+        <!-- Team Switcher -->
+        <div class="px-2.5 pt-3 pb-1">
+          <button
+            class="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 transition-all duration-150"
+            :class="showTeamSwitcher
+              ? 'bg-[#edf4ff] dark:bg-[#478FC8]/15 ring-1 ring-[#478FC8]/20'
+              : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+            "
+            @click="showTeamSwitcher = !showTeamSwitcher"
+          >
+            <div
+              class="shrink-0 flex items-center justify-center rounded-lg text-white"
+              style="width: 30px; height: 30px; font-size: 12px; font-weight: 800; background: linear-gradient(135deg, #478FC8, #3570A5); box-shadow: 0 2px 8px rgba(71,143,200,0.25);"
+            >
+              {{ teamInitial }}
+            </div>
+            <div class="flex-1 min-w-0 text-left">
+              <p class="truncate" style="font-size: 12.5px; font-weight: 700; color: var(--md-team-name);">
+                {{ currentTeam?.name ?? 'Select Team' }}
+              </p>
+              <p class="truncate" style="font-size: 10px; color: var(--md-team-sub);">
+                {{ teams.length }} team{{ teams.length !== 1 ? 's' : '' }}
+              </p>
+            </div>
+            <ChevronsUpDown style="width: 14px; height: 14px; color: var(--md-item-icon); flex-shrink: 0;" />
+          </button>
+
+          <!-- Team list -->
+          <Transition
+            enter-active-class="transition duration-150 ease-out"
+            enter-from-class="opacity-0 -translate-y-1"
+            enter-to-class="opacity-100 translate-y-0"
+            leave-active-class="transition duration-100 ease-in"
+            leave-from-class="opacity-100 translate-y-0"
+            leave-to-class="opacity-0 -translate-y-1"
+          >
+            <div
+              v-if="showTeamSwitcher"
+              class="mt-1 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-lg overflow-hidden"
+            >
+              <div class="max-h-[200px] overflow-y-auto py-1">
+                <button
+                  v-for="team in teams"
+                  :key="team.id"
+                  class="w-full flex items-center gap-2.5 px-3 py-2 transition-all duration-100"
+                  :class="currentTeam?.id === team.id
+                    ? 'bg-[#edf4ff] dark:bg-[#478FC8]/15'
+                    : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                  "
+                  @click="switchTeam(team.id)"
+                >
+                  <div
+                    class="shrink-0 flex items-center justify-center rounded-lg text-white"
+                    style="width: 26px; height: 26px; font-size: 10.5px; font-weight: 800; background: linear-gradient(135deg, #478FC8, #3570A5);"
+                  >
+                    {{ team.name.charAt(0).toUpperCase() }}
+                  </div>
+                  <span
+                    class="flex-1 text-left truncate"
+                    :style="{
+                      fontSize: '12.5px',
+                      fontWeight: currentTeam?.id === team.id ? 700 : 500,
+                      color: currentTeam?.id === team.id ? 'var(--md-team-active-text)' : 'var(--md-team-item-text)',
+                    }"
+                  >
+                    {{ team.name }}
+                  </span>
+                  <Check
+                    v-if="currentTeam?.id === team.id"
+                    style="width: 14px; height: 14px; color: var(--md-team-active-text); flex-shrink: 0;"
+                  />
+                </button>
+              </div>
+            </div>
+          </Transition>
+        </div>
+
         <!-- Nav -->
         <nav class="flex-1 overflow-y-auto px-2.5 py-4 flex flex-col gap-5">
           <!-- Menu -->
           <div>
             <p
               class="px-2 mb-2 uppercase tracking-widest"
-              style="font-size: 9.5px; font-weight: 700; color: #cbd5e1;"
+              style="font-size: 9.5px; font-weight: 700; color: var(--md-section-label);"
             >
               Menu
             </p>
@@ -136,7 +252,7 @@ const userInitials = computed(() => {
                   ]"
                   :style="
                     isActive(item.href)
-                      ? 'background: linear-gradient(135deg, #e8f4fd 0%, #edf4ff 100%); box-shadow: 0 0 0 1px rgba(71,143,200,0.12) inset;'
+                      ? 'background: var(--md-active-bg); box-shadow: var(--md-active-shadow);'
                       : ''
                   "
                   @click="navigateTo(item.href)"
@@ -156,7 +272,7 @@ const userInitials = computed(() => {
                       height: '30px',
                       background: isActive(item.href)
                         ? 'linear-gradient(135deg, #478FC8 0%, #5BA3D9 100%)'
-                        : '#f8fafc',
+                        : 'var(--md-item-icon-bg)',
                       boxShadow: isActive(item.href) ? '0 4px 10px rgba(71,143,200,0.3)' : 'none',
                     }"
                   >
@@ -165,7 +281,7 @@ const userInitials = computed(() => {
                       :style="{
                         width: '14px',
                         height: '14px',
-                        color: isActive(item.href) ? '#fff' : '#94a3b8',
+                        color: isActive(item.href) ? '#fff' : 'var(--md-item-icon)',
                       }"
                     />
                   </div>
@@ -175,7 +291,7 @@ const userInitials = computed(() => {
                     :style="{
                       fontSize: '13.5px',
                       fontWeight: isActive(item.href) ? 700 : 500,
-                      color: isActive(item.href) ? '#2d6da3' : '#64748b',
+                      color: isActive(item.href) ? 'var(--md-active-text)' : 'var(--md-item-text)',
                     }"
                   >
                     {{ item.label }}
@@ -189,8 +305,8 @@ const userInitials = computed(() => {
                       height: '19px',
                       fontSize: '10.5px',
                       fontWeight: 800,
-                      background: isActive(item.href) ? '#cce4f5' : '#edf4ff',
-                      color: '#478FC8',
+                      background: isActive(item.href) ? 'var(--md-active-badge-bg)' : 'var(--md-badge-bg)',
+                      color: 'var(--md-badge-text)',
                     }"
                   >
                     {{ item.badge }}
@@ -204,7 +320,7 @@ const userInitials = computed(() => {
           <div>
             <p
               class="px-2 mb-2 uppercase tracking-widest"
-              style="font-size: 9.5px; font-weight: 700; color: #cbd5e1;"
+              style="font-size: 9.5px; font-weight: 700; color: var(--md-section-label);"
             >
               General
             </p>
@@ -216,11 +332,11 @@ const userInitials = computed(() => {
                 >
                   <div
                     class="shrink-0 flex items-center justify-center rounded-lg"
-                    style="width: 30px; height: 30px; background: #f8fafc;"
+                    style="width: 30px; height: 30px; background: var(--md-item-icon-bg);"
                   >
-                    <component :is="item.icon" style="width: 14px; height: 14px; color: #94a3b8;" />
+                    <component :is="item.icon" style="width: 14px; height: 14px; color: var(--md-item-icon);" />
                   </div>
-                  <span style="font-size: 13.5px; font-weight: 500; color: #64748b;">
+                  <span style="font-size: 13.5px; font-weight: 500; color: var(--md-item-text);">
                     {{ item.label }}
                   </span>
                 </button>
@@ -233,11 +349,11 @@ const userInitials = computed(() => {
                 >
                   <div
                     class="shrink-0 flex items-center justify-center rounded-lg transition-colors group-hover:!bg-[#fee2e2]"
-                    style="width: 30px; height: 30px; background: #f8fafc;"
+                    style="width: 30px; height: 30px; background: var(--md-item-icon-bg);"
                   >
-                    <LogOut class="transition-colors group-hover:!text-[#ef4444]" style="width: 14px; height: 14px; color: #94a3b8;" />
+                    <LogOut class="transition-colors group-hover:!text-[#ef4444]" style="width: 14px; height: 14px; color: var(--md-item-icon);" />
                   </div>
-                  <span class="transition-colors group-hover:!text-[#ef4444]" style="font-size: 13.5px; font-weight: 500; color: #64748b;">
+                  <span class="transition-colors group-hover:!text-[#ef4444]" style="font-size: 13.5px; font-weight: 500; color: var(--md-item-text);">
                     Logout
                   </span>
                 </button>
@@ -262,10 +378,10 @@ const userInitials = computed(() => {
               />
             </div>
             <div class="flex-1 min-w-0">
-              <p class="truncate" style="font-size: 12.5px; font-weight: 700; color: #1e293b;">
+              <p class="truncate" style="font-size: 12.5px; font-weight: 700; color: var(--md-profile-name);">
                 {{ authStore.currentUser?.name || 'User' }}
               </p>
-              <p class="truncate" style="font-size: 10.5px; color: #94a3b8;">
+              <p class="truncate" style="font-size: 10.5px; color: var(--md-profile-email);">
                 {{ authStore.currentUser?.email || '' }}
               </p>
             </div>
@@ -275,3 +391,43 @@ const userInitials = computed(() => {
     </Transition>
   </Teleport>
 </template>
+
+<style scoped>
+.mobile-drawer-root {
+  --md-section-label: #cbd5e1;
+  --md-item-icon-bg: #f8fafc;
+  --md-item-icon: #94a3b8;
+  --md-item-text: #64748b;
+  --md-active-bg: linear-gradient(135deg, #e8f4fd 0%, #edf4ff 100%);
+  --md-active-shadow: 0 0 0 1px rgba(71, 143, 200, 0.12) inset;
+  --md-active-text: #2d6da3;
+  --md-active-badge-bg: #cce4f5;
+  --md-badge-bg: #edf4ff;
+  --md-badge-text: #478fc8;
+  --md-team-name: #1e293b;
+  --md-team-sub: #94a3b8;
+  --md-team-item-text: #64748b;
+  --md-team-active-text: #478fc8;
+  --md-profile-name: #1e293b;
+  --md-profile-email: #94a3b8;
+}
+
+:root.dark .mobile-drawer-root {
+  --md-section-label: #64748b;
+  --md-item-icon-bg: #0f172a;
+  --md-item-icon: #d1d5db;
+  --md-item-text: #a7b4c8;
+  --md-active-bg: linear-gradient(135deg, rgba(71, 143, 200, 0.28) 0%, rgba(91, 163, 217, 0.2) 100%);
+  --md-active-shadow: 0 0 0 1px rgba(71, 143, 200, 0.32) inset;
+  --md-active-text: #e2f0ff;
+  --md-active-badge-bg: rgba(71, 143, 200, 0.3);
+  --md-badge-bg: rgba(71, 143, 200, 0.2);
+  --md-badge-text: #b8ddff;
+  --md-team-name: #e5e7eb;
+  --md-team-sub: #9ca3af;
+  --md-team-item-text: #cbd5e1;
+  --md-team-active-text: #9fd1fb;
+  --md-profile-name: #e5e7eb;
+  --md-profile-email: #9ca3af;
+}
+</style>

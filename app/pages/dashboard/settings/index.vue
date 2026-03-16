@@ -25,7 +25,7 @@ const tabs: TabItem[] = [
   { id: 'notifications', label: 'Notifications', icon: Bell },
   { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'security', label: 'Security', icon: Shield },
-  { id: 'workspace', label: 'Workspace', icon: Building2 },
+  { id: 'workspace', label: 'Team', icon: Building2 },
 ]
 
 const activeTab = ref<SettingsTab>('profile')

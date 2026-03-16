@@ -36,6 +36,7 @@ import type { Component } from 'vue'
 const { toggleMobileDrawer } = useLayoutState()
 const authStore = useAuthStore()
 const projectStore = useProjectStore()
+const workspaceStore = useWorkspaceStore()
 const route = useRoute()
 const router = useRouter()
 const colorMode = useColorMode()
@@ -183,6 +184,10 @@ function highlightText(text: string, query: string): string | { before: string; 
 }
 
 onMounted(() => {
+  workspaceStore.fetchPendingInvitations().catch(() => {
+    // Handled by global API alert
+  })
+
   const onKey = (e: KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); searchInputRef.value?.focus(); searchOpen.value = true }
   }
@@ -216,25 +221,76 @@ function getQaColor(i: number): { bg: string; accent: string } {
 
 // ── Notifications ─────────────────────────────────────────────────────────────
 const notifOpen = ref(false)
-const notifList = ref([
+const respondingInvitationId = ref<string | null>(null)
+
+interface NotificationItem {
+  id: string | number
+  type: string
+  title: string
+  desc: string
+  time: string
+  read: boolean
+  invitationId?: string
+}
+
+const baseNotifList = ref<NotificationItem[]>([
   { id: 1, type: 'success', title: 'Task completed',            desc: '"Design Homepage" marked as done',    time: '2m ago',    read: false },
   { id: 2, type: 'alert',   title: 'Overdue task',              desc: '"API Integration" is 2 days overdue', time: '1h ago',    read: false },
-  { id: 3, type: 'info',    title: 'New member joined',         desc: 'Rina joined the workspace',           time: '3h ago',    read: true },
+  { id: 3, type: 'info',    title: 'New member joined',         desc: 'Rina joined the team',           time: '3h ago',    read: true },
   { id: 4, type: 'success', title: 'Project milestone reached', desc: 'Phase 1 of "Kanban App" completed',   time: 'Yesterday', read: true },
 ])
 
+const invitationNotifList = computed<NotificationItem[]>(() =>
+  workspaceStore.invitations.map((inv) => ({
+    id: `workspace-invite-${inv.id}`,
+    invitationId: inv.id,
+    type: 'workspace_invite',
+    title: `Undangan team: ${inv.workspace.name}`,
+    desc: `${inv.inviter.name} mengundang Anda sebagai ${inv.role}.`,
+    time: new Date(inv.createdAt).toLocaleString(),
+    read: false,
+  })),
+)
+
+const notifList = computed(() => [...invitationNotifList.value, ...baseNotifList.value])
 const unreadCount = computed(() => notifList.value.filter(n => !n.read).length)
-const markAllRead = () => { notifList.value = notifList.value.map(n => ({ ...n, read: true })) }
+const markAllRead = () => {
+  baseNotifList.value = baseNotifList.value.map(n => ({ ...n, read: true }))
+}
+
+watch(notifOpen, (open) => {
+  if (!open) return
+  workspaceStore.fetchPendingInvitations().catch(() => {
+    // Handled by global API alert
+  })
+})
+
+async function respondWorkspaceInvitation(invitationId: string, action: 'accept' | 'decline') {
+  if (respondingInvitationId.value) return
+  respondingInvitationId.value = invitationId
+  try {
+    await workspaceStore.respondInvitation(invitationId, action)
+    await workspaceStore.fetchPendingInvitations()
+  } finally {
+    respondingInvitationId.value = null
+  }
+}
+
+function getInvitationId(item: NotificationItem): string {
+  return item.invitationId || ''
+}
 
 const notifIconMapLight: Record<string, { bg: string; color: string; icon: Component }> = {
   success: { bg: 'linear-gradient(135deg,#ecfdf5,#d1fae5)', color: '#059669', icon: CheckCircle2 },
   alert:   { bg: 'linear-gradient(135deg,#fff1f2,#ffe4e6)', color: '#dc2626', icon: AlertCircle },
   info:    { bg: 'linear-gradient(135deg,#edf4ff,#dbeafe)', color: '#478FC8', icon: Zap },
+  workspace_invite: { bg: 'linear-gradient(135deg,#edf4ff,#dbeafe)', color: '#478FC8', icon: Users },
 }
 const notifIconMapDark: Record<string, { bg: string; color: string; icon: Component }> = {
   success: { bg: 'linear-gradient(135deg,#064e3b,#065f46)', color: '#34d399', icon: CheckCircle2 },
   alert:   { bg: 'linear-gradient(135deg,#450a0a,#7f1d1d)', color: '#fca5a5', icon: AlertCircle },
   info:    { bg: 'linear-gradient(135deg,#1e3a5f,#1e3a5f)', color: '#93c5fd', icon: Zap },
+  workspace_invite: { bg: 'linear-gradient(135deg,#1e3a5f,#1e3a5f)', color: '#93c5fd', icon: Users },
 }
 const defaultNotifIconLight = notifIconMapLight['info']!
 const defaultNotifIconDark = notifIconMapDark['info']!
@@ -259,7 +315,7 @@ function handleLogout() {
 
 <template>
   <!-- Overlay for dropdowns -->
-  <div v-if="notifOpen || profileOpen" class="fixed inset-0 z-40" @click="closeAll" />
+  <div v-if="notifOpen || profileOpen" class="fixed inset-0 z-20" @click="closeAll" />
 
   <!-- ── Mobile fullscreen search overlay ──────────────────────────────── -->
   <div v-if="mobileSearchOpen" class="fixed inset-0 z-50 flex flex-col bg-white dark:bg-gray-900 sm:hidden">
@@ -392,7 +448,7 @@ function handleLogout() {
         <div>
           <div class="flex items-center gap-1.5">
             <span class="flex items-center gap-[3px] text-[10.5px] font-medium text-gray-400 dark:text-gray-500">
-              <Home style="width: 9px; height: 9px;" /> Workspace
+              <Home style="width: 9px; height: 9px;" /> Team
             </span>
             <ChevronRight style="width: 10px; height: 10px; color: #cbd5e1;" />
             <span class="text-[10.5px] font-semibold text-[#478FC8]">{{ currentPage.label }}</span>
@@ -602,6 +658,22 @@ function handleLogout() {
                     <span class="shrink-0 text-[10.5px] text-gray-400">{{ n.time }}</span>
                   </div>
                   <p class="text-[11.5px] text-gray-500 leading-snug mt-[2px]">{{ n.desc }}</p>
+                  <div v-if="n.type === 'workspace_invite'" class="mt-2 flex items-center gap-2">
+                    <button
+                      class="px-2.5 py-1 rounded-md text-[11px] font-semibold text-white bg-[#478FC8] hover:bg-[#3a7bb3] disabled:opacity-60"
+                      :disabled="respondingInvitationId === getInvitationId(n)"
+                      @click.stop="respondWorkspaceInvitation(getInvitationId(n), 'accept')"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      class="px-2.5 py-1 rounded-md text-[11px] font-semibold border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-60"
+                      :disabled="respondingInvitationId === getInvitationId(n)"
+                      @click.stop="respondWorkspaceInvitation(getInvitationId(n), 'decline')"
+                    >
+                      Decline
+                    </button>
+                  </div>
                 </div>
                 <div v-if="!n.read" class="shrink-0 rounded-full mt-2" style="width: 6px; height: 6px; background: #478FC8;" />
               </div>
@@ -680,6 +752,22 @@ function handleLogout() {
                     <span class="shrink-0 text-[10.5px] text-gray-400">{{ n.time }}</span>
                   </div>
                   <p class="text-[11.5px] text-gray-500 leading-snug mt-[2px]">{{ n.desc }}</p>
+                  <div v-if="n.type === 'workspace_invite'" class="mt-2 flex items-center gap-2">
+                    <button
+                      class="px-2.5 py-1 rounded-md text-[11px] font-semibold text-white bg-[#478FC8] hover:bg-[#3a7bb3] disabled:opacity-60"
+                      :disabled="respondingInvitationId === getInvitationId(n)"
+                      @click.stop="respondWorkspaceInvitation(getInvitationId(n), 'accept')"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      class="px-2.5 py-1 rounded-md text-[11px] font-semibold border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-60"
+                      :disabled="respondingInvitationId === getInvitationId(n)"
+                      @click.stop="respondWorkspaceInvitation(getInvitationId(n), 'decline')"
+                    >
+                      Decline
+                    </button>
+                  </div>
                 </div>
                 <div v-if="!n.read" class="shrink-0 rounded-full mt-2" style="width: 6px; height: 6px; background: #478FC8;" />
               </div>

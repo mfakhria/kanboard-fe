@@ -37,7 +37,7 @@ const faqCategories: FAQCategory[] = [
     items: [
       { id: 'gs1', question: 'How do I create my first project?', answer: 'Navigate to the Projects page from the sidebar, then click the "+ New Project" button in the top-right corner. Fill in the project name, description, and set a deadline. You can also assign team members during creation or add them later.' },
       { id: 'gs2', question: 'What is the Kanban board and how do I use it?', answer: 'The Kanban board is a visual project management tool that organizes tasks into columns like "To Do", "In Progress", and "Done". You can drag and drop tasks between columns to update their status. Click on any project card to open its Kanban board detail view.' },
-      { id: 'gs3', question: 'How do I invite team members to my workspace?', answer: 'Go to the Team page, click "Invite Member", enter their email address, and select a role (Member or Admin). They\'ll receive an email invitation to join your workspace.' },
+      { id: 'gs3', question: 'How do I invite team members?', answer: 'Go to the Team page, click "Invite Member", enter their email address, and select a role (Member or Admin). They\'ll be added to your team and all its projects.' },
       { id: 'gs4', question: 'Can I customize the sidebar layout?', answer: 'Yes! You can collapse or expand the sidebar using the toggle button on its edge. The sidebar remembers your preference across sessions. All navigation items remain accessible in both states via icon-only mode with tooltips.' },
     ],
   },
@@ -74,7 +74,7 @@ const faqCategories: FAQCategory[] = [
     iconColor: '#0891b2',
     iconBg: '#ecfeff',
     items: [
-      { id: 'tm1', question: 'What are the different team roles?', answer: "There are three roles: Owner (full control, billing, can delete workspace), Admin (can manage members, projects, and settings), and Member (can create/edit tasks and view projects they're assigned to)." },
+      { id: 'tm1', question: 'What are the different team roles?', answer: "There are three roles: Owner (full control, billing, can delete team), Admin (can manage members, projects, and settings), and Member (can create/edit tasks and view projects they're assigned to)." },
       { id: 'tm2', question: "How do I change someone's role?", answer: 'On the Team page, find the member\'s card, click the three-dot menu, and select "Edit role". Only Owners and Admins can change roles. Note: there must always be at least one Owner.' },
       { id: 'tm3', question: 'Can I remove a team member?', answer: 'Yes. Click the three-dot menu on the member\'s card and select "Remove". Their tasks will remain but become unassigned. Only Owners and Admins can remove members.' },
     ],
@@ -88,7 +88,7 @@ const faqCategories: FAQCategory[] = [
     items: [
       { id: 'a1', question: 'What metrics does the Analytics page show?', answer: 'The Analytics page displays task completion rates, project progress over time, team workload distribution, overdue task trends, and weekly/monthly/yearly breakdowns with interactive charts.' },
       { id: 'a2', question: 'Can I export analytics data?', answer: 'Yes. On the Analytics page, click the "Export Report" button to download your data as a CSV or PDF file. You can choose the date range and which metrics to include.' },
-      { id: 'a3', question: 'How often is the analytics data updated?', answer: 'Analytics data updates in real-time as tasks and projects are modified. Charts and statistics reflect the latest state of your workspace whenever you visit the page.' },
+      { id: 'a3', question: 'How often is the analytics data updated?', answer: 'Analytics data updates in real-time as tasks and projects are modified. Charts and statistics reflect the latest state of your team whenever you visit the page.' },
     ],
   },
   {
@@ -101,7 +101,7 @@ const faqCategories: FAQCategory[] = [
       { id: 'ac1', question: 'How do I change my password?', answer: 'Go to Settings > Security tab. Enter your current password, then your new password and confirmation. Click "Update Password" to save. We recommend using a strong, unique password.' },
       { id: 'ac2', question: 'How do I enable Two-Factor Authentication?', answer: "Navigate to Settings > Security and toggle on Two-Factor Authentication. You'll be prompted to scan a QR code with an authenticator app (like Google Authenticator or Authy) to complete setup." },
       { id: 'ac3', question: 'Can I change my email or profile information?', answer: 'Yes! Go to Settings > Profile tab where you can update your name, email, phone, location, website, bio, and profile picture.' },
-      { id: 'ac4', question: 'How do I delete my workspace?', answer: 'Go to Settings > Workspace tab, scroll to Data Management, and click "Delete Workspace". This action is irreversible and will permanently remove all projects, tasks, and data. Only Owners can perform this action.' },
+      { id: 'ac4', question: 'How do I delete my team?', answer: 'Go to Settings > Team tab, scroll to Data Management, and click "Delete Team". This action is irreversible and will permanently remove all projects, tasks, and data. Only Owners can perform this action.' },
     ],
   },
 ]

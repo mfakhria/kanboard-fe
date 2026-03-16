@@ -45,7 +45,7 @@ const colors = [
 <template>
   <div class="flex flex-col gap-5">
     <!-- Theme -->
-    <SettingsSection title="Theme" description="Customize the look and feel of your workspace.">
+    <SettingsSection title="Theme" description="Customize the look and feel of your team.">
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <button
           v-for="t in themes"

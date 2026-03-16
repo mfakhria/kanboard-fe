@@ -76,8 +76,8 @@ const guides: Guide[] = [
   },
   {
     id: 'g6',
-    title: 'Workspace Settings & Customization',
-    description: 'Configure your workspace theme, notifications, security preferences, and team settings.',
+    title: 'Team Settings & Customization',
+    description: 'Configure your team theme, notifications, security preferences, and team settings.',
     icon: Settings,
     iconColor: '#64748b',
     iconBg: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',

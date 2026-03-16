@@ -126,7 +126,7 @@ const quickMetrics = computed(() => [
     accent: '#d1fae5',
     label: 'Projects Active',
     value: String(analyticsStore.stats.runningProjects || 0),
-    sub: 'Across all workspaces',
+    sub: 'Across all teams',
   },
 ])
 </script>

@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
 import { workspaceApi } from '~/features/workspace/services/workspace.api'
-import type { Workspace, WorkspaceMember } from '~/features/workspace/types'
+import type { Workspace, WorkspaceMember, WorkspaceInvitation, WorkspaceInvitationAction } from '~/features/workspace/types'
 
 interface WorkspaceState {
   workspaces: Workspace[]
   currentWorkspace: Workspace | null
+  pendingInvitations: WorkspaceInvitation[]
   isLoading: boolean
 }
 
@@ -12,6 +13,7 @@ export const useWorkspaceStore = defineStore('workspace', {
   state: (): WorkspaceState => ({
     workspaces: [],
     currentWorkspace: null,
+    pendingInvitations: [],
     isLoading: false,
   }),
 
@@ -19,6 +21,7 @@ export const useWorkspaceStore = defineStore('workspace', {
     allWorkspaces: (state) => state.workspaces,
     activeWorkspace: (state) => state.currentWorkspace,
     members: (state) => state.currentWorkspace?.members ?? [],
+    invitations: (state) => state.pendingInvitations,
   },
 
   actions: {
@@ -30,7 +33,7 @@ export const useWorkspaceStore = defineStore('workspace', {
 
         // Auto-create a default workspace if user has none
         if (this.workspaces.length === 0) {
-          const created = await this.createWorkspace({ name: 'My Workspace' })
+          const created = await this.createWorkspace({ name: 'My Team' })
           if (created) {
             this.workspaces = [created]
           }
@@ -79,13 +82,46 @@ export const useWorkspaceStore = defineStore('workspace', {
       }
     },
 
+    async updateWorkspace(workspaceId: string, payload: { name?: string; description?: string }) {
+      try {
+        await workspaceApi.update(workspaceId, payload)
+        await this.fetchWorkspaceById(workspaceId)
+        return this.workspaces.find(w => w.id === workspaceId) ?? this.currentWorkspace
+      } catch (error) {
+        console.error('Failed to update workspace:', error)
+        throw error
+      }
+    },
+
     async inviteMember(workspaceId: string, payload: { email: string; role?: 'ADMIN' | 'MEMBER' | 'VIEWER' }) {
       try {
         await workspaceApi.inviteMember(workspaceId, { email: payload.email, role: payload.role || 'MEMBER' })
-        // Re-fetch workspace to get updated members
-        await this.fetchWorkspaceById(workspaceId)
       } catch (error) {
         console.error('Failed to invite member:', error)
+        throw error
+      }
+    },
+
+    async fetchPendingInvitations() {
+      try {
+        const { data } = await workspaceApi.getPendingInvitations()
+        this.pendingInvitations = data as WorkspaceInvitation[]
+      } catch (error) {
+        console.error('Failed to fetch pending invitations:', error)
+        throw error
+      }
+    },
+
+    async respondInvitation(invitationId: string, action: WorkspaceInvitationAction) {
+      try {
+        await workspaceApi.respondInvitation(invitationId, action)
+        this.pendingInvitations = this.pendingInvitations.filter(inv => inv.id !== invitationId)
+
+        if (action === 'accept') {
+          await this.fetchWorkspaces()
+        }
+      } catch (error) {
+        console.error('Failed to respond invitation:', error)
         throw error
       }
     },
@@ -124,9 +160,20 @@ export const useWorkspaceStore = defineStore('workspace', {
       }
     },
 
-    setCurrentWorkspace(workspaceId: string) {
+    async setCurrentWorkspace(workspaceId: string) {
+      const prev = this.currentWorkspace?.id
       this.currentWorkspace = this.workspaces.find(w => w.id === workspaceId) ?? null
       if (this.currentWorkspace) localStorage.setItem('activeWorkspaceId', this.currentWorkspace.id)
+
+      // Re-fetch dependent data when switching to a different team
+      if (prev !== workspaceId && this.currentWorkspace) {
+        const projectStore = useProjectStore()
+        const analyticsStore = useAnalyticsStore()
+        await Promise.all([
+          projectStore.fetchProjects(workspaceId),
+          analyticsStore.fetchAnalytics(workspaceId),
+        ])
+      }
     },
   },
 })

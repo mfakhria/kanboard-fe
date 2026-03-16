@@ -4,6 +4,7 @@ export interface Workspace {
   description?: string
   ownerId: string
   members: WorkspaceMember[]
+  _count?: { projects: number }
   createdAt: string
   updatedAt: string
 }
@@ -27,7 +28,32 @@ export interface CreateWorkspacePayload {
   description?: string
 }
 
+export interface UpdateWorkspacePayload {
+  name?: string
+  description?: string
+}
+
 export interface InviteMemberPayload {
   email: string
   role: 'ADMIN' | 'MEMBER' | 'VIEWER'
 }
+
+export interface WorkspaceInvitation {
+  id: string
+  role: 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER'
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED'
+  createdAt: string
+  workspace: {
+    id: string
+    name: string
+    slug: string
+  }
+  inviter: {
+    id: string
+    name: string
+    email: string
+    avatar?: string
+  }
+}
+
+export type WorkspaceInvitationAction = 'accept' | 'decline'

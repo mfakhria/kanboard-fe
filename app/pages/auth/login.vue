@@ -60,7 +60,7 @@ const handleLogin = async () => {
         Sign in with email
       </h1>
       <p class="text-gray-400" style="font-size: 13.5px; line-height: 1.6">
-        Your all-in-one Kanban workspace.<br />Pick up right where you left off.
+        Your all-in-one Kanban team space.<br />Pick up right where you left off.
       </p>
     </div>
 

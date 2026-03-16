@@ -87,6 +87,11 @@ onMounted(async () => {
   ])
 })
 
+// Re-fetch tasks when active team changes
+watch(() => workspaceStore.activeWorkspace?.id, (newId, oldId) => {
+  if (newId && newId !== oldId) loadTasks()
+})
+
 const filteredTasks = computed(() => {
   return tasks.value.filter((task) => {
     const matchesSearch = !searchQuery.value

@@ -1,4 +1,5 @@
 <template>
+  <UiGlobalAlert />
   <NuxtLayout>
     <NuxtPage />
   </NuxtLayout>

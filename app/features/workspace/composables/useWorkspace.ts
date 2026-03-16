@@ -17,6 +17,7 @@ export const useWorkspace = () => {
     loadWorkspaces,
     loadWorkspace,
     createWorkspace: workspaceStore.createWorkspace,
+    updateWorkspace: workspaceStore.updateWorkspace,
     inviteMember: workspaceStore.inviteMember,
     deleteWorkspace: workspaceStore.deleteWorkspace,
     setCurrentWorkspace: workspaceStore.setCurrentWorkspace,

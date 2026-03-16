@@ -242,6 +242,11 @@ onMounted(async () => {
   })
 })
 
+// Re-fetch calendar events when active team changes
+watch(() => workspaceStore.activeWorkspace?.id, (newId, oldId) => {
+  if (newId && newId !== oldId) loadCalendarEvents()
+})
+
 // ─── Filtered events for the current week ───
 const filteredWeekEvents = computed(() => {
   let filtered = events.value

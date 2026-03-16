@@ -1,5 +1,12 @@
 import api from '~/utils/api'
-import type { Workspace, CreateWorkspacePayload, InviteMemberPayload } from '~/features/workspace/types'
+import type {
+  Workspace,
+  CreateWorkspacePayload,
+  UpdateWorkspacePayload,
+  InviteMemberPayload,
+  WorkspaceInvitation,
+  WorkspaceInvitationAction,
+} from '~/features/workspace/types'
 
 export const workspaceApi = {
   list() {
@@ -12,6 +19,10 @@ export const workspaceApi = {
 
   create(payload: CreateWorkspacePayload) {
     return api.post<Workspace>('/workspaces', payload)
+  },
+
+  update(id: string, payload: UpdateWorkspacePayload) {
+    return api.patch<Workspace>(`/workspaces/${id}`, payload)
   },
 
   delete(id: string) {
@@ -28,5 +39,13 @@ export const workspaceApi = {
 
   assignRole(workspaceId: string, memberId: string, role: string) {
     return api.patch(`/workspaces/${workspaceId}/members/${memberId}/role`, { role })
+  },
+
+  getPendingInvitations() {
+    return api.get<WorkspaceInvitation[]>('/workspaces/invitations/pending')
+  },
+
+  respondInvitation(invitationId: string, action: WorkspaceInvitationAction) {
+    return api.post(`/workspaces/invitations/${invitationId}/${action}`)
   },
 }

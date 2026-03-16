@@ -356,7 +356,7 @@ const projectPicOptions = computed(() => wsMembers.value.map(m => ({
   value: m.userId,
 })))
 const visibilityOptions = [
-  { label: 'Public - Visible to all workspace members', value: 'PUBLIC' },
+  { label: 'Public - Visible to all team members', value: 'PUBLIC' },
   { label: 'Private - Only invited members', value: 'PRIVATE' },
 ]
 
@@ -374,7 +374,7 @@ async function handleCreateProject() {
   if (!newProjectName.value.trim()) return
   const wsId = workspaceStore.activeWorkspace?.id
   if (!wsId) {
-    alert('No workspace selected. Please create or select a workspace first.')
+    alert('No team selected. Please create or select a team first.')
     return
   }
   isCreatingProject.value = true
@@ -794,7 +794,7 @@ function getInitials(name: string): string {
   </LayoutPageContainer>
 
   <!-- Create Project Dialog -->
-  <UiDialog v-model:open="showCreateProject" title="Create Project" description="Add a new project to your workspace.">
+  <UiDialog v-model:open="showCreateProject" title="Create Project" description="Add a new project to your team.">
     <template #default="{ close }">
       <form class="space-y-4" @submit.prevent="handleCreateProject">
         <div>

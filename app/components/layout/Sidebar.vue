@@ -12,6 +12,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Grid2x2,
+  ChevronsUpDown,
+  Check,
 } from 'lucide-vue-next'
 
 const { sidebarCollapsed: collapsed, toggleCollapse } = useLayoutState()
@@ -23,14 +25,67 @@ const { badgeLabel, fetchTaskCount } = useTaskCount()
 
 const ready = ref(false)
 const hoveredItem = ref<string | null>(null)
+const showTeamSwitcher = ref(false)
+const workspaceStore = useWorkspaceStore()
 
 onMounted(async () => {
   nextTick(() => { ready.value = true })
-  const workspaceStore = useWorkspaceStore()
   if (!workspaceStore.allWorkspaces.length) {
     await workspaceStore.fetchWorkspaces()
   }
+})
+
+watch(
+  () => workspaceStore.activeWorkspace?.id,
+  async (workspaceId, prevWorkspaceId) => {
+    if (workspaceId !== prevWorkspaceId) {
+      await fetchTaskCount()
+    }
+  },
+  { immediate: true },
+)
+
+const currentTeam = computed(() => workspaceStore.activeWorkspace)
+const teams = computed(() => {
+  const userId = authStore.currentUser?.id
+  if (!userId) return []
+
+  return workspaceStore.allWorkspaces.filter((workspace: any) => {
+    if (workspace?.ownerId === userId) return true
+    return (workspace?.members ?? []).some((member: any) => member?.user?.id === userId)
+  })
+})
+
+const teamInitial = computed(() => {
+  const name = currentTeam.value?.name
+  if (!name) return 'T'
+  return name.charAt(0).toUpperCase()
+})
+
+async function switchTeam(teamId: string) {
+  const canAccessTeam = teams.value.some(team => team.id === teamId)
+  if (!canAccessTeam) return
+
+  showTeamSwitcher.value = false
+  await workspaceStore.setCurrentWorkspace(teamId)
   await fetchTaskCount()
+}
+
+function handleClickOutsideTeamSwitcher(e: MouseEvent) {
+  const el = (e.target as HTMLElement)?.closest('.team-switcher-root')
+  if (!el) showTeamSwitcher.value = false
+}
+
+watch(showTeamSwitcher, (open) => {
+  if (open) {
+    setTimeout(() => document.addEventListener('click', handleClickOutsideTeamSwitcher), 0)
+  } else {
+    document.removeEventListener('click', handleClickOutsideTeamSwitcher)
+  }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutsideTeamSwitcher)
 })
 
 const menuItems = computed(() => [
@@ -113,6 +168,128 @@ const userInitials = computed(() => {
           Project Management
         </span>
       </div>
+    </div>
+
+    <!-- ── Team Switcher ───────────────────────────────────────── -->
+    <div class="shrink-0 px-2.5 pt-3 pb-1 relative team-switcher-root">
+      <button
+        :class="[
+          'w-full flex items-center gap-2.5 rounded-xl transition-all duration-150',
+          collapsed ? 'justify-center px-0 py-2' : 'px-2.5 py-2',
+          showTeamSwitcher
+            ? 'bg-[#edf4ff] dark:bg-[#478FC8]/15 ring-1 ring-[#478FC8]/20'
+            : 'hover:bg-gray-50 dark:hover:bg-gray-800',
+        ]"
+        @click="showTeamSwitcher = !showTeamSwitcher"
+        @mouseenter="collapsed && (hoveredItem = '__team_switcher')"
+        @mouseleave="hoveredItem = null"
+      >
+        <!-- Team avatar -->
+        <div
+          class="shrink-0 flex items-center justify-center rounded-lg text-white"
+          style="width: 30px; height: 30px; font-size: 12px; font-weight: 800; background: linear-gradient(135deg, #478FC8, #3570A5); box-shadow: 0 2px 8px rgba(71,143,200,0.25);"
+        >
+          {{ teamInitial }}
+        </div>
+
+        <template v-if="!collapsed">
+          <div class="flex-1 min-w-0 text-left">
+            <p
+              class="truncate"
+              style="font-size: 12.5px; font-weight: 700; color: var(--sb-profile-name);"
+            >
+              {{ currentTeam?.name ?? 'Select Team' }}
+            </p>
+            <p class="truncate" style="font-size: 10px; color: var(--sb-profile-email);">
+              {{ teams.length }} team{{ teams.length !== 1 ? 's' : '' }}
+            </p>
+          </div>
+          <ChevronsUpDown
+            style="width: 14px; height: 14px; color: var(--sb-item-icon); flex-shrink: 0;"
+          />
+        </template>
+      </button>
+
+      <!-- Collapsed tooltip -->
+      <div
+        v-if="collapsed && hoveredItem === '__team_switcher'"
+        class="absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 pointer-events-none whitespace-nowrap"
+      >
+        <div
+          class="px-2.5 py-1.5 rounded-lg shadow-xl"
+          style="font-size: 12px; font-weight: 600; background: #1e293b; color: #f1f5f9;"
+        >
+          {{ currentTeam?.name ?? 'Select Team' }}
+          <div
+            class="absolute right-full top-1/2 -translate-y-1/2"
+            style="border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-right: 5px solid #1e293b;"
+          />
+        </div>
+      </div>
+
+      <!-- Dropdown -->
+      <Transition
+        enter-active-class="transition duration-150 ease-out"
+        enter-from-class="opacity-0 scale-95"
+        enter-to-class="opacity-100 scale-100"
+        leave-active-class="transition duration-100 ease-in"
+        leave-from-class="opacity-100 scale-100"
+        leave-to-class="opacity-0 scale-95"
+      >
+        <div
+          v-if="showTeamSwitcher"
+          :class="[
+            'absolute z-50 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-xl overflow-hidden',
+            collapsed ? 'left-full ml-2 top-0' : 'left-2.5 right-2.5 top-full mt-1',
+          ]"
+          :style="collapsed ? 'width: 220px;' : ''"
+        >
+          <div class="px-3 py-2 border-b border-gray-100 dark:border-gray-800">
+            <p style="font-size: 10.5px; font-weight: 700; color: var(--sb-section-label);" class="uppercase tracking-wider">
+              Switch Team
+            </p>
+          </div>
+          <div class="max-h-[240px] overflow-y-auto py-1">
+            <button
+              v-for="team in teams"
+              :key="team.id"
+              class="w-full flex items-center gap-2.5 px-3 py-2 transition-all duration-100"
+              :class="[
+                currentTeam?.id === team.id
+                  ? 'bg-[#edf4ff] dark:bg-[#478FC8]/15'
+                  : 'hover:bg-gray-50 dark:hover:bg-gray-800',
+              ]"
+              @click="switchTeam(team.id)"
+            >
+              <div
+                class="shrink-0 flex items-center justify-center rounded-lg text-white"
+                style="width: 26px; height: 26px; font-size: 10.5px; font-weight: 800; background: linear-gradient(135deg, #478FC8, #3570A5);"
+              >
+                {{ team.name.charAt(0).toUpperCase() }}
+              </div>
+              <div class="flex-1 min-w-0 text-left">
+                <p
+                  class="truncate"
+                  :style="{
+                    fontSize: '12.5px',
+                    fontWeight: currentTeam?.id === team.id ? 700 : 500,
+                    color: currentTeam?.id === team.id ? '#478FC8' : 'var(--sb-item-text)',
+                  }"
+                >
+                  {{ team.name }}
+                </p>
+                <p style="font-size: 10px; color: var(--sb-profile-email);">
+                  {{ team.members?.length ?? 0 }} member{{ (team.members?.length ?? 0) !== 1 ? 's' : '' }}
+                </p>
+              </div>
+              <Check
+                v-if="currentTeam?.id === team.id"
+                style="width: 14px; height: 14px; color: #478FC8; flex-shrink: 0;"
+              />
+            </button>
+          </div>
+        </div>
+      </Transition>
     </div>
 
     <!-- ── Navigation ──────────────────────────────────────────── -->
@@ -459,11 +636,11 @@ const userInitials = computed(() => {
 :root.dark .sidebar-root {
   --sb-section-label: #64748b;
   --sb-item-hover-bg: #0f172a;
-  --sb-item-icon-bg: #111827;
+  --sb-item-icon-bg: #0b1220;
   --sb-item-icon-hover-bg: #1f2937;
-  --sb-item-icon: #9ca3af;
-  --sb-item-icon-hover: #e2e8f0;
-  --sb-item-text: #94a3b8;
+  --sb-item-icon: #d1d5db;
+  --sb-item-icon-hover: #f1f5f9;
+  --sb-item-text: #a7b4c8;
   --sb-item-text-hover: #e2e8f0;
   --sb-active-bg: linear-gradient(135deg, rgba(71, 143, 200, 0.24) 0%, rgba(91, 163, 217, 0.16) 100%);
   --sb-active-shadow: 0 0 0 1px rgba(71, 143, 200, 0.28) inset;

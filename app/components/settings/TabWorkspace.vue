@@ -9,7 +9,7 @@ import {
   CheckCircle2,
 } from 'lucide-vue-next'
 
-const workspaceName = ref('Kanzon Workspace')
+const workspaceName = ref('Kanzon Team')
 const timezone = ref('Asia/Jakarta (GMT+7)')
 const language = ref('English')
 const dateFormat = ref('DD/MM/YYYY')
@@ -26,11 +26,11 @@ const handleSave = () => {
 <template>
   <div class="flex flex-col gap-5">
     <!-- General -->
-    <SettingsSection title="General Settings" description="Configure your workspace preferences.">
+    <SettingsSection title="General Settings" description="Configure your team preferences.">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <SettingsFormField
           v-model="workspaceName"
-          label="Workspace Name"
+          label="Team Name"
           :icon="Building2"
         />
 
@@ -130,7 +130,7 @@ const handleSave = () => {
     </SettingsSection>
 
     <!-- Data Management -->
-    <SettingsSection title="Data Management" description="Export or manage your workspace data.">
+    <SettingsSection title="Data Management" description="Export or manage your team data.">
       <div class="flex flex-col gap-3 sm:flex-row">
         <button class="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-[13px] font-semibold">
           <Download style="width: 14px; height: 14px;" />
@@ -138,7 +138,7 @@ const handleSave = () => {
         </button>
         <button class="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all text-[13px] font-semibold">
           <Trash2 style="width: 14px; height: 14px;" />
-          Delete Workspace
+          Delete Team
         </button>
       </div>
     </SettingsSection>

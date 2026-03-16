@@ -1,24 +1,11 @@
 <script setup lang="ts">
 import {
   Users,
-  UserPlus,
-  Search,
-  Shield,
-  Mail,
+  Plus,
+  FolderKanban,
+  Crown,
+  ChevronRight,
 } from 'lucide-vue-next'
-
-interface MemberItem {
-  id: string
-  name: string
-  email: string
-  role: string
-  rawRole: 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER'
-  avatar?: string
-  joinedAt: string
-  projects?: number
-  tasks?: number
-  online?: boolean
-}
 
 definePageMeta({
   layout: 'dashboard',
@@ -26,144 +13,56 @@ definePageMeta({
 
 const workspaceStore = useWorkspaceStore()
 
+const showCreateTeam = ref(false)
+const newTeamName = ref('')
+const newTeamDescription = ref('')
+const isCreating = ref(false)
+
 onMounted(async () => {
   if (!workspaceStore.allWorkspaces.length) {
     await workspaceStore.fetchWorkspaces()
   }
 })
 
-// Map real workspace members into the card format
-const members = computed(() =>
-  workspaceStore.members.map((m) => ({
-    id: m.id,
-    name: m.user.name,
-    email: m.user.email,
-    role: formatRole(m.role),
-    rawRole: m.role,
-    avatar: m.user.avatar,
-    joinedAt: m.joinedAt,
-    projects: 0,
-    tasks: 0,
-    online: false,
-  })),
-)
+const teams = computed(() => workspaceStore.allWorkspaces)
 
-// Search + filter
-const searchQuery = ref('')
-const roleFilter = ref<'All' | 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER'>('All')
+function getWorkspaceColor(workspaceId: string) {
+  if (import.meta.server) return 'linear-gradient(135deg, #3570A5, #478FC8)'
+  return localStorage.getItem(`workspace:color:${workspaceId}`) || 'linear-gradient(135deg, #3570A5, #478FC8)'
+}
 
-const filteredMembers = computed(() => {
-  return members.value.filter((m) => {
-    const q = searchQuery.value.toLowerCase()
-    const matchQuery =
-      !q ||
-      m.name.toLowerCase().includes(q) ||
-      m.email.toLowerCase().includes(q) ||
-      m.role.toLowerCase().includes(q)
-    const matchRole = roleFilter.value === 'All' || m.rawRole === roleFilter.value
-    return matchQuery && matchRole
-  })
-})
+function getWorkspacePhoto(workspaceId: string) {
+  if (import.meta.server) return ''
+  return localStorage.getItem(`workspace:photo:${workspaceId}`) || ''
+}
 
-// Stats
-const totalMembers = computed(() => members.value.length)
-const totalAdmins = computed(() => members.value.filter((m) => m.rawRole === 'ADMIN' || m.rawRole === 'OWNER').length)
-const onlineCount = computed(() => members.value.filter((m) => m.online).length)
+function getOwnerName(ws: any): string {
+  const owner = ws.members?.find((m: any) => m.role === 'OWNER')
+  return owner?.user?.name ?? '-'
+}
 
-// Invite dialog
-const showInvite = ref(false)
-const inviteEmail = ref('')
-const inviteRole = ref<'ADMIN' | 'MEMBER' | 'VIEWER'>('MEMBER')
-const isInviting = ref(false)
-
-async function handleInvite() {
-  if (!inviteEmail.value.trim()) return
-  const ws = workspaceStore.activeWorkspace
-  if (!ws) return
-  isInviting.value = true
+async function handleCreateTeam() {
+  if (!newTeamName.value.trim()) return
+  isCreating.value = true
   try {
-    await workspaceStore.inviteMember(ws.id, { email: inviteEmail.value, role: inviteRole.value as any })
-    inviteEmail.value = ''
-    inviteRole.value = 'MEMBER'
-    showInvite.value = false
+    await workspaceStore.createWorkspace({
+      name: newTeamName.value.trim(),
+      description: newTeamDescription.value.trim() || undefined,
+    })
+    newTeamName.value = ''
+    newTeamDescription.value = ''
+    showCreateTeam.value = false
   } catch {
     // Error handled in store
   } finally {
-    isInviting.value = false
+    isCreating.value = false
   }
-}
-
-// Edit Role dialog
-const showEditRole = ref(false)
-const editRoleMember = ref<MemberItem | null>(null)
-const editRoleValue = ref('')
-const isUpdatingRole = ref(false)
-
-const roleOptions = [
-  { label: 'Admin', value: 'ADMIN' },
-  { label: 'Member', value: 'MEMBER' },
-  { label: 'Viewer', value: 'VIEWER' },
-]
-
-function handleEditRole(member: MemberItem) {
-  editRoleMember.value = member
-  editRoleValue.value = member.rawRole
-  showEditRole.value = true
-}
-
-async function submitEditRole() {
-  const ws = workspaceStore.activeWorkspace
-  if (!ws || !editRoleMember.value) return
-  isUpdatingRole.value = true
-  try {
-    await workspaceStore.updateMemberRole(ws.id, editRoleMember.value.id, editRoleValue.value)
-    showEditRole.value = false
-  } catch {
-    // Error handled in store
-  } finally {
-    isUpdatingRole.value = false
-  }
-}
-
-// Remove member dialog
-const showRemove = ref(false)
-const removeMember_ = ref<MemberItem | null>(null)
-const isRemoving = ref(false)
-
-function handleRemove(member: MemberItem) {
-  removeMember_.value = member
-  showRemove.value = true
-}
-
-async function submitRemove() {
-  const ws = workspaceStore.activeWorkspace
-  if (!ws || !removeMember_.value) return
-  isRemoving.value = true
-  try {
-    await workspaceStore.removeMember(ws.id, removeMember_.value.id)
-    showRemove.value = false
-  } catch {
-    // Error handled in store
-  } finally {
-    isRemoving.value = false
-  }
-}
-
-// Helpers
-function formatRole(role: string) {
-  return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase()
-}
-
-const filterRoles = ['All', 'OWNER', 'ADMIN', 'MEMBER', 'VIEWER'] as const
-function filterLabel(r: string) {
-  if (r === 'All') return 'All'
-  return r.charAt(0) + r.slice(1).toLowerCase()
 }
 </script>
 
 <template>
   <LayoutPageContainer>
-    <div class="team-page flex flex-col gap-6">
+    <div class="flex flex-col gap-6">
       <!-- Header -->
       <div class="flex items-start justify-between gap-4 flex-wrap">
         <div>
@@ -173,138 +72,148 @@ function filterLabel(r: string) {
               style="background: linear-gradient(to bottom, #478FC8, #3570A5)"
             />
             <h1
-              style="font-size: clamp(20px, 2.5vw, 28px); font-weight: 900; letter-spacing: -0.8px; color: var(--team-title); line-height: 1.15"
+              class="text-gray-900 dark:text-white"
+              style="font-size: clamp(20px, 2.5vw, 28px); font-weight: 900; letter-spacing: -0.8px; line-height: 1.15"
             >
-              Team
+              Teams
             </h1>
           </div>
-          <p class="pl-4" style="font-size: 13.5px; line-height: 1.6; color: var(--team-subtitle)">
-            Manage workspace
+          <p class="pl-4 text-gray-500 dark:text-gray-400" style="font-size: 13.5px; line-height: 1.6">
+            Manage your
             <span
               style="font-weight: 600; background: linear-gradient(90deg, #478FC8, #5BA3D9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text"
-            >members</span>
-            and roles.
+            >teams</span>
+            and collaborate with members.
           </p>
         </div>
 
         <button
           class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white transition-all hover:opacity-90 active:scale-[0.98]"
           style="background: linear-gradient(135deg, #3570A5, #478FC8); font-size: 13.5px; font-weight: 700; box-shadow: 0 4px 16px rgba(71,143,200,0.30)"
-          @click="showInvite = true"
+          @click="showCreateTeam = true"
         >
-          <UserPlus :size="15" />
-          Invite member
+          <Plus :size="15" />
+          Create Team
         </button>
       </div>
 
       <!-- Stat cards -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <!-- Total Members -->
-        <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-6 py-5 flex items-center gap-4 shadow-sm dark:shadow-black/20 hover:shadow-md transition-shadow">
-          <div
-            class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-            style="background: linear-gradient(135deg, #dbeafe, #eff6ff)"
-          >
+        <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-6 py-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style="background: linear-gradient(135deg, #dbeafe, #eff6ff)">
             <Users :size="20" class="text-[#478FC8]" />
+          </div>
+          <div>
+            <p class="text-gray-400 dark:text-gray-500" style="font-size: 12.5px; font-weight: 500">Total Teams</p>
+            <p class="text-gray-900 dark:text-gray-100" style="font-size: 26px; font-weight: 800; letter-spacing: -0.8px; line-height: 1.2">
+              {{ teams.length }}
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-6 py-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style="background: linear-gradient(135deg, #ede9fe, #f5f3ff)">
+            <FolderKanban :size="20" class="text-purple-600" />
+          </div>
+          <div>
+            <p class="text-gray-400 dark:text-gray-500" style="font-size: 12.5px; font-weight: 500">Total Projects</p>
+            <p class="text-gray-900 dark:text-gray-100" style="font-size: 26px; font-weight: 800; letter-spacing: -0.8px; line-height: 1.2">
+              {{ teams.reduce((sum, t) => sum + (t._count?.projects ?? 0), 0) }}
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-6 py-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style="background: linear-gradient(135deg, #d1fae5, #ecfdf5)">
+            <Users :size="20" class="text-emerald-600" />
           </div>
           <div>
             <p class="text-gray-400 dark:text-gray-500" style="font-size: 12.5px; font-weight: 500">Total Members</p>
             <p class="text-gray-900 dark:text-gray-100" style="font-size: 26px; font-weight: 800; letter-spacing: -0.8px; line-height: 1.2">
-              {{ totalMembers }}
-            </p>
-          </div>
-        </div>
-
-        <!-- Admins & Owners -->
-        <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-6 py-5 flex items-center gap-4 shadow-sm dark:shadow-black/20 hover:shadow-md transition-shadow">
-          <div
-            class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-            style="background: linear-gradient(135deg, #ede9fe, #f5f3ff)"
-          >
-            <Shield :size="20" class="text-purple-600" />
-          </div>
-          <div>
-            <p class="text-gray-400 dark:text-gray-500" style="font-size: 12.5px; font-weight: 500">Admins & Owners</p>
-            <p class="text-gray-900 dark:text-gray-100" style="font-size: 26px; font-weight: 800; letter-spacing: -0.8px; line-height: 1.2">
-              {{ totalAdmins }}
-            </p>
-          </div>
-        </div>
-
-        <!-- Online Now -->
-        <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-6 py-5 flex items-center gap-4 shadow-sm dark:shadow-black/20 hover:shadow-md transition-shadow">
-          <div
-            class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 relative"
-            style="background: linear-gradient(135deg, #d1fae5, #ecfdf5)"
-          >
-            <div class="w-3 h-3 rounded-full bg-green-400 absolute -top-0.5 -right-0.5 border border-white" />
-            <Users :size="20" class="text-emerald-600" />
-          </div>
-          <div>
-            <p class="text-gray-400 dark:text-gray-500" style="font-size: 12.5px; font-weight: 500">Online Now</p>
-            <p class="text-gray-900 dark:text-gray-100" style="font-size: 26px; font-weight: 800; letter-spacing: -0.8px; line-height: 1.2">
-              {{ onlineCount }}
+              {{ teams.reduce((sum, t) => sum + (t.members?.length ?? 0), 0) }}
             </p>
           </div>
         </div>
       </div>
 
-      <!-- Search + Filter bar -->
-      <div class="flex items-center gap-3 flex-wrap">
-        <!-- Search -->
-        <div class="flex-1 min-w-[200px] relative flex items-center">
-          <Search class="absolute left-3.5 z-10 text-gray-400 dark:text-gray-500 pointer-events-none" :size="14" />
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Search members by name, role, or email…"
-            class="w-full pl-10 pr-4 py-2.5 rounded-xl border bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 outline-none focus:border-[#478FC8] focus:ring-4 focus:ring-[#478FC8]/10 transition-all shadow-sm"
-            style="font-size: 13.5px"
-          />
-        </div>
-
-        <!-- Role filter pills -->
-        <div class="flex items-center gap-1.5 p-1 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-sm">
-          <button
-            v-for="r in filterRoles"
-            :key="r"
-            :class="[
-              'px-3 py-1.5 rounded-lg transition-all',
-              roleFilter === r
-                ? 'bg-[#478FC8] text-white shadow-sm'
-                : 'text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800/80',
-            ]"
-            :style="{ fontSize: '12.5px', fontWeight: roleFilter === r ? 700 : 500 }"
-            @click="roleFilter = r"
-          >
-            {{ filterLabel(r) }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Member grid -->
+      <!-- Team cards grid -->
       <div
-        v-if="filteredMembers.length > 0"
+        v-if="teams.length > 0"
         class="grid gap-4"
-        style="grid-template-columns: repeat(auto-fill, minmax(240px, 1fr))"
+        style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr))"
       >
-        <TeamMemberCard
-          v-for="member in filteredMembers"
-          :key="member.id"
-          :member="member"
-          @edit-role="handleEditRole"
-          @remove="handleRemove"
-        />
+        <NuxtLink
+          v-for="ws in teams"
+          :key="ws.id"
+          :to="`/team/${ws.id}`"
+          class="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:border-[#478FC8]/30 transition-all"
+        >
+          <!-- Team name + arrow -->
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex items-center gap-3">
+              <img
+                v-if="getWorkspacePhoto(ws.id)"
+                :src="getWorkspacePhoto(ws.id)"
+                :alt="ws.name"
+                class="w-10 h-10 rounded-xl object-cover border border-gray-200 dark:border-gray-700"
+              >
+              <div
+                v-else
+                class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold"
+                :style="{ background: getWorkspaceColor(ws.id), fontSize: '16px' }"
+              >
+                {{ ws.name.charAt(0).toUpperCase() }}
+              </div>
+              <div>
+                <h3
+                  class="text-gray-900 dark:text-white group-hover:text-[#478FC8] transition-colors"
+                  style="font-size: 15px; font-weight: 700; letter-spacing: -0.3px"
+                >
+                  {{ ws.name }}
+                </h3>
+                <p
+                  v-if="ws.description"
+                  class="text-gray-400 dark:text-gray-500 line-clamp-1"
+                  style="font-size: 12px; margin-top: 1px"
+                >
+                  {{ ws.description }}
+                </p>
+              </div>
+            </div>
+            <ChevronRight
+              :size="16"
+              class="text-gray-300 dark:text-gray-600 group-hover:text-[#478FC8] group-hover:translate-x-0.5 transition-all mt-1"
+            />
+          </div>
 
-        <!-- Invite placeholder card -->
+          <!-- Stats row -->
+          <div class="flex items-center gap-4 pt-3 border-t border-gray-50 dark:border-gray-800">
+            <div class="flex items-center gap-1.5 text-gray-400 dark:text-gray-500">
+              <Users :size="13" />
+              <span style="font-size: 12.5px; font-weight: 500">{{ ws.members?.length ?? 0 }} members</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-gray-400 dark:text-gray-500">
+              <FolderKanban :size="13" />
+              <span style="font-size: 12.5px; font-weight: 500">{{ ws._count?.projects ?? 0 }} projects</span>
+            </div>
+          </div>
+
+          <!-- Owner -->
+          <div class="flex items-center gap-1.5 mt-2.5 text-gray-400 dark:text-gray-500">
+            <Crown :size="12" />
+            <span style="font-size: 11.5px; font-weight: 500">Owner: {{ getOwnerName(ws) }}</span>
+          </div>
+        </NuxtLink>
+
+        <!-- Create team placeholder card -->
         <button
           class="bg-white dark:bg-gray-900 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl flex flex-col items-center justify-center gap-3 py-12 px-6 text-gray-400 dark:text-gray-500 hover:border-[#478FC8]/50 hover:text-[#478FC8] hover:bg-[#478FC8]/5 dark:hover:bg-[#478FC8]/10 transition-all group"
-          @click="showInvite = true"
+          @click="showCreateTeam = true"
         >
           <div class="w-12 h-12 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 group-hover:border-[#478FC8]/50 flex items-center justify-center transition-all">
-            <UserPlus :size="20" />
+            <Plus :size="20" />
           </div>
-          <span style="font-size: 13.5px; font-weight: 600">Invite member</span>
+          <span style="font-size: 13.5px; font-weight: 600">Create new team</span>
         </button>
       </div>
 
@@ -314,12 +223,20 @@ function filterLabel(r: string) {
         class="flex flex-col items-center justify-center py-20 text-gray-400 dark:text-gray-500 gap-3"
       >
         <Users :size="36" style="opacity: 0.4" />
-        <p style="font-size: 15px; font-weight: 600">No members found</p>
-        <p style="font-size: 13px">Try adjusting your search or filter.</p>
+        <p style="font-size: 15px; font-weight: 600">No teams yet</p>
+        <p style="font-size: 13px">Create your first team to get started.</p>
+        <button
+          class="mt-2 flex items-center gap-2 px-4 py-2.5 rounded-xl text-white transition-all hover:opacity-90"
+          style="background: linear-gradient(135deg, #3570A5, #478FC8); font-size: 13.5px; font-weight: 700"
+          @click="showCreateTeam = true"
+        >
+          <Plus :size="15" />
+          Create Team
+        </button>
       </div>
     </div>
 
-    <!-- Invite Member Modal -->
+    <!-- Create Team Modal -->
     <Teleport to="body">
       <Transition
         enter-active-class="transition duration-200 ease-out"
@@ -329,149 +246,67 @@ function filterLabel(r: string) {
         leave-from-class="opacity-100"
         leave-to-class="opacity-0"
       >
-        <div v-if="showInvite" class="fixed inset-0 z-50 flex items-center justify-center">
-          <!-- Backdrop -->
-          <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" @click="showInvite = false" />
+        <div v-if="showCreateTeam" class="fixed inset-0 z-50 flex items-center justify-center">
+          <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" @click="showCreateTeam = false" />
 
           <div
             class="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 w-full mx-4 flex flex-col gap-6 p-7"
             style="max-width: 420px"
           >
-            <!-- Header -->
             <div class="flex flex-col gap-1">
               <h2 class="text-gray-900 dark:text-gray-100" style="font-size: 18px; font-weight: 800; letter-spacing: -0.4px">
-                Invite member
+                Create Team
               </h2>
               <p class="text-gray-400 dark:text-gray-500" style="font-size: 13.5px">
-                Send an invitation link to join your workspace.
+                Set up a new team to collaborate on projects.
               </p>
             </div>
 
-            <!-- Email input -->
             <div class="flex flex-col gap-2">
-              <label class="text-gray-600 dark:text-gray-300" style="font-size: 13px; font-weight: 600">Email address</label>
-              <div class="relative flex items-center">
-                <Mail class="absolute left-3.5 z-10 text-gray-400 dark:text-gray-500 pointer-events-none" :size="14" />
-                <input
-                  v-model="inviteEmail"
-                  type="email"
-                  placeholder="colleague@example.com"
-                  class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 outline-none focus:border-[#478FC8] focus:bg-white dark:focus:bg-gray-900 focus:ring-4 focus:ring-[#478FC8]/10 transition-all"
-                  style="font-size: 13.5px"
-                />
-              </div>
+              <label class="text-gray-600 dark:text-gray-300" style="font-size: 13px; font-weight: 600">Team name</label>
+              <input
+                v-model="newTeamName"
+                type="text"
+                placeholder="e.g. Engineering Team"
+                class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 outline-none focus:border-[#478FC8] focus:bg-white dark:focus:bg-gray-900 focus:ring-4 focus:ring-[#478FC8]/10 transition-all"
+                style="font-size: 13.5px"
+              />
             </div>
 
-            <!-- Role select -->
             <div class="flex flex-col gap-2">
-              <label class="text-gray-600" style="font-size: 13px; font-weight: 600">Role</label>
-              <div class="flex items-center gap-2">
-                <button
-                  v-for="r in (['MEMBER', 'ADMIN'] as const)"
-                  :key="r"
-                  :class="[
-                    'flex-1 py-2.5 rounded-xl border transition-all',
-                    inviteRole === r
-                      ? 'border-[#478FC8] bg-[#EDF4FF] dark:bg-[#478FC8]/15 text-[#478FC8]'
-                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600',
-                  ]"
-                  :style="{ fontSize: '13px', fontWeight: inviteRole === r ? 700 : 500 }"
-                  @click="inviteRole = r"
-                >
-                  {{ formatRole(r) }}
-                </button>
-              </div>
+              <label class="text-gray-600 dark:text-gray-300" style="font-size: 13px; font-weight: 600">Description <span class="text-gray-400 font-normal">(optional)</span></label>
+              <textarea
+                v-model="newTeamDescription"
+                rows="3"
+                placeholder="What does this team work on?"
+                class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 outline-none focus:border-[#478FC8] focus:bg-white dark:focus:bg-gray-900 focus:ring-4 focus:ring-[#478FC8]/10 transition-all resize-none"
+                style="font-size: 13.5px"
+              />
             </div>
 
-            <!-- Actions -->
             <div class="flex items-center gap-3">
               <button
                 class="flex-1 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
                 style="font-size: 14px; font-weight: 600"
-                @click="showInvite = false"
+                @click="showCreateTeam = false"
               >
                 Cancel
               </button>
               <button
-                :disabled="isInviting || !inviteEmail.trim()"
+                :disabled="isCreating || !newTeamName.trim()"
                 :class="[
                   'flex-1 py-3 rounded-xl text-white transition-all hover:opacity-90 active:scale-[0.98]',
-                  isInviting || !inviteEmail.trim() ? 'opacity-70 cursor-not-allowed' : '',
+                  isCreating || !newTeamName.trim() ? 'opacity-70 cursor-not-allowed' : '',
                 ]"
                 style="background: linear-gradient(135deg, #3570A5, #478FC8); font-size: 14px; font-weight: 700; box-shadow: 0 4px 16px rgba(71,143,200,0.35)"
-                @click="handleInvite"
+                @click="handleCreateTeam"
               >
-                {{ isInviting ? 'Sending...' : 'Send invite' }}
+                {{ isCreating ? 'Creating...' : 'Create Team' }}
               </button>
             </div>
           </div>
         </div>
       </Transition>
     </Teleport>
-
-    <!-- Edit Role Dialog -->
-    <UiDialog v-model:open="showEditRole" title="Edit Member Role" description="Change the role for this member.">
-      <template #default="{ close }">
-        <form v-if="editRoleMember" class="space-y-4" @submit.prevent="submitEditRole">
-          <div class="flex items-center gap-3 rounded-lg border p-3">
-            <UiAvatar :src="editRoleMember.avatar" :alt="editRoleMember.name" size="sm" />
-            <div class="min-w-0">
-              <p class="text-sm font-medium truncate">{{ editRoleMember.name }}</p>
-              <p class="text-xs text-muted-foreground truncate">{{ editRoleMember.email }}</p>
-            </div>
-          </div>
-          <div>
-            <UiLabel for="edit-role">New Role</UiLabel>
-            <UiSelect
-              v-model="editRoleValue"
-              :options="roleOptions"
-              class="mt-1.5"
-            />
-          </div>
-          <div class="flex justify-end gap-3 pt-2">
-            <UiButton variant="outline" type="button" @click="close">Cancel</UiButton>
-            <UiButton type="submit" :disabled="isUpdatingRole || editRoleValue === editRoleMember.rawRole">
-              {{ isUpdatingRole ? 'Updating...' : 'Update Role' }}
-            </UiButton>
-          </div>
-        </form>
-      </template>
-    </UiDialog>
-
-    <!-- Remove Member Confirmation Dialog -->
-    <UiDialog v-model:open="showRemove" title="Remove Member" description="Are you sure you want to remove this member?">
-      <template #default="{ close }">
-        <div v-if="removeMember_" class="space-y-4">
-          <div class="flex items-center gap-3 rounded-lg border border-destructive/20 bg-destructive/5 p-3">
-            <UiAvatar :src="removeMember_.avatar" :alt="removeMember_.name" size="sm" />
-            <div class="min-w-0">
-              <p class="text-sm font-medium truncate">{{ removeMember_.name }}</p>
-              <p class="text-xs text-muted-foreground truncate">{{ removeMember_.email }}</p>
-            </div>
-          </div>
-          <p class="text-sm text-muted-foreground">
-            This member will lose access to the workspace and all its projects. This action cannot be undone.
-          </p>
-          <div class="flex justify-end gap-3 pt-2">
-            <UiButton variant="outline" @click="close">Cancel</UiButton>
-            <UiButton variant="destructive" :disabled="isRemoving" @click="submitRemove">
-              {{ isRemoving ? 'Removing...' : 'Remove Member' }}
-            </UiButton>
-          </div>
-        </div>
-      </template>
-    </UiDialog>
   </LayoutPageContainer>
 </template>
-
-<style scoped>
-.team-page {
-  --team-title: #0f172a;
-  --team-subtitle: #64748b;
-}
-
-:root.dark .team-page {
-  --team-title: #e5e7eb;
-  --team-subtitle: #94a3b8;
-}
-</style>

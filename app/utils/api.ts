@@ -1,5 +1,46 @@
 import axios from 'axios'
 
+function emitGlobalErrorAlert(message: string) {
+  if (!import.meta.client) return
+  window.dispatchEvent(new CustomEvent('app:error-alert', {
+    detail: {
+      message,
+      at: Date.now(),
+    },
+  }))
+}
+
+function toErrorMessage(error: any): string {
+  const status = error?.response?.status
+  const responseMessage = error?.response?.data?.message
+
+  if (Array.isArray(responseMessage) && responseMessage.length > 0) {
+    return String(responseMessage[0])
+  }
+
+  if (typeof responseMessage === 'string' && responseMessage.trim()) {
+    return responseMessage
+  }
+
+  if (!error?.response) {
+    return 'Network error. Please check your connection and try again.'
+  }
+
+  if (status === 403) {
+    return 'Anda tidak memiliki izin untuk melakukan aksi ini.'
+  }
+
+  if (status === 404) {
+    return 'Data atau endpoint tidak ditemukan.'
+  }
+
+  if (status === 500) {
+    return 'Terjadi kesalahan server. Silakan coba lagi.'
+  }
+
+  return 'Terjadi kesalahan. Silakan coba lagi.'
+}
+
 const api = axios.create({
   baseURL: 'http://localhost:3001/api',
   timeout: 10000,
@@ -76,12 +117,15 @@ api.interceptors.response.use(
       } catch {
         // Clear cookies and redirect to login
         if (import.meta.client) {
+          emitGlobalErrorAlert('Sesi login berakhir. Silakan login kembali.')
           document.cookie = 'access_token=;path=/;max-age=0'
           document.cookie = 'refresh_token=;path=/;max-age=0'
           window.location.href = '/auth/login'
         }
       }
     }
+
+    emitGlobalErrorAlert(toErrorMessage(error))
 
     return Promise.reject(error)
   }
