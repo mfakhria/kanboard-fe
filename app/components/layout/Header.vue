@@ -67,6 +67,11 @@ const currentPage = computed((): PageMeta => {
   return defaultPage
 })
 
+const currentWorkspaceLabel = computed(() => {
+  const name = workspaceStore.activeWorkspace?.name?.trim()
+  return name && name.length > 0 ? name : 'Workspace'
+})
+
 // ── User ──────────────────────────────────────────────────────────────────────
 const userInitials = computed(() => {
   const name = authStore.currentUser?.name
@@ -448,7 +453,7 @@ function handleLogout() {
         <div>
           <div class="flex items-center gap-1.5">
             <span class="flex items-center gap-[3px] text-[10.5px] font-medium text-gray-400 dark:text-gray-500">
-              <Home style="width: 9px; height: 9px;" /> Team
+                <Home style="width: 9px; height: 9px;" /> {{ currentWorkspaceLabel }}
             </span>
             <ChevronRight style="width: 10px; height: 10px; color: #cbd5e1;" />
             <span class="text-[10.5px] font-semibold text-[#478FC8]">{{ currentPage.label }}</span>
