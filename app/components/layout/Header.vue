@@ -78,9 +78,20 @@ const userInitials = computed(() => {
 // ── Search ────────────────────────────────────────────────────────────────────
 const searchQuery = ref('')
 const searchOpen = ref(false)
+const mobileSearchOpen = ref(false)
 const activeIdx = ref(0)
 const searchInputRef = ref<HTMLInputElement | null>(null)
 const searchWrapperRef = ref<HTMLDivElement | null>(null)
+
+function openMobileSearch() {
+  mobileSearchOpen.value = true
+  nextTick(() => searchInputRef.value?.focus())
+}
+function closeMobileSearch() {
+  mobileSearchOpen.value = false
+  searchQuery.value = ''
+  searchOpen.value = false
+}
 
 interface SearchResult {
   id: string
@@ -152,11 +163,12 @@ function handleSelect(result: SearchResult) {
   router.push(result.href)
   searchQuery.value = ''
   searchOpen.value = false
+  mobileSearchOpen.value = false
   searchInputRef.value?.blur()
 }
 
 function handleSearchKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') { searchQuery.value = ''; searchOpen.value = false; searchInputRef.value?.blur(); return }
+  if (e.key === 'Escape') { searchQuery.value = ''; searchOpen.value = false; mobileSearchOpen.value = false; searchInputRef.value?.blur(); return }
   if (!searchOpen.value || searchResults.value.length === 0) return
   if (e.key === 'ArrowDown') { e.preventDefault(); activeIdx.value = Math.min(activeIdx.value + 1, searchResults.value.length - 1) }
   else if (e.key === 'ArrowUp') { e.preventDefault(); activeIdx.value = Math.max(activeIdx.value - 1, 0) }
@@ -249,16 +261,127 @@ function handleLogout() {
   <!-- Overlay for dropdowns -->
   <div v-if="notifOpen || profileOpen" class="fixed inset-0 z-40" @click="closeAll" />
 
+  <!-- ── Mobile fullscreen search overlay ──────────────────────────────── -->
+  <div v-if="mobileSearchOpen" class="fixed inset-0 z-50 flex flex-col bg-white dark:bg-gray-900 sm:hidden">
+    <div class="flex items-center gap-2.5 px-3 py-2.5 border-b border-gray-200 dark:border-gray-800">
+      <button class="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" @click="closeMobileSearch">
+        <X style="width: 18px; height: 18px;" />
+      </button>
+      <div ref="searchWrapperRef" class="relative flex-1">
+        <div
+          class="flex items-center gap-2.5 rounded-2xl px-3.5 transition-all duration-200"
+          :style="{
+            height: '40px',
+            background: isDark ? '#111827' : '#f6f8fa',
+            border: '1.5px solid #478FC8',
+            boxShadow: '0 0 0 4px rgba(71,143,200,0.08)',
+          }"
+        >
+          <Search :style="{ width: '15px', height: '15px', color: '#478FC8', flexShrink: 0 }" />
+          <input
+            ref="searchInputRef"
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search anything..."
+            class="flex-1 bg-transparent outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500 min-w-0 text-[14px] text-gray-900 dark:text-gray-200"
+            @focus="searchOpen = true"
+            @keydown="handleSearchKeydown"
+          />
+          <button
+            v-if="searchQuery"
+            class="shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            @click="searchQuery = ''; searchInputRef?.focus()"
+          >
+            <X style="width: 12px; height: 12px;" />
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile search results -->
+    <div class="flex-1 overflow-y-auto">
+      <!-- Quick Access (no query) -->
+      <div v-if="searchQuery.trim().length === 0">
+        <div class="px-4 pt-4 pb-2">
+          <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Quick Access</p>
+        </div>
+        <div
+          v-for="(item, i) in quickAccessPages"
+          :key="item.id"
+          class="flex items-center gap-3 px-4 py-3 cursor-pointer active:bg-gray-50 dark:active:bg-gray-800 transition-colors"
+          @click="handleSelect(item)"
+        >
+          <div class="shrink-0 flex items-center justify-center rounded-xl" :style="{ width: '38px', height: '38px', background: getQaColor(i).bg, color: getQaColor(i).accent }">
+            <component :is="item.icon!" style="width: 16px; height: 16px;" />
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-[14px] font-semibold text-gray-900 dark:text-white">{{ item.title }}</p>
+            <p class="text-[12px] text-gray-400">{{ item.subtitle }}</p>
+          </div>
+          <ArrowRight style="width: 14px; height: 14px; color: #e2e8f0;" class="shrink-0" />
+        </div>
+      </div>
+      <!-- Search results -->
+      <div v-else-if="searchResults.length === 0" class="flex flex-col items-center justify-center gap-3 pt-20">
+        <div class="w-14 h-14 rounded-2xl flex items-center justify-center" :style="{ background: isDark ? '#1f2937' : '#f1f5f9' }">
+          <Search style="width: 22px; height: 22px; color: #cbd5e1;" />
+        </div>
+        <p class="text-[14px] font-semibold text-gray-500 dark:text-gray-400">No results found</p>
+        <p class="text-[12px] text-gray-400 dark:text-gray-500">Try different keywords</p>
+      </div>
+      <div v-else>
+        <div v-for="(group, gi) in groupedResults" :key="group.type">
+          <div class="flex items-center gap-1.5 px-4 pt-4 pb-2" :style="{ borderTop: gi > 0 ? (isDark ? '1px solid #1f2937' : '1px solid #f1f5f9') : 'none' }">
+            <component :is="typeIcons[group.type]" style="width: 11px; height: 11px; color: #94a3b8;" />
+            <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{{ typeLabels[group.type] }}</span>
+          </div>
+          <div
+            v-for="item in group.items"
+            :key="item.id"
+            class="flex items-center gap-3 px-4 py-3 cursor-pointer active:bg-gray-50 dark:active:bg-gray-800 transition-colors"
+            @click="handleSelect(item)"
+          >
+            <div
+              class="shrink-0 flex items-center justify-center rounded-xl"
+              :style="{ width: '38px', height: '38px', background: isDark ? '#1f2937' : '#f1f5f9', color: isDark ? '#94a3b8' : '#64748b' }"
+            >
+              <component :is="item.icon ?? FolderKanban" style="width: 16px; height: 16px;" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="truncate text-[14px] font-semibold" :style="{ color: isDark ? '#e2e8f0' : '#1e293b' }">
+                <template v-if="typeof highlightText(item.title, searchQuery) === 'string'">{{ item.title }}</template>
+                <template v-else>
+                  {{ (highlightText(item.title, searchQuery) as { before: string; match: string; after: string }).before }}<mark :style="{ background: isDark ? '#1e3a5f' : '#dbeafe', color: isDark ? '#93c5fd' : '#1d4ed8', borderRadius: '2px', padding: '0 1px' }">{{ (highlightText(item.title, searchQuery) as { before: string; match: string; after: string }).match }}</mark>{{ (highlightText(item.title, searchQuery) as { before: string; match: string; after: string }).after }}
+                </template>
+              </p>
+              <p v-if="item.subtitle" class="truncate text-[12px] text-gray-400 mt-[1px]">{{ item.subtitle }}</p>
+            </div>
+            <span v-if="item.badge" class="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold" :style="{ background: item.badge.color + '15', color: item.badge.color, border: `1px solid ${item.badge.color}25` }">
+              {{ item.badge.label }}
+            </span>
+            <ArrowRight style="width: 14px; height: 14px; color: #cbd5e1;" class="shrink-0" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <header
     class="sticky top-0 z-30 flex items-center shrink-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800"
-    style="height: 64px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); padding: 0 20px;"
+    style="height: 56px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); padding: 0 12px;"
   >
-    <!-- ── LEFT: Mobile menu + Breadcrumb ──────────────────────────────── -->
-    <div class="flex items-center gap-2 shrink-0" style="min-width: 180px;">
-      <button class="lg:hidden rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" @click="toggleMobileDrawer">
+    <!-- ── LEFT: Mobile menu + Page title / Breadcrumb ──────────────────── -->
+    <div class="flex items-center gap-1.5 sm:gap-2 shrink-0 min-w-0 mr-2 sm:mr-0" style="max-width: 50%;">
+      <button class="lg:hidden rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shrink-0" @click="toggleMobileDrawer">
         <Menu class="h-5 w-5 text-gray-600 dark:text-gray-400" />
       </button>
 
+      <!-- Mobile: page title -->
+      <p class="lg:hidden text-[14px] font-bold text-gray-900 dark:text-white truncate">
+        {{ currentPage.label }}
+      </p>
+
+      <!-- Desktop: breadcrumb -->
       <div class="hidden lg:flex items-center gap-2">
         <div
           class="flex items-center justify-center rounded-xl shrink-0"
@@ -279,8 +402,8 @@ function handleLogout() {
       </div>
     </div>
 
-    <!-- ── CENTER: Search ──────────────────────────────────────────────── -->
-    <div class="flex-1 flex justify-center px-4 lg:px-6">
+    <!-- ── CENTER: Search (desktop only) ───────────────────────────────── -->
+    <div class="hidden sm:flex flex-1 justify-center px-4 lg:px-6">
       <div ref="searchWrapperRef" class="relative w-full" style="max-width: 420px;">
         <div
           class="flex items-center gap-2.5 rounded-2xl px-3.5 transition-all duration-200"
@@ -308,13 +431,13 @@ function handleLogout() {
           >
             <X style="width: 10px; height: 10px;" />
           </button>
-          <div v-else class="flex items-center gap-0.5 shrink-0 rounded-lg px-1.5 py-0.5" :style="{ background: isDark ? '#374151' : '#eef0f3', border: isDark ? '1px solid #4b5563' : '1px solid #e2e6ea' }">
-            <Command :style="{ width: '9px', height: '9px', color: isDark ? '#9ca3af' : '#9ca3af' }" />
-            <span class="text-[10px] font-bold" :class="isDark ? 'text-gray-400' : 'text-gray-400'">K</span>
+          <div v-else class="hidden md:flex items-center gap-0.5 shrink-0 rounded-lg px-1.5 py-0.5" :style="{ background: isDark ? '#374151' : '#eef0f3', border: isDark ? '1px solid #4b5563' : '1px solid #e2e6ea' }">
+            <Command :style="{ width: '9px', height: '9px', color: '#9ca3af' }" />
+            <span class="text-[10px] font-bold text-gray-400">K</span>
           </div>
         </div>
 
-        <!-- Search Results -->
+        <!-- Search Results (desktop) -->
         <div
           v-if="searchOpen && searchQuery.trim().length > 0"
           class="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-50 flex flex-col overflow-hidden"
@@ -374,7 +497,7 @@ function handleLogout() {
           </template>
         </div>
 
-        <!-- Quick Access Panel -->
+        <!-- Quick Access Panel (desktop) -->
         <div
           v-if="searchOpen && searchQuery.trim().length === 0"
           class="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-50 flex flex-col overflow-hidden"
@@ -407,8 +530,92 @@ function handleLogout() {
     </div>
 
     <!-- ── RIGHT: Actions ──────────────────────────────────────────────── -->
-    <div class="flex items-center gap-2 shrink-0" style="min-width: 180px; justify-content: flex-end;">
-      <!-- Icon pill group -->
+    <div class="flex items-center gap-1 sm:gap-2 shrink-0 ml-auto">
+      <!-- Mobile: search icon -->
+      <button
+        class="sm:hidden w-9 h-9 flex items-center justify-center rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        title="Search"
+        @click="openMobileSearch"
+      >
+        <Search style="width: 18px; height: 18px;" />
+      </button>
+
+      <!-- Mobile: compact action buttons (bell + theme) -->
+      <div class="flex sm:hidden items-center gap-0.5">
+        <button
+          class="relative w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-150 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+          :title="isDark ? 'Light mode' : 'Dark mode'"
+          @click="toggleTheme"
+        >
+          <Sun v-if="isDark" style="width: 17px; height: 17px;" />
+          <Moon v-else style="width: 17px; height: 17px;" />
+        </button>
+        <div class="relative">
+          <button
+            class="relative w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-150"
+            :class="notifOpen ? 'text-[#478FC8] bg-[#dbeafe] dark:bg-[#1e3a5f]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'"
+            title="Notifications"
+            @click="notifOpen = !notifOpen; profileOpen = false"
+          >
+            <Bell style="width: 17px; height: 17px;" />
+            <span v-if="unreadCount > 0" class="absolute rounded-full" :style="{ top: '7px', right: '7px', width: '8px', height: '8px', background: 'linear-gradient(135deg, #f97316, #ef4444)', border: isDark ? '1.5px solid #111827' : '1.5px solid #fff' }" />
+          </button>
+
+          <!-- Notification Panel (mobile: anchored right, responsive width) -->
+          <div
+            v-if="notifOpen"
+            class="fixed sm:absolute right-2 sm:right-0 top-[60px] sm:top-full sm:mt-2.5 z-50 flex flex-col overflow-hidden"
+            :style="{ width: 'min(360px, calc(100vw - 16px))', background: isDark ? '#111827' : '#fff', borderRadius: '18px', border: isDark ? '1px solid #1f2937' : '1px solid #e8edf3', boxShadow: isDark ? '0 20px 60px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.2)' : '0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.06)' }"
+          >
+            <div class="flex items-center justify-between px-4 sm:px-5 py-3.5" :style="{ borderBottom: isDark ? '1px solid #1f2937' : '1px solid #f1f5f9' }">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-xl flex items-center justify-center" :style="{ background: isDark ? 'linear-gradient(135deg, #1e3a5f, #1e3a5f)' : 'linear-gradient(135deg, #edf4ff, #dbeafe)' }">
+                  <Bell style="width: 13px; height: 13px; color: #478FC8;" />
+                </div>
+                <span class="text-[13.5px] font-bold text-gray-900 dark:text-white">Notifications</span>
+                <span v-if="unreadCount > 0" class="flex items-center justify-center rounded-full text-[10px] font-bold text-white" style="min-width: 20px; height: 20px; padding: 0 6px; background: linear-gradient(135deg, #ef4444, #f97316);">
+                  {{ unreadCount }}
+                </span>
+              </div>
+              <div class="flex items-center gap-1">
+                <button v-if="unreadCount > 0" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-[#edf4ff] dark:hover:bg-[#1e3a5f] text-[#478FC8] transition-colors text-[11px] font-semibold" @click="markAllRead">
+                  <Check style="width: 10px; height: 10px;" /> Mark all read
+                </button>
+                <button class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" @click="notifOpen = false">
+                  <X style="width: 12px; height: 12px;" />
+                </button>
+              </div>
+            </div>
+            <div style="max-height: 300px; overflow-y: auto;">
+              <div
+                v-for="(n, i) in notifList"
+                :key="n.id"
+                class="flex items-start gap-3 px-4 sm:px-5 py-3.5 cursor-pointer hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors"
+                :style="{ opacity: n.read ? 0.5 : 1, borderBottom: i < notifList.length - 1 ? (isDark ? '1px solid #1f2937' : '1px solid #f8fafc') : 'none' }"
+              >
+                <div class="shrink-0 flex items-center justify-center rounded-xl mt-0.5" :style="{ width: '30px', height: '30px', background: getNotifStyle(n.type).bg }">
+                  <component :is="getNotifStyle(n.type).icon" :style="{ width: '13px', height: '13px', color: getNotifStyle(n.type).color }" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-baseline justify-between gap-2">
+                    <p class="truncate text-[12.5px] text-gray-900 dark:text-gray-100" :style="{ fontWeight: n.read ? 500 : 650 }">{{ n.title }}</p>
+                    <span class="shrink-0 text-[10.5px] text-gray-400">{{ n.time }}</span>
+                  </div>
+                  <p class="text-[11.5px] text-gray-500 leading-snug mt-[2px]">{{ n.desc }}</p>
+                </div>
+                <div v-if="!n.read" class="shrink-0 rounded-full mt-2" style="width: 6px; height: 6px; background: #478FC8;" />
+              </div>
+            </div>
+            <div class="px-4 sm:px-5 py-3" :style="{ borderTop: isDark ? '1px solid #1f2937' : '1px solid #f1f5f9', background: isDark ? '#0d1117' : '#fafbfc' }">
+              <button class="w-full py-2 rounded-xl text-[#478FC8] hover:bg-[#edf4ff] dark:hover:bg-[#1e3a5f] transition-colors text-[12.5px] font-semibold">
+                View all notifications →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Desktop: Icon pill group -->
       <div class="hidden sm:flex items-center gap-0.5 rounded-2xl px-1 py-1" :style="{ background: isDark ? '#1f2937' : '#f6f8fa', border: isDark ? '1.5px solid #374151' : '1.5px solid #edf0f4' }">
         <button
           class="relative w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-150 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
@@ -432,7 +639,7 @@ function handleLogout() {
             <span v-if="unreadCount > 0" class="absolute rounded-full" :style="{ top: '6px', right: '6px', width: '8px', height: '8px', background: 'linear-gradient(135deg, #f97316, #ef4444)', border: isDark ? '1.5px solid #1f2937' : '1.5px solid #f6f8fa' }" />
           </button>
 
-          <!-- Notification Panel -->
+          <!-- Notification Panel (desktop) -->
           <div
             v-if="notifOpen"
             class="absolute right-0 top-full mt-2.5 z-50 flex flex-col overflow-hidden"
@@ -449,7 +656,7 @@ function handleLogout() {
                 </span>
               </div>
               <div class="flex items-center gap-1">
-                <button v-if="unreadCount > 0" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-[#edf4ff] text-[#478FC8] transition-colors text-[11px] font-semibold" @click="markAllRead">
+                <button v-if="unreadCount > 0" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-[#edf4ff] dark:hover:bg-[#1e3a5f] text-[#478FC8] transition-colors text-[11px] font-semibold" @click="markAllRead">
                   <Check style="width: 10px; height: 10px;" /> Mark all read
                 </button>
                 <button class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" @click="notifOpen = false">
@@ -492,14 +699,14 @@ function handleLogout() {
       <!-- Profile -->
       <div class="relative">
         <button
-          class="flex items-center gap-2.5 rounded-2xl px-2.5 py-1.5 transition-all duration-150"
+          class="flex items-center gap-1.5 sm:gap-2.5 rounded-2xl px-1.5 sm:px-2.5 py-1.5 transition-all duration-150"
           :class="profileOpen ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800'"
           @click="profileOpen = !profileOpen; notifOpen = false"
         >
           <div class="relative shrink-0">
             <div
               class="flex items-center justify-center rounded-full text-white shrink-0"
-              style="width: 34px; height: 34px; font-size: 12px; font-weight: 700; background: linear-gradient(135deg, #478FC8, #5BA3D9); box-shadow: 0 2px 8px rgba(71,143,200,0.35);"
+              style="width: 32px; height: 32px; font-size: 11px; font-weight: 700; background: linear-gradient(135deg, #478FC8, #5BA3D9); box-shadow: 0 2px 8px rgba(71,143,200,0.35);"
             >
               {{ userInitials }}
             </div>
@@ -520,8 +727,8 @@ function handleLogout() {
         <!-- Profile Dropdown -->
         <div
           v-if="profileOpen"
-          class="absolute right-0 top-full mt-2.5 z-50 overflow-hidden"
-          :style="{ width: '220px', background: isDark ? '#111827' : '#fff', borderRadius: '18px', border: isDark ? '1px solid #1f2937' : '1px solid #e8edf3', boxShadow: isDark ? '0 20px 60px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.2)' : '0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.06)' }"
+          class="fixed sm:absolute right-2 sm:right-0 top-[60px] sm:top-full sm:mt-2.5 z-50 overflow-hidden"
+          :style="{ width: 'min(220px, calc(100vw - 16px))', background: isDark ? '#111827' : '#fff', borderRadius: '18px', border: isDark ? '1px solid #1f2937' : '1px solid #e8edf3', boxShadow: isDark ? '0 20px 60px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.2)' : '0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.06)' }"
         >
           <div style="background: linear-gradient(135deg, #478FC8 0%, #3570A5 100%); height: 52px;" />
           <div style="position: relative; margin-top: -20px; padding-left: 16px;">
