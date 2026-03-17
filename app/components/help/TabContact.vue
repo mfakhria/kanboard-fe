@@ -20,7 +20,7 @@ interface ContactChannel {
 const contactChannels: ContactChannel[] = [
   { icon: Mail, title: 'Email Support', desc: 'support@kanzon.app', sub: 'Response within 24 hours', color: '#478FC8', bg: '#edf4ff' },
   { icon: MessageSquare, title: 'Live Chat', desc: 'Chat with our team', sub: 'Available Mon-Fri, 9AM-6PM', color: '#16a34a', bg: '#f0fdf4' },
-  { icon: Headphones, title: 'Phone Support', desc: '+1 (555) 123-4567', sub: 'Premium plan only', color: '#7c3aed', bg: '#f5f3ff' },
+  { icon: Headphones, title: 'Phone Support', desc: '+62 85723847290', sub: 'Premium plan only', color: '#7c3aed', bg: '#f5f3ff' },
 ]
 
 const subject = ref('')
