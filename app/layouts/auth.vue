@@ -45,14 +45,9 @@
     <div class="relative z-10 flex items-center gap-2.5 px-8 pt-7">
       <div
         class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-        style="background: linear-gradient(135deg, #478FC8, #3570A5)"
+        style="background: rgba(255,255,255,0.88); border: 1px solid rgba(255,255,255,0.9)"
       >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <rect x="1" y="1" width="5" height="5" rx="1.2" fill="white" fill-opacity="0.95" />
-          <rect x="8" y="1" width="5" height="5" rx="1.2" fill="white" fill-opacity="0.95" />
-          <rect x="1" y="8" width="5" height="5" rx="1.2" fill="white" fill-opacity="0.95" />
-          <rect x="8" y="8" width="5" height="5" rx="1.2" fill="white" fill-opacity="0.95" />
-        </svg>
+        <img src="/logo-icon.svg" alt="Kanzon logo" class="w-6 h-6 object-contain" />
       </div>
       <NuxtLink to="/" class="text-gray-800 no-underline" style="font-size: 16px; font-weight: 800; letter-spacing: -0.4px">
         kanzon

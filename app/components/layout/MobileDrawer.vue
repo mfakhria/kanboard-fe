@@ -10,7 +10,6 @@ import {
   HelpCircle,
   LogOut,
   X,
-  Grid2x2,
   ChevronsUpDown,
   Check,
 } from 'lucide-vue-next'
@@ -136,9 +135,9 @@ const userInitials = computed(() => {
           <div class="flex items-center gap-3">
             <div
               class="shrink-0 flex items-center justify-center rounded-xl"
-              style="width: 36px; height: 36px; background: linear-gradient(135deg, #478FC8 0%, #2d6da3 100%); box-shadow: 0 4px 12px rgba(71,143,200,0.35);"
+              style="width: 36px; height: 36px; background: rgba(71,143,200,0.12); box-shadow: 0 4px 12px rgba(71,143,200,0.22);"
             >
-              <Grid2x2 style="width: 17px; height: 17px; color: #fff;" :stroke-width="2.5" />
+              <img src="/logo-icon.svg" alt="Kanzon logo" class="w-6 h-6 object-contain" />
             </div>
             <div>
               <span

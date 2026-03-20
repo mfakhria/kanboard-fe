@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Eye, EyeOff, Mail, Lock, LogIn } from 'lucide-vue-next'
+import { Eye, EyeOff, Mail, Lock } from 'lucide-vue-next'
 
 definePageMeta({
   layout: 'auth',
@@ -46,7 +46,7 @@ const handleLogin = async () => {
     class="flex items-center justify-center rounded-2xl shadow-lg mb-5"
     style="width: 56px; height: 56px; background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 8px 32px rgba(71,143,200,0.20), 0 2px 8px rgba(0,0,0,0.08)"
   >
-    <LogIn class="text-[#478FC8]" :size="22" :stroke-width="2.2" />
+    <img src="/logo-icon.svg" alt="Kanzon logo" class="w-8 h-8 object-contain" />
   </div>
 
   <!-- Glass card -->

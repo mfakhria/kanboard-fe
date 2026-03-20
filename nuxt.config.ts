@@ -52,7 +52,9 @@ export default defineNuxtConfig({
         { name: 'description', content: 'Plan, prioritize, and accomplish your tasks with ease.' },
       ],
       link: [
-        { rel: 'icon', type: 'image/jpeg', href: '/kanzon.png' },
+        { rel: 'icon', type: 'image/svg+xml', href: '/logo-icon.svg' },
+        { rel: 'icon', type: 'image/png', href: '/logo.png' },
+        { rel: 'apple-touch-icon', href: '/logo.png' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
         { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap' },

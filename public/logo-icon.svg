@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Kanzon logo">
+  <defs>
+    <linearGradient id="kanzon-bg" x1="14" y1="14" x2="114" y2="114" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5BA3D9"/>
+      <stop offset="1" stop-color="#3570A5"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#kanzon-bg)"/>
+
+  <rect x="26" y="26" width="76" height="76" rx="18" fill="#F8FCFF" fill-opacity="0.96"/>
+
+  <rect x="36" y="40" width="24" height="8" rx="4" fill="#9DBBD6"/>
+  <rect x="36" y="56" width="24" height="8" rx="4" fill="#9DBBD6"/>
+  <rect x="36" y="72" width="20" height="8" rx="4" fill="#9DBBD6"/>
+
+  <rect x="68" y="40" width="24" height="8" rx="4" fill="#478FC8"/>
+  <rect x="68" y="56" width="24" height="8" rx="4" fill="#478FC8"/>
+
+  <rect x="68" y="70" width="24" height="24" rx="7" fill="#2F6EA4"/>
+  <path d="M75 76v12" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M75 82l9-6" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M75 82l9 6" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round"/>
+</svg>
