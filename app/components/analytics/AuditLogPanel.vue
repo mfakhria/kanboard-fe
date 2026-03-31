@@ -10,7 +10,41 @@ import {
 } from 'lucide-vue-next'
 
 const analyticsStore = useAnalyticsStore()
+type AuditFilter = 'all' | 'tasks' | 'projects' | 'members' | 'invitations'
+
+const activeFilter = ref<AuditFilter>('all')
+const filterOptions: Array<{ id: AuditFilter; label: string }> = [
+  { id: 'all', label: 'All' },
+  { id: 'tasks', label: 'Tasks' },
+  { id: 'projects', label: 'Projects' },
+  { id: 'members', label: 'Members' },
+  { id: 'invitations', label: 'Invitations' },
+]
+
 const entries = computed(() => analyticsStore.auditLog)
+const filteredEntries = computed(() => {
+  if (activeFilter.value === 'all') return entries.value
+
+  return entries.value.filter((entry) => {
+    if (activeFilter.value === 'tasks') {
+      return entry.entity === 'task' || entry.entity === 'comment'
+    }
+
+    if (activeFilter.value === 'projects') {
+      return entry.entity === 'project'
+    }
+
+    if (activeFilter.value === 'members') {
+      return entry.entity === 'project_member'
+    }
+
+    if (activeFilter.value === 'invitations') {
+      return entry.entity === 'project_invitation'
+    }
+
+    return true
+  })
+})
 
 function getIcon(action: string) {
   switch (action) {
@@ -127,13 +161,29 @@ function formatFieldLabel(field: string) {
       </div>
       <div class="flex items-center gap-2 rounded-full bg-gray-50 dark:bg-gray-800 px-3 py-1 text-[12px] font-semibold text-gray-500 dark:text-gray-300">
         <Activity class="h-3.5 w-3.5" />
-        {{ entries.length }} entries
+        {{ filteredEntries.length }} entries
       </div>
     </div>
 
-    <div v-if="entries.length" class="divide-y divide-gray-100 dark:divide-gray-800">
+    <div class="px-5 py-3 border-b border-gray-100 dark:border-gray-800">
+      <div class="flex flex-wrap items-center gap-2">
+        <button
+          v-for="option in filterOptions"
+          :key="option.id"
+          class="rounded-full px-3 py-1.5 text-[12px] font-semibold transition-all"
+          :class="activeFilter === option.id
+            ? 'bg-[#478FC8] text-white shadow-sm'
+            : 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
+          @click="activeFilter = option.id"
+        >
+          {{ option.label }}
+        </button>
+      </div>
+    </div>
+
+    <div v-if="filteredEntries.length" class="divide-y divide-gray-100 dark:divide-gray-800">
       <div
-        v-for="entry in entries.slice(0, 12)"
+        v-for="entry in filteredEntries.slice(0, 12)"
         :key="entry.id"
         class="flex items-start gap-4 px-5 py-4"
       >
@@ -174,8 +224,8 @@ function formatFieldLabel(field: string) {
 
     <div v-else class="px-5 py-10 text-center">
       <Activity class="mx-auto h-10 w-10 text-gray-300 dark:text-gray-600" />
-      <p class="mt-3 text-[13px] font-semibold text-gray-500 dark:text-gray-300">No audit log yet</p>
-      <p class="mt-1 text-[12px] text-gray-400 dark:text-gray-500">Project, task, assignment, and comment changes will appear here.</p>
+      <p class="mt-3 text-[13px] font-semibold text-gray-500 dark:text-gray-300">No entries for this filter</p>
+      <p class="mt-1 text-[12px] text-gray-400 dark:text-gray-500">Try another category or create more project activity to populate the audit trail.</p>
     </div>
   </div>
 </template>
