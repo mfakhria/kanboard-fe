@@ -59,6 +59,63 @@ function formatTime(value: string) {
     minute: '2-digit',
   })
 }
+
+function getMetaBadges(entry: any) {
+  const metadata = entry.metadata ?? {}
+  const badges: string[] = []
+
+  const changedFields = Array.isArray(metadata.changedFields) ? metadata.changedFields : []
+  for (const field of changedFields) {
+    badges.push(formatFieldLabel(field))
+  }
+
+  if (metadata.previousRole && metadata.role) {
+    badges.push(`${metadata.previousRole} -> ${metadata.role}`)
+  } else if (metadata.role && (entry.entity === 'project_member' || entry.entity === 'project_invitation')) {
+    badges.push(`Role: ${metadata.role}`)
+  }
+
+  if (metadata.fromColumnName && metadata.toColumnName) {
+    badges.push(`${metadata.fromColumnName} -> ${metadata.toColumnName}`)
+  }
+
+  if (metadata.status) {
+    badges.push(`Status: ${metadata.status}`)
+  }
+
+  return badges
+}
+
+function formatFieldLabel(field: string) {
+  switch (field) {
+    case 'name':
+      return 'Name'
+    case 'description':
+      return 'Description'
+    case 'status':
+      return 'Status'
+    case 'visibility':
+      return 'Visibility'
+    case 'dueDate':
+      return 'Deadline'
+    case 'picId':
+      return 'PIC'
+    case 'color':
+      return 'Color'
+    case 'icon':
+      return 'Icon'
+    case 'title':
+      return 'Title'
+    case 'priority':
+      return 'Priority'
+    case 'completed':
+      return 'Completion'
+    case 'assigneeId':
+      return 'Assignee'
+    default:
+      return field
+  }
+}
 </script>
 
 <template>
@@ -100,6 +157,13 @@ function formatTime(value: string) {
               {{ entry.project.name }}
             </span>
             <span>{{ formatTime(entry.timestamp) }}</span>
+            <span
+              v-for="badge in getMetaBadges(entry)"
+              :key="badge"
+              class="inline-flex items-center rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-0.5 text-[11px] font-medium text-gray-600 dark:text-gray-300"
+            >
+              {{ badge }}
+            </span>
             <span v-if="entry.metadata?.commentPreview" class="truncate max-w-[420px]">
               "{{ entry.metadata.commentPreview }}"
             </span>

@@ -238,19 +238,22 @@ export const useAnalyticsStore = defineStore('analytics', {
       const projectName = activity.project?.name || metadata.projectName
       const taskTitle = metadata.taskTitle
       const memberName = metadata.memberName || metadata.invitedEmail || metadata.assigneeName
+      const changedFields = Array.isArray(metadata.changedFields) ? metadata.changedFields : []
+      const toColumnName = metadata.toColumnName
+      const fromColumnName = metadata.fromColumnName
+      const role = metadata.role
 
-      let description = `${action} ${entity}`
-      if (entity === 'task' && taskTitle) {
-        description = `${this.formatAction(action)} task "${taskTitle}"`
-      } else if (entity === 'comment' && taskTitle) {
-        description = `Commented on "${taskTitle}"`
-      } else if (entity === 'project' && projectName) {
-        description = `${this.formatAction(action)} project "${projectName}"`
-      } else if (entity === 'project_member' && memberName) {
-        description = `${this.formatAction(action)} project member ${memberName}`
-      } else if (entity === 'project_invitation' && memberName) {
-        description = `Sent invitation to ${memberName}`
-      }
+      let description = this.getActivityDescription({
+        action,
+        entity,
+        taskTitle,
+        projectName,
+        memberName,
+        changedFields,
+        fromColumnName,
+        toColumnName,
+        role,
+      })
 
       return {
         id: activity.id,
@@ -294,6 +297,140 @@ export const useAnalyticsStore = defineStore('analytics', {
         default:
           return action
       }
+    },
+
+    getActivityDescription(params: {
+      action: string
+      entity: string
+      taskTitle?: string
+      projectName?: string
+      memberName?: string
+      changedFields: string[]
+      fromColumnName?: string
+      toColumnName?: string
+      role?: string
+    }) {
+      const {
+        action,
+        entity,
+        taskTitle,
+        projectName,
+        memberName,
+        changedFields,
+        fromColumnName,
+        toColumnName,
+        role,
+      } = params
+
+      if (entity === 'task') {
+        if (action === 'CREATED' && taskTitle) {
+          return `created the task "${taskTitle}"`
+        }
+        if (action === 'COMPLETED' && taskTitle) {
+          return `completed the task "${taskTitle}"`
+        }
+        if (action === 'ASSIGNED' && taskTitle && memberName) {
+          return `assigned "${taskTitle}" to ${memberName}`
+        }
+        if (action === 'MOVED' && taskTitle && fromColumnName && toColumnName) {
+          return `moved "${taskTitle}" from ${fromColumnName} to ${toColumnName}`
+        }
+        if (action === 'UPDATED' && taskTitle) {
+          const fieldLabel = this.formatChangedFields(changedFields)
+          return fieldLabel
+            ? `updated ${fieldLabel} for "${taskTitle}"`
+            : `updated the task "${taskTitle}"`
+        }
+        if (action === 'DELETED' && taskTitle) {
+          return `deleted the task "${taskTitle}"`
+        }
+      }
+
+      if (entity === 'comment' && taskTitle) {
+        return `added a comment on "${taskTitle}"`
+      }
+
+      if (entity === 'project') {
+        if (action === 'CREATED' && projectName) {
+          return `created the project "${projectName}"`
+        }
+        if (action === 'UPDATED' && projectName) {
+          const fieldLabel = this.formatChangedFields(changedFields)
+          return fieldLabel
+            ? `updated ${fieldLabel} in "${projectName}"`
+            : `updated the project "${projectName}"`
+        }
+        if (action === 'DELETED' && projectName) {
+          return `deleted the project "${projectName}"`
+        }
+      }
+
+      if (entity === 'project_member') {
+        if (action === 'UPDATED' && memberName && role) {
+          return `changed ${memberName}'s role to ${role}`
+        }
+        if (action === 'UPDATED' && memberName) {
+          return `updated access for ${memberName}`
+        }
+        if (action === 'DELETED' && memberName) {
+          return `removed ${memberName} from the project`
+        }
+        if (action === 'DELETED') {
+          return 'removed a member from the project'
+        }
+      }
+
+      if (entity === 'project_invitation') {
+        if (memberName && role) {
+          return `invited ${memberName} as ${role}`
+        }
+        if (memberName) {
+          return `sent an invitation to ${memberName}`
+        }
+      }
+
+      return `${this.formatAction(action).toLowerCase()} ${entity.replaceAll('_', ' ')}`
+    },
+
+    formatChangedFields(fields: string[]) {
+      if (!fields.length) return ''
+
+      const labels = fields
+        .map(field => {
+          switch (field) {
+            case 'name':
+              return 'the name'
+            case 'description':
+              return 'the description'
+            case 'status':
+              return 'the status'
+            case 'visibility':
+              return 'visibility'
+            case 'dueDate':
+              return 'the deadline'
+            case 'picId':
+              return 'the project owner'
+            case 'color':
+              return 'the color'
+            case 'icon':
+              return 'the icon'
+            case 'title':
+              return 'the title'
+            case 'priority':
+              return 'the priority'
+            case 'completed':
+              return 'the completion status'
+            case 'assigneeId':
+              return 'the assignee'
+            default:
+              return field
+          }
+        })
+        .filter(Boolean)
+
+      if (labels.length === 1) return labels[0] ?? ''
+      if (labels.length === 2) return `${labels[0]} and ${labels[1]}`
+      return `${labels.slice(0, -1).join(', ')}, and ${labels[labels.length - 1]}`
     },
   },
 })
