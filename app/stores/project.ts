@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { projectApi } from '~/features/project/services/project.api'
-import type { Project, CreateProjectPayload, UpdateProjectPayload, ProjectMember, ProjectInvitation, InviteToProjectPayload } from '~/features/project/types'
+import type { Project, CreateProjectPayload, UpdateProjectPayload, ProjectMember, ProjectInvitation, InviteToProjectPayload, ProjectLabel, ProjectLabelPayload } from '~/features/project/types'
 
 interface ProjectState {
   projects: Project[]
@@ -9,6 +9,7 @@ interface ProjectState {
   pendingInvitations: ProjectInvitation[]
   currentMembers: ProjectMember[]
   currentInvitations: ProjectInvitation[]
+  currentLabels: ProjectLabel[]
 }
 
 export const useProjectStore = defineStore('project', {
@@ -19,6 +20,7 @@ export const useProjectStore = defineStore('project', {
     pendingInvitations: [],
     currentMembers: [],
     currentInvitations: [],
+    currentLabels: [],
   }),
 
   getters: {
@@ -55,6 +57,7 @@ export const useProjectStore = defineStore('project', {
       try {
         const { data } = await projectApi.get(id)
         this.currentProject = data as Project
+        this.currentLabels = ((data as Project).labels ?? []).slice()
         // Also update in list
         const idx = this.projects.findIndex(p => p.id === id)
         if (idx !== -1) this.projects[idx] = data as Project
@@ -83,7 +86,10 @@ export const useProjectStore = defineStore('project', {
         const { data } = await projectApi.update(id, payload)
         const idx = this.projects.findIndex(p => p.id === id)
         if (idx !== -1) this.projects[idx] = data as Project
-        if (this.currentProject?.id === id) this.currentProject = data as Project
+        if (this.currentProject?.id === id) {
+          this.currentProject = data as Project
+          this.currentLabels = ((data as Project).labels ?? []).slice()
+        }
       } catch (error) {
         console.error('Failed to update project:', error)
         throw error
@@ -94,7 +100,10 @@ export const useProjectStore = defineStore('project', {
       try {
         await projectApi.delete(id)
         this.projects = this.projects.filter(p => p.id !== id)
-        if (this.currentProject?.id === id) this.currentProject = null
+        if (this.currentProject?.id === id) {
+          this.currentProject = null
+          this.currentLabels = []
+        }
       } catch (error) {
         console.error('Failed to delete project:', error)
         throw error
@@ -103,6 +112,7 @@ export const useProjectStore = defineStore('project', {
 
     setCurrentProject(projectId: string) {
       this.currentProject = this.projects.find(p => p.id === projectId) ?? null
+      this.currentLabels = this.currentProject?.labels?.slice() ?? []
     },
 
     // ─── Members & Invitations ─────────────────────────────────────────
@@ -193,6 +203,73 @@ export const useProjectStore = defineStore('project', {
         this.pendingInvitations = this.pendingInvitations.filter(i => i.token !== token)
       } catch (error) {
         console.error('Failed to decline invitation:', error)
+        throw error
+      }
+    },
+
+    async fetchLabels(projectId: string) {
+      try {
+        const { data } = await projectApi.getLabels(projectId)
+        this.currentLabels = data as ProjectLabel[]
+        if (this.currentProject?.id === projectId) {
+          this.currentProject = {
+            ...this.currentProject,
+            labels: this.currentLabels.slice(),
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch project labels:', error)
+      }
+    },
+
+    async createLabel(projectId: string, payload: ProjectLabelPayload) {
+      try {
+        const { data } = await projectApi.createLabel(projectId, payload)
+        this.currentLabels.push(data as ProjectLabel)
+        this.currentLabels.sort((a, b) => a.name.localeCompare(b.name))
+        if (this.currentProject?.id === projectId) {
+          this.currentProject = {
+            ...this.currentProject,
+            labels: this.currentLabels.slice(),
+          }
+        }
+        return data as ProjectLabel
+      } catch (error) {
+        console.error('Failed to create project label:', error)
+        throw error
+      }
+    },
+
+    async updateLabel(projectId: string, labelId: string, payload: ProjectLabelPayload) {
+      try {
+        const { data } = await projectApi.updateLabel(projectId, labelId, payload)
+        const idx = this.currentLabels.findIndex(label => label.id === labelId)
+        if (idx !== -1) this.currentLabels[idx] = data as ProjectLabel
+        this.currentLabels.sort((a, b) => a.name.localeCompare(b.name))
+        if (this.currentProject?.id === projectId) {
+          this.currentProject = {
+            ...this.currentProject,
+            labels: this.currentLabels.slice(),
+          }
+        }
+      } catch (error) {
+        console.error('Failed to update project label:', error)
+        throw error
+      }
+    },
+
+    async deleteLabel(projectId: string, labelId: string) {
+      try {
+        await projectApi.deleteLabel(projectId, labelId)
+        this.currentLabels = this.currentLabels.filter(label => label.id !== labelId)
+        if (this.currentProject?.id === projectId) {
+          this.currentProject = {
+            ...this.currentProject,
+            labels: this.currentLabels.slice(),
+          }
+        }
+      } catch (error) {
+        console.error('Failed to delete project label:', error)
         throw error
       }
     },

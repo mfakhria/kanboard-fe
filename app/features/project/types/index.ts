@@ -14,6 +14,16 @@ export interface Project {
   completedTasks?: number
   myRole?: 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER' | null
   members?: ProjectMember[]
+  labels?: ProjectLabel[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ProjectLabel {
+  id: string
+  name: string
+  color: string
+  projectId: string
   createdAt: string
   updatedAt: string
 }
@@ -64,4 +74,9 @@ export interface UpdateProjectPayload {
 export interface InviteToProjectPayload {
   email: string
   role?: 'ADMIN' | 'MEMBER' | 'VIEWER'
+}
+
+export interface ProjectLabelPayload {
+  name: string
+  color?: string
 }

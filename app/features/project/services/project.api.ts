@@ -1,5 +1,5 @@
 import api from '~/utils/api'
-import type { Project, CreateProjectPayload, UpdateProjectPayload, InviteToProjectPayload, ProjectMember, ProjectInvitation } from '~/features/project/types'
+import type { Project, CreateProjectPayload, UpdateProjectPayload, InviteToProjectPayload, ProjectMember, ProjectInvitation, ProjectLabel, ProjectLabelPayload } from '~/features/project/types'
 
 export const projectApi = {
   list(workspaceId: string) {
@@ -58,5 +58,21 @@ export const projectApi = {
 
   declineInvitation(token: string) {
     return api.post('/projects/invitations/decline', { token })
+  },
+
+  getLabels(projectId: string) {
+    return api.get<ProjectLabel[]>(`/projects/${projectId}/labels`)
+  },
+
+  createLabel(projectId: string, payload: ProjectLabelPayload) {
+    return api.post<ProjectLabel>(`/projects/${projectId}/labels`, payload)
+  },
+
+  updateLabel(projectId: string, labelId: string, payload: ProjectLabelPayload) {
+    return api.patch<ProjectLabel>(`/projects/${projectId}/labels/${labelId}`, payload)
+  },
+
+  deleteLabel(projectId: string, labelId: string) {
+    return api.delete(`/projects/${projectId}/labels/${labelId}`)
   },
 }

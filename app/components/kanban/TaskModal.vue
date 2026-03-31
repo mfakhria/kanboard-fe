@@ -72,6 +72,15 @@ const selectedAssigneeId = ref<string | null>(
 const showAssigneeDropdown = ref(false)
 
 const projectMembers = computed(() => projectStore.currentMembers)
+const catalogLabelSuggestions = computed(() => {
+  const catalog = projectStore.currentLabels ?? []
+
+  return catalog.filter((label) => {
+    const key = label.name.trim().toLowerCase()
+    return key && !editableLabels.value.some(current => current.name.trim().toLowerCase() === key)
+  })
+})
+
 const boardLabelSuggestions = computed(() => {
   const seen = new Set<string>()
 
@@ -84,6 +93,11 @@ const boardLabelSuggestions = computed(() => {
       seen.add(key)
       return !editableLabels.value.some(current => current.name.trim().toLowerCase() === key)
     })
+    .filter(label =>
+      !catalogLabelSuggestions.value.some(
+        catalogLabel => catalogLabel.name.trim().toLowerCase() === label.name.trim().toLowerCase(),
+      ),
+    )
     .slice(0, 8)
 })
 
@@ -468,8 +482,29 @@ function handleClickOutside(e: MouseEvent) {
             </div>
           </div>
 
+          <div v-if="catalogLabelSuggestions.length" class="space-y-2">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Project label catalog</p>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="label in catalogLabelSuggestions"
+                :key="label.id ?? label.name"
+                type="button"
+                class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition hover:-translate-y-0.5"
+                :style="{
+                  color: label.color,
+                  borderColor: `${label.color}45`,
+                  backgroundColor: `${label.color}10`,
+                }"
+                @click="addSuggestedLabel(label)"
+              >
+                <span class="h-1.5 w-1.5 rounded-full" :style="{ backgroundColor: label.color }" />
+                {{ label.name }}
+              </button>
+            </div>
+          </div>
+
           <div v-if="boardLabelSuggestions.length" class="space-y-2">
-            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Suggested from this board</p>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Other labels from this board</p>
             <div class="flex flex-wrap gap-2">
               <button
                 v-for="label in boardLabelSuggestions"

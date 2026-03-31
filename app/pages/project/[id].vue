@@ -17,6 +17,10 @@ import {
   Sparkles,
   ChevronDown,
   Crown,
+  Tag,
+  Palette,
+  Plus,
+  Check,
 } from 'lucide-vue-next'
 
 definePageMeta({ layout: 'dashboard' })
@@ -35,6 +39,7 @@ onMounted(async () => {
   await Promise.all([
     kanbanStore.fetchBoard(projectId.value),
     projectStore.fetchMembers(projectId.value),
+    projectStore.fetchLabels(projectId.value),
   ])
 })
 
@@ -82,7 +87,7 @@ const statusConfig: Record<string, { label: string; class: string; icon: any }> 
 }
 
 // ─── Active tab ───
-const activeTab = ref<'board' | 'overview' | 'members'>('board')
+const activeTab = ref<'board' | 'overview' | 'labels' | 'members'>('board')
 
 // ─── Edit Project Dialog ───
 const showEditDialog = ref(false)
@@ -169,7 +174,104 @@ async function loadMembers() {
 
 watch(activeTab, (tab) => {
   if (tab === 'members') loadMembers()
+  if (tab === 'labels') projectStore.fetchLabels(projectId.value)
 })
+
+const labelPalette = [
+  '#478FC8',
+  '#6366f1',
+  '#8b5cf6',
+  '#ec4899',
+  '#f97316',
+  '#eab308',
+  '#22c55e',
+  '#14b8a6',
+  '#ef4444',
+  '#64748b',
+]
+
+const newLabelName = ref('')
+const newLabelColor = ref(labelPalette[0] ?? '#478FC8')
+const isCreatingLabel = ref(false)
+const editingLabelId = ref<string | null>(null)
+const editingLabelName = ref('')
+const editingLabelColor = ref(labelPalette[1] ?? '#6366f1')
+const labelError = ref('')
+
+const projectLabelUsage = computed(() => {
+  const usageMap = new Map<string, number>()
+
+  for (const task of kanbanStore.columns.flatMap(column => column.tasks)) {
+    for (const label of task.labels) {
+      const key = label.name.trim().toLowerCase()
+      usageMap.set(key, (usageMap.get(key) ?? 0) + 1)
+    }
+  }
+
+  return projectStore.currentLabels.map(label => ({
+    ...label,
+    usageCount: usageMap.get(label.name.trim().toLowerCase()) ?? 0,
+  }))
+})
+
+async function handleCreateLabel() {
+  if (!newLabelName.value.trim()) return
+
+  isCreatingLabel.value = true
+  labelError.value = ''
+  try {
+    await projectStore.createLabel(projectId.value, {
+      name: newLabelName.value.trim(),
+      color: newLabelColor.value,
+    })
+    newLabelName.value = ''
+    newLabelColor.value = labelPalette[0] ?? '#478FC8'
+  } catch (err: any) {
+    labelError.value = err?.response?.data?.message || 'Failed to create label'
+  } finally {
+    isCreatingLabel.value = false
+  }
+}
+
+function startEditLabel(label: { id: string; name: string; color: string }) {
+  editingLabelId.value = label.id
+  editingLabelName.value = label.name
+  editingLabelColor.value = label.color
+  labelError.value = ''
+}
+
+function cancelEditLabel() {
+  editingLabelId.value = null
+  editingLabelName.value = ''
+  editingLabelColor.value = labelPalette[1] ?? '#6366f1'
+}
+
+async function handleSaveLabel(labelId: string) {
+  if (!editingLabelName.value.trim()) return
+
+  labelError.value = ''
+  try {
+    await projectStore.updateLabel(projectId.value, labelId, {
+      name: editingLabelName.value.trim(),
+      color: editingLabelColor.value,
+    })
+    cancelEditLabel()
+  } catch (err: any) {
+    labelError.value = err?.response?.data?.message || 'Failed to update label'
+  }
+}
+
+async function handleDeleteLabel(labelId: string) {
+  labelError.value = ''
+  try {
+    await projectStore.deleteLabel(projectId.value, labelId)
+    if (editingLabelId.value === labelId) {
+      cancelEditLabel()
+    }
+  } catch (err: any) {
+    labelError.value = err?.response?.data?.message || 'Failed to delete label'
+  }
+}
 
 async function handleInvite() {
   if (!inviteEmail.value.trim()) return
@@ -375,6 +477,20 @@ const columnBarColors = [
       <button
         :class="[
           'relative flex items-center gap-2 px-4 py-3 text-[13.5px] transition-all',
+          activeTab === 'labels' ? 'text-[#478FC8] font-bold' : 'text-gray-500 dark:text-gray-400 font-medium hover:text-gray-700 dark:hover:text-gray-300'
+        ]"
+        @click="activeTab = 'labels'"
+      >
+        <Tag class="h-3.5 w-3.5" />
+        Labels
+        <span class="flex h-4 min-w-4 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 px-1 text-[10px] font-bold text-gray-600 dark:text-gray-400">
+          {{ projectStore.currentLabels.length || 0 }}
+        </span>
+        <span v-if="activeTab === 'labels'" class="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-[#478FC8]" />
+      </button>
+      <button
+        :class="[
+          'relative flex items-center gap-2 px-4 py-3 text-[13.5px] transition-all',
           activeTab === 'members' ? 'text-[#478FC8] font-bold' : 'text-gray-500 dark:text-gray-400 font-medium hover:text-gray-700 dark:hover:text-gray-300'
         ]"
         @click="activeTab = 'members'"
@@ -481,6 +597,179 @@ const columnBarColors = [
               </div>
             </div>
             <p v-if="kanbanStore.columns.length === 0" class="text-sm text-gray-400 dark:text-gray-500 text-center py-4">No columns yet.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Content: Labels -->
+    <div v-show="activeTab === 'labels'" class="mt-6 space-y-6">
+      <div class="grid grid-cols-1 xl:grid-cols-[1.1fr_0.9fr] gap-6">
+        <div class="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between gap-3">
+            <div>
+              <h3 class="text-[15px] font-bold text-gray-900 dark:text-white">Project Label Catalog</h3>
+              <p class="text-[12.5px] text-gray-500 dark:text-gray-400 mt-0.5">Create shared labels so tasks across this project stay consistent.</p>
+            </div>
+            <div class="inline-flex items-center gap-2 rounded-full bg-[#EDF4FF] dark:bg-[#478FC8]/10 px-3 py-1 text-[12px] font-semibold text-[#478FC8]">
+              <Tag class="h-3.5 w-3.5" />
+              {{ projectStore.currentLabels.length }} labels
+            </div>
+          </div>
+
+          <div class="p-6 space-y-4">
+            <div v-if="labelError" class="rounded-xl bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+              {{ labelError }}
+            </div>
+
+            <div
+              v-for="label in projectLabelUsage"
+              :key="label.id"
+              class="rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 p-4"
+            >
+              <template v-if="editingLabelId === label.id">
+                <div class="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
+                  <UiInput v-model="editingLabelName" placeholder="Label name" />
+                  <div class="flex items-center gap-2">
+                    <input
+                      v-model="editingLabelColor"
+                      type="color"
+                      class="h-10 w-12 cursor-pointer rounded-lg border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-gray-900"
+                    />
+                    <div
+                      class="inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-semibold"
+                      :style="{
+                        color: editingLabelColor,
+                        borderColor: `${editingLabelColor}45`,
+                        backgroundColor: `${editingLabelColor}16`,
+                      }"
+                    >
+                      <span class="h-2 w-2 rounded-full" :style="{ backgroundColor: editingLabelColor }" />
+                      {{ editingLabelName || 'Preview' }}
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <UiButton size="sm" class="gap-1.5" @click="handleSaveLabel(label.id)">
+                      <Check class="h-3.5 w-3.5" />
+                      Save
+                    </UiButton>
+                    <UiButton variant="outline" size="sm" @click="cancelEditLabel">Cancel</UiButton>
+                  </div>
+                </div>
+
+                <div class="mt-3 flex flex-wrap gap-2">
+                  <button
+                    v-for="color in labelPalette"
+                    :key="`${label.id}-${color}`"
+                    type="button"
+                    :class="[
+                      'h-6 w-6 rounded-full border-2 transition',
+                      editingLabelColor === color ? 'border-gray-900 dark:border-white scale-110' : 'border-white dark:border-gray-800',
+                    ]"
+                    :style="{ backgroundColor: color }"
+                    @click="editingLabelColor = color"
+                  />
+                </div>
+              </template>
+
+              <template v-else>
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div class="min-w-0">
+                    <div
+                      class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold"
+                      :style="{
+                        color: label.color,
+                        borderColor: `${label.color}45`,
+                        backgroundColor: `${label.color}16`,
+                      }"
+                    >
+                      <span class="h-2 w-2 rounded-full" :style="{ backgroundColor: label.color }" />
+                      {{ label.name }}
+                    </div>
+                    <p class="mt-2 text-[12.5px] text-gray-500 dark:text-gray-400">
+                      Used on <span class="font-semibold text-gray-700 dark:text-gray-200">{{ label.usageCount }}</span> task{{ label.usageCount === 1 ? '' : 's' }}
+                    </p>
+                  </div>
+
+                  <div v-if="canManage" class="flex items-center gap-2">
+                    <UiButton variant="outline" size="sm" class="gap-1.5" @click="startEditLabel(label)">
+                      <Pencil class="h-3.5 w-3.5" />
+                      Edit
+                    </UiButton>
+                    <UiButton variant="outline" size="sm" class="gap-1.5 text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200 dark:border-red-800 dark:text-red-400" @click="handleDeleteLabel(label.id)">
+                      <Trash2 class="h-3.5 w-3.5" />
+                      Delete
+                    </UiButton>
+                  </div>
+                </div>
+              </template>
+            </div>
+
+            <div v-if="projectLabelUsage.length === 0" class="rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 p-8 text-center">
+              <Tag class="h-9 w-9 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">No shared labels yet</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Create a starter catalog for backend, design, urgent work, blockers, or QA.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+            <h3 class="text-[15px] font-bold text-gray-900 dark:text-white">Add New Label</h3>
+            <p class="text-[12.5px] text-gray-500 dark:text-gray-400 mt-0.5">Shared labels appear as suggestions inside the task editor.</p>
+          </div>
+          <div class="p-6 space-y-4">
+            <div>
+              <UiLabel for="new-project-label-name">Label Name</UiLabel>
+              <UiInput id="new-project-label-name" v-model="newLabelName" placeholder="e.g. Backend, QA, Blocked" class="mt-1.5" />
+            </div>
+            <div>
+              <UiLabel for="new-project-label-color">Color</UiLabel>
+              <div class="mt-1.5 flex items-center gap-3">
+                <input
+                  id="new-project-label-color"
+                  v-model="newLabelColor"
+                  type="color"
+                  class="h-10 w-12 cursor-pointer rounded-lg border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-gray-900"
+                />
+                <div
+                  class="inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold"
+                  :style="{
+                    color: newLabelColor,
+                    borderColor: `${newLabelColor}45`,
+                    backgroundColor: `${newLabelColor}16`,
+                  }"
+                >
+                  <span class="h-2 w-2 rounded-full" :style="{ backgroundColor: newLabelColor }" />
+                  {{ newLabelName || 'Label preview' }}
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="color in labelPalette"
+                :key="`new-${color}`"
+                type="button"
+                :class="[
+                  'h-7 w-7 rounded-full border-2 transition',
+                  newLabelColor === color ? 'border-gray-900 dark:border-white scale-110' : 'border-white dark:border-gray-800',
+                ]"
+                :style="{ backgroundColor: color }"
+                @click="newLabelColor = color"
+              />
+            </div>
+            <UiButton
+              v-if="canManage"
+              class="w-full gap-2 bg-[#478FC8] hover:bg-[#3a7bb3] text-white"
+              :disabled="isCreatingLabel || !newLabelName.trim()"
+              @click="handleCreateLabel"
+            >
+              <Plus class="h-4 w-4" />
+              {{ isCreatingLabel ? 'Creating...' : 'Create Shared Label' }}
+            </UiButton>
+            <p v-else class="rounded-xl bg-gray-50 dark:bg-gray-800 px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+              You can use labels from the catalog in tasks, but only project admins can change the catalog.
+            </p>
           </div>
         </div>
       </div>
