@@ -11,6 +11,10 @@ export const kanbanApi = {
     return api.get<Board>(`/boards/${boardId}`)
   },
 
+  getTask(taskId: string) {
+    return api.get(`/tasks/${taskId}`)
+  },
+
   // Columns
   createColumn(payload: CreateColumnPayload) {
     // Backend expects 'name' instead of 'title'
@@ -79,6 +83,20 @@ export const kanbanApi = {
 
   addComment(taskId: string, content: string) {
     return api.post(`/tasks/${taskId}/comments`, { content })
+  },
+
+  uploadAttachment(taskId: string, file: File) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post(`/tasks/${taskId}/attachments`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+  },
+
+  deleteAttachment(taskId: string, attachmentId: string) {
+    return api.delete(`/tasks/${taskId}/attachments/${attachmentId}`)
   },
 
   listTasks(workspaceId: string) {

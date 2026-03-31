@@ -25,6 +25,7 @@ export interface Task {
   dueDate?: string
   assignees: TaskAssignee[]
   labels: TaskLabel[]
+  attachments?: TaskAttachment[]
   commentsCount: number
   attachmentsCount: number
   createdAt: string
@@ -41,6 +42,22 @@ export interface TaskAssignee {
   id: string
   name: string
   avatar?: string
+}
+
+export interface TaskAttachment {
+  id: string
+  fileName: string
+  originalName: string
+  mimeType: string
+  size: number
+  url: string
+  createdAt: string
+  uploader?: {
+    id: string
+    name: string
+    email: string
+    avatar?: string
+  }
 }
 
 export interface CreateColumnPayload {

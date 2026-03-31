@@ -13,8 +13,12 @@ import {
   Check,
   Palette,
   Plus,
+  Paperclip,
+  Upload,
+  Download,
+  Loader2,
 } from 'lucide-vue-next'
-import type { Task, TaskLabel } from '~/features/kanban/types'
+import type { Task, TaskLabel, TaskAttachment } from '~/features/kanban/types'
 import { kanbanApi } from '~/features/kanban/services/task.api'
 
 const props = defineProps<{
@@ -28,6 +32,7 @@ const emit = defineEmits<{
 
 const kanbanStore = useKanbanStore()
 const projectStore = useProjectStore()
+const runtimeConfig = useRuntimeConfig()
 
 // ─── Editable form fields ───
 const editForm = reactive({
@@ -59,6 +64,10 @@ const editableLabels = ref<TaskLabel[]>(
 )
 const newLabelName = ref('')
 const newLabelColor = ref(labelPalette[0] ?? '#478FC8')
+const attachments = ref<TaskAttachment[]>(props.task.attachments ?? [])
+const isLoadingAttachments = ref(false)
+const isUploadingAttachment = ref(false)
+const attachmentInputRef = ref<HTMLInputElement | null>(null)
 
 // ─── Column / Status ───
 const columns = computed(() => kanbanStore.columns)
@@ -157,6 +166,66 @@ function removeLabel(labelName: string) {
   editableLabels.value = editableLabels.value.filter(label => label.name !== labelName)
 }
 
+async function fetchTaskDetails() {
+  isLoadingAttachments.value = true
+  try {
+    const { data } = await kanbanApi.getTask(props.task.id)
+    attachments.value = (data as any).attachments ?? []
+  } catch (error) {
+    console.error('Failed to fetch task details:', error)
+  } finally {
+    isLoadingAttachments.value = false
+  }
+}
+
+function getAttachmentUrl(url: string) {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  const baseUrl = (runtimeConfig.public.apiBaseUrl || '').replace(/\/api\/?$/, '')
+  return `${baseUrl}${url}`
+}
+
+function formatFileSize(size: number) {
+  if (size < 1024) return `${size} B`
+  if (size < 1024 * 1024) return `${Math.round(size / 102.4) / 10} KB`
+  return `${Math.round(size / (1024 * 102.4)) / 10} MB`
+}
+
+function openAttachmentPicker() {
+  attachmentInputRef.value?.click()
+}
+
+async function handleAttachmentSelected(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  isUploadingAttachment.value = true
+  try {
+    await kanbanApi.uploadAttachment(props.task.id, file)
+    await fetchTaskDetails()
+    if (kanbanStore.board) {
+      await kanbanStore.fetchBoard(kanbanStore.board.projectId)
+    }
+  } catch (error) {
+    console.error('Failed to upload attachment:', error)
+  } finally {
+    input.value = ''
+    isUploadingAttachment.value = false
+  }
+}
+
+async function removeAttachment(attachmentId: string) {
+  try {
+    await kanbanApi.deleteAttachment(props.task.id, attachmentId)
+    attachments.value = attachments.value.filter(attachment => attachment.id !== attachmentId)
+    if (kanbanStore.board) {
+      await kanbanStore.fetchBoard(kanbanStore.board.projectId)
+    }
+  } catch (error) {
+    console.error('Failed to delete attachment:', error)
+  }
+}
+
 // ─── Save ───
 const isSaving = ref(false)
 
@@ -237,9 +306,13 @@ const avatarColors = [
 const assigneeRef = ref<HTMLElement>()
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  fetchTaskDetails()
 })
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+})
+watch(() => props.task.id, () => {
+  fetchTaskDetails()
 })
 function handleClickOutside(e: MouseEvent) {
   if (assigneeRef.value && !assigneeRef.value.contains(e.target as Node)) {
@@ -523,6 +596,90 @@ function handleClickOutside(e: MouseEvent) {
               </button>
             </div>
           </div>
+        </div>
+
+        <!-- Attachments -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <Paperclip class="h-4 w-4 text-gray-400 dark:text-gray-500" />
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Attachments</span>
+              <span class="rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400">
+                {{ attachments.length }}
+              </span>
+            </div>
+
+            <input
+              ref="attachmentInputRef"
+              type="file"
+              class="hidden"
+              @change="handleAttachmentSelected"
+            />
+            <UiButton
+              type="button"
+              size="sm"
+              variant="outline"
+              class="gap-1.5"
+              :disabled="isUploadingAttachment"
+              @click="openAttachmentPicker"
+            >
+              <Loader2 v-if="isUploadingAttachment" class="h-3.5 w-3.5 animate-spin" />
+              <Upload v-else class="h-3.5 w-3.5" />
+              {{ isUploadingAttachment ? 'Uploading...' : 'Upload File' }}
+            </UiButton>
+          </div>
+
+          <div v-if="isLoadingAttachments" class="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-800/50 px-3 py-3 text-sm text-gray-500 dark:text-gray-400">
+            <Loader2 class="h-4 w-4 animate-spin" />
+            Loading attachments...
+          </div>
+
+          <div v-else-if="attachments.length" class="space-y-2">
+            <div
+              v-for="attachment in attachments"
+              :key="attachment.id"
+              class="flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-800/50 px-3 py-3"
+            >
+              <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#EDF4FF] dark:bg-[#478FC8]/10 text-[#478FC8] shrink-0">
+                <Paperclip class="h-4 w-4" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <a
+                  :href="getAttachmentUrl(attachment.url)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="block truncate text-sm font-semibold text-gray-800 transition hover:text-[#478FC8] dark:text-gray-200"
+                >
+                  {{ attachment.originalName }}
+                </a>
+                <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  {{ formatFileSize(attachment.size) }}
+                  <span v-if="attachment.uploader"> • uploaded by {{ attachment.uploader.name }}</span>
+                </p>
+              </div>
+              <a
+                :href="getAttachmentUrl(attachment.url)"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="rounded-lg p-2 text-gray-400 transition hover:bg-gray-200/70 hover:text-[#478FC8] dark:hover:bg-gray-700"
+                title="Open attachment"
+              >
+                <Download class="h-4 w-4" />
+              </a>
+              <button
+                type="button"
+                class="rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+                title="Remove attachment"
+                @click="removeAttachment(attachment.id)"
+              >
+                <Trash2 class="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          <p v-else class="text-xs text-gray-400 dark:text-gray-500">
+            No files attached yet. Upload references, screenshots, specs, or supporting documents for this task.
+          </p>
         </div>
 
         <!-- Description -->

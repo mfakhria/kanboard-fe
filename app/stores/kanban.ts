@@ -92,7 +92,17 @@ export const useKanbanStore = defineStore('kanban', {
           : [],
         labels,
         commentsCount: t._count?.comments ?? t.commentsCount ?? 0,
-        attachmentsCount: t.attachmentsCount ?? 0,
+        attachmentsCount: t._count?.attachments ?? t.attachmentsCount ?? 0,
+        attachments: (t.attachments ?? []).map((attachment: any) => ({
+          id: attachment.id,
+          fileName: attachment.fileName,
+          originalName: attachment.originalName,
+          mimeType: attachment.mimeType,
+          size: attachment.size,
+          url: attachment.url,
+          createdAt: attachment.createdAt,
+          uploader: attachment.uploader,
+        })),
         createdAt: t.createdAt,
         updatedAt: t.updatedAt,
       }
