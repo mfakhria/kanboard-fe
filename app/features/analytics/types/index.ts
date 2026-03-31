@@ -22,13 +22,22 @@ export interface ProjectProgress {
 
 export interface RecentActivity {
   id: string
-  type: 'task_created' | 'task_completed' | 'task_moved' | 'comment_added' | 'member_added'
+  type: string
+  action: string
+  entity: string
   description: string
   user: {
     name: string
     avatar?: string
   }
   timestamp: string
+  project?: {
+    id: string
+    name: string
+    color?: string
+    icon?: string
+  }
+  metadata?: Record<string, any> | null
 }
 
 export interface TeamMember {

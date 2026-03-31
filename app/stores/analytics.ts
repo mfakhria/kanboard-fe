@@ -16,6 +16,7 @@ interface AnalyticsState {
   weeklyProductivity: WeeklyProductivity
   projectProgress: ProjectProgress
   recentActivities: RecentActivity[]
+  auditLog: RecentActivity[]
   teamMembers: TeamMember[]
   reminders: Reminder[]
   timeTracker: TimeTracker
@@ -50,6 +51,7 @@ export const useAnalyticsStore = defineStore('analytics', {
       total: 0,
     },
     recentActivities: [],
+    auditLog: [],
     teamMembers: [],
     reminders: [],
     timeTracker: {
@@ -117,16 +119,7 @@ export const useAnalyticsStore = defineStore('analytics', {
 
         // Map recent activities
         if (weekly.recentActivities && Array.isArray(weekly.recentActivities)) {
-          this.recentActivities = weekly.recentActivities.map((a: any) => ({
-            id: a.id,
-            type: a.action?.toLowerCase() ?? 'task_created',
-            description: a.description ?? `${a.action} on ${a.entityType}`,
-            user: {
-              name: a.user?.name ?? 'Unknown',
-              avatar: a.user?.avatar,
-            },
-            timestamp: a.createdAt,
-          }))
+          this.recentActivities = weekly.recentActivities.map((a: any) => this.mapActivity(a))
         }
 
         // Build team members from real tasks (group by assignee, show latest task)
@@ -212,6 +205,17 @@ export const useAnalyticsStore = defineStore('analytics', {
       }
     },
 
+    async fetchActivityLog(workspaceId?: string) {
+      try {
+        const wsId = workspaceId || useWorkspaceStore().activeWorkspace?.id
+        if (!wsId) return
+        const { data } = await analyticsApi.getActivityLog(wsId)
+        this.auditLog = Array.isArray(data) ? data.map((activity: any) => this.mapActivity(activity)) : []
+      } catch (error) {
+        console.error('Failed to fetch activity log:', error)
+      }
+    },
+
     toggleTimeTracker() {
       this.timeTracker.isRunning = !this.timeTracker.isRunning
     },
@@ -224,6 +228,71 @@ export const useAnalyticsStore = defineStore('analytics', {
     incrementTimer() {
       if (this.timeTracker.isRunning) {
         this.timeTracker.elapsed++
+      }
+    },
+
+    mapActivity(activity: any): RecentActivity {
+      const metadata = activity.metadata ?? {}
+      const action = String(activity.action ?? 'UPDATED')
+      const entity = String(activity.entity ?? 'item')
+      const projectName = activity.project?.name || metadata.projectName
+      const taskTitle = metadata.taskTitle
+      const memberName = metadata.memberName || metadata.invitedEmail || metadata.assigneeName
+
+      let description = `${action} ${entity}`
+      if (entity === 'task' && taskTitle) {
+        description = `${this.formatAction(action)} task "${taskTitle}"`
+      } else if (entity === 'comment' && taskTitle) {
+        description = `Commented on "${taskTitle}"`
+      } else if (entity === 'project' && projectName) {
+        description = `${this.formatAction(action)} project "${projectName}"`
+      } else if (entity === 'project_member' && memberName) {
+        description = `${this.formatAction(action)} project member ${memberName}`
+      } else if (entity === 'project_invitation' && memberName) {
+        description = `Sent invitation to ${memberName}`
+      }
+
+      return {
+        id: activity.id,
+        type: `${entity}_${String(action).toLowerCase()}`,
+        action,
+        entity,
+        description,
+        user: {
+          name: activity.user?.name ?? 'Unknown',
+          avatar: activity.user?.avatar,
+        },
+        timestamp: activity.createdAt,
+        project: activity.project
+          ? {
+              id: activity.project.id,
+              name: activity.project.name,
+              color: activity.project.color,
+              icon: activity.project.icon,
+            }
+          : undefined,
+        metadata,
+      }
+    },
+
+    formatAction(action: string) {
+      switch (action) {
+        case 'CREATED':
+          return 'Created'
+        case 'UPDATED':
+          return 'Updated'
+        case 'DELETED':
+          return 'Deleted'
+        case 'MOVED':
+          return 'Moved'
+        case 'ASSIGNED':
+          return 'Assigned'
+        case 'COMMENTED':
+          return 'Commented on'
+        case 'COMPLETED':
+          return 'Completed'
+        default:
+          return action
       }
     },
   },

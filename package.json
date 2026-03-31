@@ -7,7 +7,8 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "test": "npx vitest run"
   },
   "dependencies": {
     "@pinia/nuxt": "^0.11.3",
@@ -33,6 +34,7 @@
     "eslint": "^10.0.2",
     "prettier": "^3.8.1",
     "tailwindcss-animate": "^1.0.7",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   }
 }

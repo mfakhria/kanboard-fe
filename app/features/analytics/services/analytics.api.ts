@@ -16,4 +16,8 @@ export const analyticsApi = {
   getOverviewStats(workspaceId: string) {
     return api.get(`/analytics/overview/${workspaceId}`)
   },
+
+  getActivityLog(workspaceId: string) {
+    return api.get(`/analytics/activity-log/${workspaceId}`)
+  },
 }

@@ -29,6 +29,7 @@ onMounted(async () => {
     await Promise.all([
       analyticsStore.fetchAnalytics(wsId),
       analyticsStore.fetchOverviewStats(wsId),
+      analyticsStore.fetchActivityLog(wsId),
     ])
   }
 })
@@ -283,6 +284,8 @@ const quickMetrics = computed(() => [
           </div>
         </div>
       </div>
+
+      <AnalyticsAuditLogPanel />
     </div>
   </LayoutPageContainer>
 </template>
