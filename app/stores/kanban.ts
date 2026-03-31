@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { kanbanApi } from '~/features/kanban/services/task.api'
-import type { Board, Column, Task, CreateTaskPayload, MoveTaskPayload } from '~/features/kanban/types'
+import type { Board, Column, Task, CreateTaskPayload, MoveTaskPayload, TaskLabel } from '~/features/kanban/types'
 
 interface KanbanState {
   board: Board | null
@@ -63,6 +63,21 @@ export const useKanbanStore = defineStore('kanban', {
     },
 
     normalizeTask(t: any): Task {
+      const labels: TaskLabel[] = (t.labels ?? []).map((label: any) => {
+        if (typeof label === 'string') {
+          return {
+            name: label,
+            color: '#6366f1',
+          }
+        }
+
+        return {
+          id: label.id,
+          name: label.name ?? label.label ?? '',
+          color: label.color ?? '#6366f1',
+        }
+      }).filter((label: TaskLabel) => label.name)
+
       return {
         id: t.id,
         columnId: t.columnId,
@@ -75,7 +90,7 @@ export const useKanbanStore = defineStore('kanban', {
         assignees: t.assignee
           ? [{ id: t.assignee.id, name: t.assignee.name, avatar: t.assignee.avatar }]
           : [],
-        labels: (t.labels ?? []).map((l: any) => (typeof l === 'string' ? l : l.name ?? l.label)),
+        labels,
         commentsCount: t._count?.comments ?? t.commentsCount ?? 0,
         attachmentsCount: t.attachmentsCount ?? 0,
         createdAt: t.createdAt,

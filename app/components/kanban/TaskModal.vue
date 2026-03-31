@@ -11,8 +11,10 @@ import {
   UserPlus,
   X,
   Check,
+  Palette,
+  Plus,
 } from 'lucide-vue-next'
-import type { Task } from '~/features/kanban/types'
+import type { Task, TaskLabel } from '~/features/kanban/types'
 import { kanbanApi } from '~/features/kanban/services/task.api'
 
 const props = defineProps<{
@@ -35,6 +37,29 @@ const editForm = reactive({
   dueDate: props.task.dueDate ? new Date(props.task.dueDate).toISOString().slice(0, 16) : '',
 })
 
+const labelPalette = [
+  '#478FC8',
+  '#6366f1',
+  '#8b5cf6',
+  '#ec4899',
+  '#f97316',
+  '#eab308',
+  '#22c55e',
+  '#14b8a6',
+  '#ef4444',
+  '#64748b',
+]
+
+const editableLabels = ref<TaskLabel[]>(
+  props.task.labels.map(label => ({
+    id: label.id,
+    name: label.name,
+    color: label.color,
+  })),
+)
+const newLabelName = ref('')
+const newLabelColor = ref(labelPalette[0] ?? '#478FC8')
+
 // ─── Column / Status ───
 const columns = computed(() => kanbanStore.columns)
 const selectedColumnId = ref(props.task.columnId)
@@ -47,6 +72,20 @@ const selectedAssigneeId = ref<string | null>(
 const showAssigneeDropdown = ref(false)
 
 const projectMembers = computed(() => projectStore.currentMembers)
+const boardLabelSuggestions = computed(() => {
+  const seen = new Set<string>()
+
+  return kanbanStore.columns
+    .flatMap(column => column.tasks)
+    .flatMap(task => task.labels)
+    .filter((label) => {
+      const key = label.name.trim().toLowerCase()
+      if (!key || seen.has(key)) return false
+      seen.add(key)
+      return !editableLabels.value.some(current => current.name.trim().toLowerCase() === key)
+    })
+    .slice(0, 8)
+})
 
 const currentAssignee = computed(() => {
   if (!selectedAssigneeId.value) return null
@@ -69,6 +108,41 @@ function removeAssignee() {
   showAssigneeDropdown.value = false
 }
 
+function addLabelFromInput() {
+  const trimmedName = newLabelName.value.trim()
+  if (!trimmedName) return
+
+  const exists = editableLabels.value.some(
+    label => label.name.trim().toLowerCase() === trimmedName.toLowerCase(),
+  )
+  if (exists) {
+    newLabelName.value = ''
+    return
+  }
+
+  editableLabels.value.push({
+    name: trimmedName,
+    color: newLabelColor.value,
+  })
+  newLabelName.value = ''
+}
+
+function addSuggestedLabel(label: TaskLabel) {
+  const exists = editableLabels.value.some(
+    current => current.name.trim().toLowerCase() === label.name.trim().toLowerCase(),
+  )
+  if (exists) return
+
+  editableLabels.value.push({
+    name: label.name,
+    color: label.color,
+  })
+}
+
+function removeLabel(labelName: string) {
+  editableLabels.value = editableLabels.value.filter(label => label.name !== labelName)
+}
+
 // ─── Save ───
 const isSaving = ref(false)
 
@@ -81,6 +155,11 @@ const handleSave = async () => {
       description: editForm.description,
       priority: editForm.priority,
       dueDate: editForm.dueDate || undefined,
+      labels: editableLabels.value.map(label => ({
+        id: label.id,
+        name: label.name,
+        color: label.color,
+      })),
     })
 
     // Assign/unassign member if changed
@@ -298,19 +377,116 @@ function handleClickOutside(e: MouseEvent) {
         </div>
 
         <!-- Labels -->
-        <div v-if="task.labels.length">
+        <div class="space-y-3">
           <div class="flex items-center gap-2 mb-2">
             <Tag class="h-4 w-4 text-gray-400 dark:text-gray-500" />
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Labels</span>
           </div>
-          <div class="flex flex-wrap gap-1.5">
+
+          <div v-if="editableLabels.length" class="flex flex-wrap gap-2">
             <span
-              v-for="label in task.labels"
-              :key="label"
-              class="rounded-full bg-gray-100 dark:bg-gray-700 px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-300"
+              v-for="label in editableLabels"
+              :key="label.id ?? label.name"
+              class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold"
+              :style="{
+                color: label.color,
+                borderColor: `${label.color}45`,
+                backgroundColor: `${label.color}16`,
+              }"
             >
-              {{ label }}
+              <span class="h-2 w-2 rounded-full" :style="{ backgroundColor: label.color }" />
+              {{ label.name }}
+              <button
+                type="button"
+                class="rounded-full p-0.5 transition hover:bg-black/5"
+                aria-label="Remove label"
+                @click="removeLabel(label.name)"
+              >
+                <X class="h-3 w-3" />
+              </button>
             </span>
+          </div>
+
+          <p v-else class="text-xs text-gray-400 dark:text-gray-500">
+            No labels yet. Add labels to group this task by topic, owner stream, or workflow state.
+          </p>
+
+          <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/60 p-3">
+            <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
+              <div>
+                <label class="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
+                  <Tag class="h-3.5 w-3.5" />
+                  New Label
+                </label>
+                <input
+                  v-model="newLabelName"
+                  type="text"
+                  class="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#478FC8]"
+                  placeholder="e.g. Backend, Design, Blocked"
+                  @keydown.enter.prevent="addLabelFromInput"
+                />
+              </div>
+
+              <div>
+                <label class="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
+                  <Palette class="h-3.5 w-3.5" />
+                  Color
+                </label>
+                <div class="flex items-center gap-2">
+                  <input
+                    v-model="newLabelColor"
+                    type="color"
+                    class="h-10 w-12 cursor-pointer rounded-lg border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-gray-900"
+                  />
+                  <UiButton
+                    type="button"
+                    size="sm"
+                    class="gap-1.5"
+                    :disabled="!newLabelName.trim()"
+                    @click="addLabelFromInput"
+                  >
+                    <Plus class="h-3.5 w-3.5" />
+                    Add
+                  </UiButton>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-3 flex flex-wrap gap-2">
+              <button
+                v-for="color in labelPalette"
+                :key="color"
+                type="button"
+                :class="[
+                  'h-6 w-6 rounded-full border-2 transition',
+                  newLabelColor === color ? 'border-gray-900 dark:border-white scale-110' : 'border-white dark:border-gray-800',
+                ]"
+                :style="{ backgroundColor: color }"
+                :aria-label="`Use ${color} label color`"
+                @click="newLabelColor = color"
+              />
+            </div>
+          </div>
+
+          <div v-if="boardLabelSuggestions.length" class="space-y-2">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Suggested from this board</p>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="label in boardLabelSuggestions"
+                :key="label.id ?? label.name"
+                type="button"
+                class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition hover:-translate-y-0.5"
+                :style="{
+                  color: label.color,
+                  borderColor: `${label.color}45`,
+                  backgroundColor: `${label.color}10`,
+                }"
+                @click="addSuggestedLabel(label)"
+              >
+                <span class="h-1.5 w-1.5 rounded-full" :style="{ backgroundColor: label.color }" />
+                {{ label.name }}
+              </button>
+            </div>
           </div>
         </div>
 

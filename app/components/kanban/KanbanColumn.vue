@@ -49,7 +49,7 @@ const filteredTasks = computed(() => {
   const q = props.searchQuery.toLowerCase()
   return props.column.tasks.filter(t =>
     t.title.toLowerCase().includes(q) ||
-    t.labels.some(l => l.toLowerCase().includes(q)) ||
+    t.labels.some(label => label.name.toLowerCase().includes(q)) ||
     t.assignees.some(a => a.name.toLowerCase().includes(q))
   )
 })

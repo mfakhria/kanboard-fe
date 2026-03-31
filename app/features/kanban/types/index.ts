@@ -24,11 +24,17 @@ export interface Task {
   status: 'todo' | 'in_progress' | 'review' | 'done'
   dueDate?: string
   assignees: TaskAssignee[]
-  labels: string[]
+  labels: TaskLabel[]
   commentsCount: number
   attachmentsCount: number
   createdAt: string
   updatedAt: string
+}
+
+export interface TaskLabel {
+  id?: string
+  name: string
+  color: string
 }
 
 export interface TaskAssignee {
@@ -51,7 +57,7 @@ export interface CreateTaskPayload {
   priority?: Task['priority']
   dueDate?: string
   assigneeIds?: string[]
-  labels?: string[]
+  labels?: TaskLabel[]
 }
 
 export interface UpdateTaskPayload {
@@ -60,7 +66,7 @@ export interface UpdateTaskPayload {
   priority?: Task['priority']
   dueDate?: string
   assigneeIds?: string[]
-  labels?: string[]
+  labels?: TaskLabel[]
 }
 
 export interface MoveTaskPayload {

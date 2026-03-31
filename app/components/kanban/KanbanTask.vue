@@ -98,10 +98,16 @@ const isOverdue = computed(() => {
     <div v-if="task.labels.length" class="mb-2 flex flex-wrap gap-1">
       <span
         v-for="label in task.labels.slice(0, 3)"
-        :key="label"
-        class="rounded-md bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:text-gray-400"
+        :key="label.id ?? `${task.id}-${label.name}`"
+        class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold"
+        :style="{
+          color: label.color,
+          borderColor: `${label.color}40`,
+          backgroundColor: `${label.color}18`,
+        }"
       >
-        {{ label }}
+        <span class="h-1.5 w-1.5 rounded-full" :style="{ backgroundColor: label.color }" />
+        {{ label.name }}
       </span>
       <span v-if="task.labels.length > 3" class="rounded-md bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 text-[10px] font-medium text-gray-400">
         +{{ task.labels.length - 3 }}

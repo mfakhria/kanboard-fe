@@ -43,12 +43,22 @@ export const kanbanApi = {
     return api.post('/tasks', {
       ...payload,
       priority: payload.priority?.toUpperCase(),
+      labels: payload.labels?.map(label => ({
+        name: label.name,
+        color: label.color,
+      })),
     })
   },
 
   updateTask(taskId: string, payload: UpdateTaskPayload) {
     const body: Record<string, any> = { ...payload }
     if (body.priority) body.priority = body.priority.toUpperCase()
+    if (body.labels) {
+      body.labels = body.labels.map((label: { name: string; color: string }) => ({
+        name: label.name,
+        color: label.color,
+      }))
+    }
     return api.patch(`/tasks/${taskId}`, body)
   },
 
