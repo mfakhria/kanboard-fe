@@ -87,9 +87,20 @@ export const useKanbanStore = defineStore('kanban', {
         priority: t.priority?.toLowerCase() ?? 'medium',
         status: t.status ?? 'todo',
         dueDate: t.dueDate,
+        approvalStatus: t.approvalStatus ?? 'NONE',
+        reviewSubmittedAt: t.reviewSubmittedAt,
+        reviewDueDate: t.reviewDueDate,
         assignees: t.assignee
           ? [{ id: t.assignee.id, name: t.assignee.name, avatar: t.assignee.avatar }]
           : [],
+        reviewer: t.reviewer
+          ? {
+              id: t.reviewer.id,
+              name: t.reviewer.name,
+              email: t.reviewer.email,
+              avatar: t.reviewer.avatar,
+            }
+          : undefined,
         labels,
         commentsCount: t._count?.comments ?? t.commentsCount ?? 0,
         attachmentsCount: t._count?.attachments ?? t.attachmentsCount ?? 0,
@@ -102,6 +113,14 @@ export const useKanbanStore = defineStore('kanban', {
           url: attachment.url,
           createdAt: attachment.createdAt,
           uploader: attachment.uploader,
+        })),
+        reviews: (t.reviews ?? []).map((review: any) => ({
+          id: review.id,
+          action: review.action,
+          comment: review.comment,
+          createdAt: review.createdAt,
+          actor: review.actor,
+          reviewer: review.reviewer ?? undefined,
         })),
         createdAt: t.createdAt,
         updatedAt: t.updatedAt,

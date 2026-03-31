@@ -17,6 +17,12 @@ import {
   Upload,
   Download,
   Loader2,
+  ShieldCheck,
+  ShieldAlert,
+  Clock3,
+  Send,
+  RotateCcw,
+  GitPullRequest,
 } from 'lucide-vue-next'
 import type { Task, TaskLabel, TaskAttachment } from '~/features/kanban/types'
 import { kanbanApi } from '~/features/kanban/services/task.api'
@@ -32,6 +38,7 @@ const emit = defineEmits<{
 
 const kanbanStore = useKanbanStore()
 const projectStore = useProjectStore()
+const authStore = useAuthStore()
 const runtimeConfig = useRuntimeConfig()
 
 // ─── Editable form fields ───
@@ -68,6 +75,16 @@ const attachments = ref<TaskAttachment[]>(props.task.attachments ?? [])
 const isLoadingAttachments = ref(false)
 const isUploadingAttachment = ref(false)
 const attachmentInputRef = ref<HTMLInputElement | null>(null)
+const reviewComment = ref('')
+const reviewDecisionComment = ref('')
+const selectedReviewerId = ref<string | null>(props.task.reviewer?.id ?? null)
+const reviewDueDate = ref(props.task.reviewDueDate ? new Date(props.task.reviewDueDate).toISOString().slice(0, 16) : '')
+const approvalStatus = ref<Task['approvalStatus']>(props.task.approvalStatus ?? 'NONE')
+const reviewSubmittedAt = ref(props.task.reviewSubmittedAt ?? '')
+const reviewTimeline = ref(props.task.reviews ?? [])
+const reviewer = ref(props.task.reviewer)
+const isSubmittingReview = ref(false)
+const isDecidingReview = ref(false)
 
 // ─── Column / Status ───
 const columns = computed(() => kanbanStore.columns)
@@ -121,6 +138,60 @@ const currentAssignee = computed(() => {
   return null
 })
 
+const currentUserId = computed(() => authStore.currentUser?.id ?? null)
+
+const currentReviewer = computed(() => {
+  if (!selectedReviewerId.value) return null
+  const member = projectMembers.value.find(m => m.user.id === selectedReviewerId.value)
+  if (member) return member.user
+  if (reviewer.value?.id === selectedReviewerId.value) return reviewer.value
+  return null
+})
+
+const reviewerCandidates = computed(() =>
+  projectMembers.value.filter(member => member.role !== 'VIEWER'),
+)
+
+const isReviewPending = computed(() => approvalStatus.value === 'IN_REVIEW')
+const canSubmitReview = computed(() => !!selectedReviewerId.value && selectedReviewerId.value !== currentUserId.value)
+const canDecideReview = computed(() => {
+  const currentRole = projectStore.currentProject?.myRole
+  return isReviewPending.value && (
+    selectedReviewerId.value === currentUserId.value
+    || currentRole === 'OWNER'
+    || currentRole === 'ADMIN'
+  )
+})
+
+const approvalBadge = computed(() => {
+  switch (approvalStatus.value) {
+    case 'IN_REVIEW':
+      return {
+        label: 'In Review',
+        class: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+        icon: Clock3,
+      }
+    case 'CHANGES_REQUESTED':
+      return {
+        label: 'Changes Requested',
+        class: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
+        icon: ShieldAlert,
+      }
+    case 'APPROVED':
+      return {
+        label: 'Approved',
+        class: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+        icon: ShieldCheck,
+      }
+    default:
+      return {
+        label: 'Draft',
+        class: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+        icon: GitPullRequest,
+      }
+  }
+})
+
 function selectAssignee(userId: string) {
   selectedAssigneeId.value = userId
   showAssigneeDropdown.value = false
@@ -170,7 +241,14 @@ async function fetchTaskDetails() {
   isLoadingAttachments.value = true
   try {
     const { data } = await kanbanApi.getTask(props.task.id)
-    attachments.value = (data as any).attachments ?? []
+    const taskDetail = kanbanStore.normalizeTask(data as any)
+    attachments.value = taskDetail.attachments ?? []
+    reviewer.value = taskDetail.reviewer
+    selectedReviewerId.value = taskDetail.reviewer?.id ?? selectedReviewerId.value
+    approvalStatus.value = taskDetail.approvalStatus ?? 'NONE'
+    reviewSubmittedAt.value = taskDetail.reviewSubmittedAt ?? ''
+    reviewDueDate.value = taskDetail.reviewDueDate ? new Date(taskDetail.reviewDueDate).toISOString().slice(0, 16) : ''
+    reviewTimeline.value = taskDetail.reviews ?? []
   } catch (error) {
     console.error('Failed to fetch task details:', error)
   } finally {
@@ -188,6 +266,32 @@ function formatFileSize(size: number) {
   if (size < 1024) return `${size} B`
   if (size < 1024 * 1024) return `${Math.round(size / 102.4) / 10} KB`
   return `${Math.round(size / (1024 * 102.4)) / 10} MB`
+}
+
+function formatReviewDate(value?: string) {
+  if (!value) return 'Not set'
+  return new Date(value).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+function reviewActionLabel(action: string) {
+  switch (action) {
+    case 'SUBMITTED':
+      return 'Submitted for review'
+    case 'APPROVED':
+      return 'Approved'
+    case 'CHANGES_REQUESTED':
+      return 'Changes requested'
+    case 'CANCELLED':
+      return 'Review cancelled'
+    default:
+      return action
+  }
 }
 
 function openAttachmentPicker() {
@@ -223,6 +327,62 @@ async function removeAttachment(attachmentId: string) {
     }
   } catch (error) {
     console.error('Failed to delete attachment:', error)
+  }
+}
+
+async function refreshTaskState() {
+  await fetchTaskDetails()
+  if (kanbanStore.board) {
+    await kanbanStore.fetchBoard(kanbanStore.board.projectId)
+  }
+}
+
+async function handleSubmitReview() {
+  if (!canSubmitReview.value) return
+
+  isSubmittingReview.value = true
+  try {
+    await kanbanApi.submitTaskReview(props.task.id, {
+      reviewerId: selectedReviewerId.value ?? undefined,
+      reviewDueDate: reviewDueDate.value || undefined,
+      comment: reviewComment.value || undefined,
+    })
+    reviewComment.value = ''
+    await refreshTaskState()
+  } catch (error) {
+    console.error('Failed to submit review:', error)
+  } finally {
+    isSubmittingReview.value = false
+  }
+}
+
+async function handleDecision(decision: 'APPROVED' | 'CHANGES_REQUESTED') {
+  if (!canDecideReview.value) return
+
+  isDecidingReview.value = true
+  try {
+    await kanbanApi.decideTaskReview(props.task.id, {
+      decision,
+      comment: reviewDecisionComment.value || undefined,
+    })
+    reviewDecisionComment.value = ''
+    await refreshTaskState()
+  } catch (error) {
+    console.error(`Failed to ${decision.toLowerCase()} review:`, error)
+  } finally {
+    isDecidingReview.value = false
+  }
+}
+
+async function handleCancelReview() {
+  isSubmittingReview.value = true
+  try {
+    await kanbanApi.cancelTaskReview(props.task.id)
+    await refreshTaskState()
+  } catch (error) {
+    console.error('Failed to cancel review:', error)
+  } finally {
+    isSubmittingReview.value = false
   }
 }
 
@@ -322,11 +482,14 @@ function handleClickOutside(e: MouseEvent) {
 </script>
 
 <template>
-  <UiDialog :open="open" @update:open="emit('update:open', $event)">
+  <UiDialog
+    :open="open"
+    class="max-w-4xl max-h-[92vh] overflow-hidden p-0"
+    @update:open="emit('update:open', $event)"
+  >
     <template #default="{ close }">
-      <div class="space-y-5">
-        <!-- Title -->
-        <div>
+      <div class="flex max-h-[92vh] flex-col">
+        <div class="border-b border-gray-100 dark:border-gray-800 px-6 py-5 pr-14">
           <input
             v-model="editForm.title"
             class="w-full text-lg font-bold text-gray-900 dark:text-white border-none outline-none focus:ring-0 p-0 bg-transparent placeholder:text-gray-400"
@@ -334,6 +497,8 @@ function handleClickOutside(e: MouseEvent) {
           />
         </div>
 
+        <div class="flex-1 overflow-y-auto px-6 py-5">
+          <div class="space-y-5">
         <!-- Meta row: Priority + Due Date + Status Column -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <!-- Priority -->
@@ -460,6 +625,167 @@ function handleClickOutside(e: MouseEvent) {
                 class="h-4 w-4 text-[#478FC8] shrink-0"
               />
             </button>
+          </div>
+        </div>
+
+        <!-- Approval workflow -->
+        <div class="space-y-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-[#EDF4FF] via-white to-[#F6FAFF] dark:from-[#0f172a] dark:via-gray-900 dark:to-[#111827] p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <GitPullRequest class="h-4 w-4 text-[#478FC8]" />
+                <span class="text-sm font-semibold text-gray-800 dark:text-gray-100">Approval Workflow</span>
+              </div>
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Submit this task for formal review, assign an approver, and keep the decision trail documented.
+              </p>
+            </div>
+
+            <span :class="['inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold', approvalBadge.class]">
+              <component :is="approvalBadge.icon" class="h-3.5 w-3.5" />
+              {{ approvalBadge.label }}
+            </span>
+          </div>
+
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Reviewer</label>
+              <select
+                v-model="selectedReviewerId"
+                class="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#478FC8]"
+              >
+                <option :value="null">Select reviewer</option>
+                <option
+                  v-for="member in reviewerCandidates"
+                  :key="member.id"
+                  :value="member.user.id"
+                >
+                  {{ member.user.name }} - {{ member.role }}
+                </option>
+              </select>
+              <p v-if="currentReviewer" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Current approver: {{ currentReviewer.name }}
+              </p>
+            </div>
+
+            <div>
+              <label class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Review due date</label>
+              <input
+                v-model="reviewDueDate"
+                type="datetime-local"
+                class="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#478FC8]"
+              />
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Submitted: {{ formatReviewDate(reviewSubmittedAt || undefined) }}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Submission note</label>
+            <UiTextarea
+              v-model="reviewComment"
+              placeholder="Explain what is ready, what needs approval, or any review checklist."
+              class="min-h-[84px]"
+            />
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <UiButton
+              type="button"
+              size="sm"
+              class="gap-1.5 bg-[#478FC8] hover:bg-[#3a7bb3] text-white"
+              :disabled="!canSubmitReview || isSubmittingReview"
+              @click="handleSubmitReview"
+            >
+              <Send class="h-3.5 w-3.5" />
+              {{ isSubmittingReview ? 'Submitting...' : (isReviewPending ? 'Resubmit Review' : 'Submit for Review') }}
+            </UiButton>
+
+            <UiButton
+              v-if="isReviewPending"
+              type="button"
+              size="sm"
+              variant="outline"
+              class="gap-1.5"
+              :disabled="isSubmittingReview"
+              @click="handleCancelReview"
+            >
+              <RotateCcw class="h-3.5 w-3.5" />
+              Cancel Review
+            </UiButton>
+          </div>
+
+          <div v-if="canDecideReview" class="space-y-3 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-900/70 p-3">
+            <div class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <ShieldCheck class="h-4 w-4 text-emerald-500" />
+              Reviewer Decision
+            </div>
+            <UiTextarea
+              v-model="reviewDecisionComment"
+              placeholder="Add approval notes or requested changes."
+              class="min-h-[80px]"
+            />
+            <div class="flex flex-wrap gap-2">
+              <UiButton
+                type="button"
+                size="sm"
+                class="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                :disabled="isDecidingReview"
+                @click="handleDecision('APPROVED')"
+              >
+                <ShieldCheck class="h-3.5 w-3.5" />
+                Approve
+              </UiButton>
+              <UiButton
+                type="button"
+                size="sm"
+                variant="outline"
+                class="gap-1.5 border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-400"
+                :disabled="isDecidingReview"
+                @click="handleDecision('CHANGES_REQUESTED')"
+              >
+                <ShieldAlert class="h-3.5 w-3.5" />
+                Request Changes
+              </UiButton>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <p class="text-xs font-medium uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Review Timeline</p>
+              <span class="text-xs text-gray-400 dark:text-gray-500">{{ reviewTimeline.length }} event{{ reviewTimeline.length === 1 ? '' : 's' }}</span>
+            </div>
+
+            <div v-if="reviewTimeline.length" class="space-y-2">
+              <div
+                v-for="entry in reviewTimeline"
+                :key="entry.id"
+                class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/60 px-3 py-3"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                      {{ reviewActionLabel(entry.action) }}
+                    </p>
+                    <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                      {{ entry.actor.name }}
+                      <span v-if="entry.reviewer"> -> {{ entry.reviewer.name }}</span>
+                    </p>
+                  </div>
+                  <span class="text-[11px] text-gray-400 dark:text-gray-500">
+                    {{ formatReviewDate(entry.createdAt) }}
+                  </span>
+                </div>
+                <p v-if="entry.comment" class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                  {{ entry.comment }}
+                </p>
+              </div>
+            </div>
+
+            <p v-else class="text-xs text-gray-400 dark:text-gray-500">
+              No review history yet. Submit this task when it is ready for validation or approval.
+            </p>
           </div>
         </div>
 
@@ -698,8 +1024,11 @@ function handleClickOutside(e: MouseEvent) {
           {{ task.commentsCount }} comments
         </div>
 
+          </div>
+        </div>
+
         <!-- Actions -->
-        <div class="flex justify-between pt-3 border-t border-gray-100 dark:border-gray-800">
+        <div class="flex justify-between gap-3 border-t border-gray-100 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 px-6 py-4 backdrop-blur">
           <UiButton variant="outline" size="sm" class="gap-1.5 text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200 dark:border-red-800 dark:text-red-400" @click="handleDelete">
             <Trash2 class="h-3.5 w-3.5" />
             Delete

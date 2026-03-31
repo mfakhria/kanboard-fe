@@ -6,6 +6,9 @@ import {
   MoreVertical,
   Flag,
   ClipboardList,
+  ShieldCheck,
+  ShieldAlert,
+  Clock3,
 } from 'lucide-vue-next'
 import type { Task } from '~/features/kanban/types'
 
@@ -59,6 +62,31 @@ const isOverdue = computed(() => {
   if (!props.task.dueDate) return false
   return new Date(props.task.dueDate) < new Date()
 })
+
+const approvalBadge = computed(() => {
+  switch (props.task.approvalStatus) {
+    case 'IN_REVIEW':
+      return {
+        label: 'In Review',
+        class: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+        icon: Clock3,
+      }
+    case 'CHANGES_REQUESTED':
+      return {
+        label: 'Changes Requested',
+        class: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
+        icon: ShieldAlert,
+      }
+    case 'APPROVED':
+      return {
+        label: 'Approved',
+        class: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+        icon: ShieldCheck,
+      }
+    default:
+      return null
+  }
+})
 </script>
 
 <template>
@@ -111,6 +139,13 @@ const isOverdue = computed(() => {
       </span>
       <span v-if="task.labels.length > 3" class="rounded-md bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 text-[10px] font-medium text-gray-400">
         +{{ task.labels.length - 3 }}
+      </span>
+    </div>
+
+    <div v-if="approvalBadge" class="mb-2">
+      <span :class="['inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold', approvalBadge.class]">
+        <component :is="approvalBadge.icon" class="h-3 w-3" />
+        {{ approvalBadge.label }}
       </span>
     </div>
 

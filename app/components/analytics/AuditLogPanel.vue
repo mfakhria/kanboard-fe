@@ -27,7 +27,7 @@ const filteredEntries = computed(() => {
 
   return entries.value.filter((entry) => {
     if (activeFilter.value === 'tasks') {
-      return entry.entity === 'task' || entry.entity === 'comment'
+      return entry.entity === 'task' || entry.entity === 'comment' || entry.entity === 'task_review'
     }
 
     if (activeFilter.value === 'projects') {
@@ -115,6 +115,14 @@ function getMetaBadges(entry: any) {
 
   if (metadata.status) {
     badges.push(`Status: ${metadata.status}`)
+  }
+
+  if (metadata.reviewAction) {
+    badges.push(`Review: ${String(metadata.reviewAction).replaceAll('_', ' ')}`)
+  }
+
+  if (metadata.reviewerName) {
+    badges.push(`Reviewer: ${metadata.reviewerName}`)
   }
 
   return badges

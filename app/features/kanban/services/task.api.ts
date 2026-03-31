@@ -1,5 +1,13 @@
 import api from '~/utils/api'
-import type { Board, CreateColumnPayload, CreateTaskPayload, UpdateTaskPayload, MoveTaskPayload } from '~/features/kanban/types'
+import type {
+  Board,
+  CreateColumnPayload,
+  CreateTaskPayload,
+  UpdateTaskPayload,
+  MoveTaskPayload,
+  SubmitTaskReviewPayload,
+  DecideTaskReviewPayload,
+} from '~/features/kanban/types'
 
 export const kanbanApi = {
   // Board
@@ -83,6 +91,18 @@ export const kanbanApi = {
 
   addComment(taskId: string, content: string) {
     return api.post(`/tasks/${taskId}/comments`, { content })
+  },
+
+  submitTaskReview(taskId: string, payload: SubmitTaskReviewPayload) {
+    return api.post(`/tasks/${taskId}/review/submit`, payload)
+  },
+
+  decideTaskReview(taskId: string, payload: DecideTaskReviewPayload) {
+    return api.post(`/tasks/${taskId}/review/decision`, payload)
+  },
+
+  cancelTaskReview(taskId: string) {
+    return api.post(`/tasks/${taskId}/review/cancel`)
   },
 
   uploadAttachment(taskId: string, file: File) {

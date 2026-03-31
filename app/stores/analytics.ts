@@ -242,6 +242,8 @@ export const useAnalyticsStore = defineStore('analytics', {
       const toColumnName = metadata.toColumnName
       const fromColumnName = metadata.fromColumnName
       const role = metadata.role
+      const reviewAction = metadata.reviewAction
+      const reviewerName = metadata.reviewerName
 
       let description = this.getActivityDescription({
         action,
@@ -253,6 +255,8 @@ export const useAnalyticsStore = defineStore('analytics', {
         fromColumnName,
         toColumnName,
         role,
+        reviewAction,
+        reviewerName,
       })
 
       return {
@@ -309,6 +313,8 @@ export const useAnalyticsStore = defineStore('analytics', {
       fromColumnName?: string
       toColumnName?: string
       role?: string
+      reviewAction?: string
+      reviewerName?: string
     }) {
       const {
         action,
@@ -320,6 +326,8 @@ export const useAnalyticsStore = defineStore('analytics', {
         fromColumnName,
         toColumnName,
         role,
+        reviewAction,
+        reviewerName,
       } = params
 
       if (entity === 'task') {
@@ -348,6 +356,24 @@ export const useAnalyticsStore = defineStore('analytics', {
 
       if (entity === 'comment' && taskTitle) {
         return `added a comment on "${taskTitle}"`
+      }
+
+      if (entity === 'task_review' && taskTitle) {
+        if (reviewAction === 'SUBMITTED' && reviewerName) {
+          return `submitted "${taskTitle}" for review to ${reviewerName}`
+        }
+        if (reviewAction === 'SUBMITTED') {
+          return `submitted "${taskTitle}" for review`
+        }
+        if (reviewAction === 'APPROVED') {
+          return `approved "${taskTitle}"`
+        }
+        if (reviewAction === 'CHANGES_REQUESTED') {
+          return `requested changes for "${taskTitle}"`
+        }
+        if (reviewAction === 'CANCELLED') {
+          return `cancelled the review for "${taskTitle}"`
+        }
       }
 
       if (entity === 'project') {

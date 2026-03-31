@@ -23,9 +23,14 @@ export interface Task {
   priority: 'low' | 'medium' | 'high' | 'urgent'
   status: 'todo' | 'in_progress' | 'review' | 'done'
   dueDate?: string
+  approvalStatus?: 'NONE' | 'IN_REVIEW' | 'CHANGES_REQUESTED' | 'APPROVED'
+  reviewSubmittedAt?: string
+  reviewDueDate?: string
   assignees: TaskAssignee[]
+  reviewer?: TaskReviewer
   labels: TaskLabel[]
   attachments?: TaskAttachment[]
+  reviews?: TaskReview[]
   commentsCount: number
   attachmentsCount: number
   createdAt: string
@@ -44,6 +49,13 @@ export interface TaskAssignee {
   avatar?: string
 }
 
+export interface TaskReviewer {
+  id: string
+  name: string
+  email: string
+  avatar?: string
+}
+
 export interface TaskAttachment {
   id: string
   fileName: string
@@ -58,6 +70,15 @@ export interface TaskAttachment {
     email: string
     avatar?: string
   }
+}
+
+export interface TaskReview {
+  id: string
+  action: 'SUBMITTED' | 'APPROVED' | 'CHANGES_REQUESTED' | 'CANCELLED'
+  comment?: string
+  createdAt: string
+  actor: TaskReviewer
+  reviewer?: TaskReviewer
 }
 
 export interface CreateColumnPayload {
@@ -90,4 +111,15 @@ export interface MoveTaskPayload {
   taskId: string
   targetColumnId: string
   targetPosition: number
+}
+
+export interface SubmitTaskReviewPayload {
+  reviewerId?: string
+  reviewDueDate?: string
+  comment?: string
+}
+
+export interface DecideTaskReviewPayload {
+  decision: 'APPROVED' | 'CHANGES_REQUESTED'
+  comment?: string
 }
