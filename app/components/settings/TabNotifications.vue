@@ -9,6 +9,7 @@ import {
   Users,
 } from 'lucide-vue-next'
 import type { Component } from 'vue'
+import type { NotificationPreferences } from '~/features/notification/types'
 
 interface NotifItem {
   icon: Component
@@ -17,23 +18,14 @@ interface NotifItem {
   darkIconBg: string
   title: string
   description: string
-  key: string
+  key: keyof NotificationPreferences
 }
 
-const toggles = reactive<Record<string, boolean>>({
-  emailNotifs: true,
-  pushNotifs: true,
-  taskAssigned: true,
-  taskCompleted: true,
-  taskOverdue: false,
-  projectUpdates: true,
-  teamActivity: false,
-  weeklyDigest: true,
-})
+const notificationStore = useNotificationStore()
 
 const channelItems: NotifItem[] = [
-  { icon: Mail, iconColor: '#478FC8', iconBg: '#edf4ff', darkIconBg: 'rgba(71,143,200,0.15)', title: 'Email Notifications', description: 'Get notified via email for important updates', key: 'emailNotifs' },
-  { icon: Bell, iconColor: '#7c3aed', iconBg: '#f5f3ff', darkIconBg: 'rgba(124,58,237,0.15)', title: 'Push Notifications', description: 'Receive browser push notifications', key: 'pushNotifs' },
+  { icon: Mail, iconColor: '#478FC8', iconBg: '#edf4ff', darkIconBg: 'rgba(71,143,200,0.15)', title: 'Email Notifications', description: 'Get notified via email for important updates', key: 'emailEnabled' },
+  { icon: Bell, iconColor: '#7c3aed', iconBg: '#f5f3ff', darkIconBg: 'rgba(124,58,237,0.15)', title: 'Push Notifications', description: 'Receive browser push notifications', key: 'pushEnabled' },
 ]
 
 const activityItems: NotifItem[] = [
@@ -44,6 +36,21 @@ const activityItems: NotifItem[] = [
   { icon: Users, iconColor: '#7c3aed', iconBg: '#f5f3ff', darkIconBg: 'rgba(124,58,237,0.15)', title: 'Team Activity', description: 'When team members join or leave', key: 'teamActivity' },
   { icon: Clock, iconColor: '#d97706', iconBg: '#fffbeb', darkIconBg: 'rgba(217,119,6,0.15)', title: 'Weekly Digest', description: 'Receive a weekly summary of your projects', key: 'weeklyDigest' },
 ]
+
+onMounted(async () => {
+  if (!notificationStore.preferences) {
+    await notificationStore.fetchPreferences()
+  }
+})
+
+function isEnabled(key: keyof NotificationPreferences) {
+  return !!notificationStore.preferences?.[key]
+}
+
+async function handleToggle(key: keyof NotificationPreferences) {
+  const currentValue = isEnabled(key)
+  await notificationStore.updatePreference(key, !currentValue)
+}
 </script>
 
 <template>
@@ -64,7 +71,7 @@ const activityItems: NotifItem[] = [
               <p class="text-gray-400 dark:text-gray-500 text-[12px]">{{ item.description }}</p>
             </div>
           </div>
-          <SettingsToggle :enabled="toggles[item.key] ?? false" @toggle="toggles[item.key] = !toggles[item.key]" />
+          <SettingsToggle :enabled="isEnabled(item.key)" @toggle="handleToggle(item.key)" />
         </div>
       </div>
     </SettingsSection>
@@ -85,7 +92,7 @@ const activityItems: NotifItem[] = [
               <p class="text-gray-400 dark:text-gray-500 text-[12px]">{{ item.description }}</p>
             </div>
           </div>
-          <SettingsToggle :enabled="toggles[item.key] ?? false" @toggle="toggles[item.key] = !toggles[item.key]" />
+          <SettingsToggle :enabled="isEnabled(item.key)" @toggle="handleToggle(item.key)" />
         </div>
       </div>
     </SettingsSection>

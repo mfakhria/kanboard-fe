@@ -84,6 +84,7 @@ export const useAuthStore = defineStore('auth', () => {
       useWorkspaceStore().$reset()
       useKanbanStore().$reset()
       useAnalyticsStore().$reset()
+      useNotificationStore().$reset()
     } catch {
       // Stores may not be initialized yet
     }

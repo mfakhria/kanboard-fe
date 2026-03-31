@@ -18,7 +18,6 @@ import {
   Sparkles,
   ArrowRight,
   Clock,
-  AlertCircle,
   CheckCircle2,
   Zap,
 
@@ -37,6 +36,8 @@ const { toggleMobileDrawer } = useLayoutState()
 const authStore = useAuthStore()
 const projectStore = useProjectStore()
 const workspaceStore = useWorkspaceStore()
+const analyticsStore = useAnalyticsStore()
+const notificationStore = useNotificationStore()
 const route = useRoute()
 const router = useRouter()
 const colorMode = useColorMode()
@@ -189,10 +190,12 @@ function highlightText(text: string, query: string): string | { before: string; 
 }
 
 onMounted(() => {
-  workspaceStore.fetchPendingInvitations().catch(() => {
+  notificationStore.fetchNotifications().catch(() => {
     // Handled by global API alert
   })
-
+  notificationStore.fetchPreferences().catch(() => {
+    // Handled by global API alert
+  })
   const onKey = (e: KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); searchInputRef.value?.focus(); searchOpen.value = true }
   }
@@ -229,76 +232,117 @@ const notifOpen = ref(false)
 const respondingInvitationId = ref<string | null>(null)
 
 interface NotificationItem {
-  id: string | number
+  id: string
   type: string
   title: string
   desc: string
   time: string
   read: boolean
-  invitationId?: string
+  workspaceInvitationId?: string
+  projectInvitationToken?: string
 }
 
-const baseNotifList = ref<NotificationItem[]>([
-  { id: 1, type: 'success', title: 'Task completed',            desc: '"Design Homepage" marked as done',    time: '2m ago',    read: false },
-  { id: 2, type: 'alert',   title: 'Overdue task',              desc: '"API Integration" is 2 days overdue', time: '1h ago',    read: false },
-  { id: 3, type: 'info',    title: 'New member joined',         desc: 'Rina joined the team',           time: '3h ago',    read: true },
-  { id: 4, type: 'success', title: 'Project milestone reached', desc: 'Phase 1 of "Kanban App" completed',   time: 'Yesterday', read: true },
-])
-
-const invitationNotifList = computed<NotificationItem[]>(() =>
-  workspaceStore.invitations.map((inv) => ({
-    id: `workspace-invite-${inv.id}`,
-    invitationId: inv.id,
-    type: 'workspace_invite',
-    title: `Team invitation: ${inv.workspace.name}`,
-    desc: `${inv.inviter.name} invited you as ${inv.role}.`,
-    time: new Date(inv.createdAt).toLocaleString(),
-    read: false,
+const notifList = computed<NotificationItem[]>(() =>
+  notificationStore.items.map((item) => ({
+    id: item.id,
+    type: item.type,
+    title: item.title,
+    desc: item.message,
+    time: new Date(item.createdAt).toLocaleString(),
+    read: !!item.readAt,
+    workspaceInvitationId: item.metadata?.workspaceInvitationId,
+    projectInvitationToken: item.metadata?.projectInvitationToken,
   })),
 )
+const unreadCount = computed(() => notificationStore.unreadCount)
 
-const notifList = computed(() => [...invitationNotifList.value, ...baseNotifList.value])
-const unreadCount = computed(() => notifList.value.filter(n => !n.read).length)
-const markAllRead = () => {
-  baseNotifList.value = baseNotifList.value.map(n => ({ ...n, read: true }))
+async function markAllRead() {
+  await notificationStore.markAllAsRead()
 }
 
 watch(notifOpen, (open) => {
   if (!open) return
-  workspaceStore.fetchPendingInvitations().catch(() => {
+  notificationStore.fetchNotifications().catch(() => {
     // Handled by global API alert
   })
 })
 
-async function respondWorkspaceInvitation(invitationId: string, action: 'accept' | 'decline') {
-  if (respondingInvitationId.value) return
-  respondingInvitationId.value = invitationId
+async function respondWorkspaceInvitation(item: NotificationItem, action: 'accept' | 'decline') {
+  if (!item.workspaceInvitationId || respondingInvitationId.value) return
+  respondingInvitationId.value = item.workspaceInvitationId
   try {
-    await workspaceStore.respondInvitation(invitationId, action)
-    await workspaceStore.fetchPendingInvitations()
+    await workspaceStore.respondInvitation(item.workspaceInvitationId, action)
+    await notificationStore.markAsRead(item.id)
+    await notificationStore.fetchNotifications()
   } finally {
     respondingInvitationId.value = null
   }
 }
 
+async function respondProjectInvitation(item: NotificationItem, action: 'accept' | 'decline') {
+  if (!item.projectInvitationToken || respondingInvitationId.value) return
+  respondingInvitationId.value = item.projectInvitationToken
+  try {
+    if (action === 'accept') {
+      const result = await projectStore.acceptInvitation(item.projectInvitationToken)
+      await workspaceStore.fetchWorkspaces()
+      if (result?.project?.workspaceId) {
+        const ws = workspaceStore.allWorkspaces.find(w => w.id === result.project.workspaceId)
+        if (ws) {
+          await workspaceStore.setCurrentWorkspace(ws.id)
+        }
+      } else {
+        await Promise.all([
+          projectStore.fetchProjects(),
+          analyticsStore.fetchAnalytics(),
+        ])
+      }
+    } else {
+      await projectStore.declineInvitation(item.projectInvitationToken)
+    }
+    await notificationStore.markAsRead(item.id)
+    await notificationStore.fetchNotifications()
+  } finally {
+    respondingInvitationId.value = null
+  }
+}
+
+async function markNotificationAsRead(item: NotificationItem) {
+  if (item.read) return
+  await notificationStore.markAsRead(item.id)
+}
+
 function getInvitationId(item: NotificationItem): string {
-  return item.invitationId || ''
+  return item.workspaceInvitationId || item.projectInvitationToken || ''
+}
+
+function isWorkspaceInvitation(item: NotificationItem) {
+  return item.type === 'WORKSPACE_INVITATION' && !!item.workspaceInvitationId
+}
+
+function isProjectInvitation(item: NotificationItem) {
+  return item.type === 'PROJECT_INVITATION' && !!item.projectInvitationToken
+}
+
+async function openNotificationsSettings() {
+  notifOpen.value = false
+  await router.push({ path: '/dashboard/settings', query: { tab: 'notifications' } })
 }
 
 const notifIconMapLight: Record<string, { bg: string; color: string; icon: Component }> = {
-  success: { bg: 'linear-gradient(135deg,#ecfdf5,#d1fae5)', color: '#059669', icon: CheckCircle2 },
-  alert:   { bg: 'linear-gradient(135deg,#fff1f2,#ffe4e6)', color: '#dc2626', icon: AlertCircle },
-  info:    { bg: 'linear-gradient(135deg,#edf4ff,#dbeafe)', color: '#478FC8', icon: Zap },
-  workspace_invite: { bg: 'linear-gradient(135deg,#edf4ff,#dbeafe)', color: '#478FC8', icon: Users },
+  WORKSPACE_INVITATION: { bg: 'linear-gradient(135deg,#edf4ff,#dbeafe)', color: '#478FC8', icon: Users },
+  PROJECT_INVITATION: { bg: 'linear-gradient(135deg,#f5f3ff,#ede9fe)', color: '#7c3aed', icon: FolderKanban },
+  TASK_ASSIGNED: { bg: 'linear-gradient(135deg,#ecfdf5,#d1fae5)', color: '#059669', icon: CheckCircle2 },
+  GENERAL: { bg: 'linear-gradient(135deg,#edf4ff,#dbeafe)', color: '#478FC8', icon: Zap },
 }
 const notifIconMapDark: Record<string, { bg: string; color: string; icon: Component }> = {
-  success: { bg: 'linear-gradient(135deg,#064e3b,#065f46)', color: '#34d399', icon: CheckCircle2 },
-  alert:   { bg: 'linear-gradient(135deg,#450a0a,#7f1d1d)', color: '#fca5a5', icon: AlertCircle },
-  info:    { bg: 'linear-gradient(135deg,#1e3a5f,#1e3a5f)', color: '#93c5fd', icon: Zap },
-  workspace_invite: { bg: 'linear-gradient(135deg,#1e3a5f,#1e3a5f)', color: '#93c5fd', icon: Users },
+  WORKSPACE_INVITATION: { bg: 'linear-gradient(135deg,#1e3a5f,#1e3a5f)', color: '#93c5fd', icon: Users },
+  PROJECT_INVITATION: { bg: 'linear-gradient(135deg,#3b0764,#4c1d95)', color: '#d8b4fe', icon: FolderKanban },
+  TASK_ASSIGNED: { bg: 'linear-gradient(135deg,#064e3b,#065f46)', color: '#34d399', icon: CheckCircle2 },
+  GENERAL: { bg: 'linear-gradient(135deg,#1e3a5f,#1e3a5f)', color: '#93c5fd', icon: Zap },
 }
-const defaultNotifIconLight = notifIconMapLight['info']!
-const defaultNotifIconDark = notifIconMapDark['info']!
+const defaultNotifIconLight = notifIconMapLight.GENERAL
+const defaultNotifIconDark = notifIconMapDark.GENERAL
 
 function getNotifStyle(type: string): { bg: string; color: string; icon: Component } {
   const map = isDark.value ? notifIconMapDark : notifIconMapLight
@@ -653,6 +697,7 @@ function handleLogout() {
                 :key="n.id"
                 class="flex items-start gap-3 px-4 sm:px-5 py-3.5 cursor-pointer hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors"
                 :style="{ opacity: n.read ? 0.5 : 1, borderBottom: i < notifList.length - 1 ? (isDark ? '1px solid #1f2937' : '1px solid #f8fafc') : 'none' }"
+                @click="markNotificationAsRead(n)"
               >
                 <div class="shrink-0 flex items-center justify-center rounded-xl mt-0.5" :style="{ width: '30px', height: '30px', background: getNotifStyle(n.type).bg }">
                   <component :is="getNotifStyle(n.type).icon" :style="{ width: '13px', height: '13px', color: getNotifStyle(n.type).color }" />
@@ -663,18 +708,34 @@ function handleLogout() {
                     <span class="shrink-0 text-[10.5px] text-gray-400">{{ n.time }}</span>
                   </div>
                   <p class="text-[11.5px] text-gray-500 leading-snug mt-[2px]">{{ n.desc }}</p>
-                  <div v-if="n.type === 'workspace_invite'" class="mt-2 flex items-center gap-2">
+                  <div v-if="isWorkspaceInvitation(n)" class="mt-2 flex items-center gap-2">
                     <button
                       class="px-2.5 py-1 rounded-md text-[11px] font-semibold text-white bg-[#478FC8] hover:bg-[#3a7bb3] disabled:opacity-60"
                       :disabled="respondingInvitationId === getInvitationId(n)"
-                      @click.stop="respondWorkspaceInvitation(getInvitationId(n), 'accept')"
+                      @click.stop="respondWorkspaceInvitation(n, 'accept')"
                     >
                       Accept
                     </button>
                     <button
                       class="px-2.5 py-1 rounded-md text-[11px] font-semibold border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-60"
                       :disabled="respondingInvitationId === getInvitationId(n)"
-                      @click.stop="respondWorkspaceInvitation(getInvitationId(n), 'decline')"
+                      @click.stop="respondWorkspaceInvitation(n, 'decline')"
+                    >
+                      Decline
+                    </button>
+                  </div>
+                  <div v-else-if="isProjectInvitation(n)" class="mt-2 flex items-center gap-2">
+                    <button
+                      class="px-2.5 py-1 rounded-md text-[11px] font-semibold text-white bg-[#478FC8] hover:bg-[#3a7bb3] disabled:opacity-60"
+                      :disabled="respondingInvitationId === getInvitationId(n)"
+                      @click.stop="respondProjectInvitation(n, 'accept')"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      class="px-2.5 py-1 rounded-md text-[11px] font-semibold border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-60"
+                      :disabled="respondingInvitationId === getInvitationId(n)"
+                      @click.stop="respondProjectInvitation(n, 'decline')"
                     >
                       Decline
                     </button>
@@ -684,7 +745,7 @@ function handleLogout() {
               </div>
             </div>
             <div class="px-4 sm:px-5 py-3" :style="{ borderTop: isDark ? '1px solid #1f2937' : '1px solid #f1f5f9', background: isDark ? '#0d1117' : '#fafbfc' }">
-              <button class="w-full py-2 rounded-xl text-[#478FC8] hover:bg-[#edf4ff] dark:hover:bg-[#1e3a5f] transition-colors text-[12.5px] font-semibold">
+              <button class="w-full py-2 rounded-xl text-[#478FC8] hover:bg-[#edf4ff] dark:hover:bg-[#1e3a5f] transition-colors text-[12.5px] font-semibold" @click="openNotificationsSettings">
                 View all notifications →
               </button>
             </div>
@@ -747,6 +808,7 @@ function handleLogout() {
                 :key="n.id"
                 class="flex items-start gap-3 px-5 py-3.5 cursor-pointer hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors"
                 :style="{ opacity: n.read ? 0.5 : 1, borderBottom: i < notifList.length - 1 ? (isDark ? '1px solid #1f2937' : '1px solid #f8fafc') : 'none' }"
+                @click="markNotificationAsRead(n)"
               >
                 <div class="shrink-0 flex items-center justify-center rounded-xl mt-0.5" :style="{ width: '30px', height: '30px', background: getNotifStyle(n.type).bg }">
                   <component :is="getNotifStyle(n.type).icon" :style="{ width: '13px', height: '13px', color: getNotifStyle(n.type).color }" />
@@ -757,18 +819,34 @@ function handleLogout() {
                     <span class="shrink-0 text-[10.5px] text-gray-400">{{ n.time }}</span>
                   </div>
                   <p class="text-[11.5px] text-gray-500 leading-snug mt-[2px]">{{ n.desc }}</p>
-                  <div v-if="n.type === 'workspace_invite'" class="mt-2 flex items-center gap-2">
+                  <div v-if="isWorkspaceInvitation(n)" class="mt-2 flex items-center gap-2">
                     <button
                       class="px-2.5 py-1 rounded-md text-[11px] font-semibold text-white bg-[#478FC8] hover:bg-[#3a7bb3] disabled:opacity-60"
                       :disabled="respondingInvitationId === getInvitationId(n)"
-                      @click.stop="respondWorkspaceInvitation(getInvitationId(n), 'accept')"
+                      @click.stop="respondWorkspaceInvitation(n, 'accept')"
                     >
                       Accept
                     </button>
                     <button
                       class="px-2.5 py-1 rounded-md text-[11px] font-semibold border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-60"
                       :disabled="respondingInvitationId === getInvitationId(n)"
-                      @click.stop="respondWorkspaceInvitation(getInvitationId(n), 'decline')"
+                      @click.stop="respondWorkspaceInvitation(n, 'decline')"
+                    >
+                      Decline
+                    </button>
+                  </div>
+                  <div v-else-if="isProjectInvitation(n)" class="mt-2 flex items-center gap-2">
+                    <button
+                      class="px-2.5 py-1 rounded-md text-[11px] font-semibold text-white bg-[#478FC8] hover:bg-[#3a7bb3] disabled:opacity-60"
+                      :disabled="respondingInvitationId === getInvitationId(n)"
+                      @click.stop="respondProjectInvitation(n, 'accept')"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      class="px-2.5 py-1 rounded-md text-[11px] font-semibold border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-60"
+                      :disabled="respondingInvitationId === getInvitationId(n)"
+                      @click.stop="respondProjectInvitation(n, 'decline')"
                     >
                       Decline
                     </button>
@@ -778,7 +856,7 @@ function handleLogout() {
               </div>
             </div>
             <div class="px-5 py-3" :style="{ borderTop: isDark ? '1px solid #1f2937' : '1px solid #f1f5f9', background: isDark ? '#0d1117' : '#fafbfc' }">
-              <button class="w-full py-2 rounded-xl text-[#478FC8] hover:bg-[#edf4ff] dark:hover:bg-[#1e3a5f] transition-colors text-[12.5px] font-semibold">
+              <button class="w-full py-2 rounded-xl text-[#478FC8] hover:bg-[#edf4ff] dark:hover:bg-[#1e3a5f] transition-colors text-[12.5px] font-semibold" @click="openNotificationsSettings">
                 View all notifications →
               </button>
             </div>

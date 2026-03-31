@@ -28,7 +28,16 @@ const tabs: TabItem[] = [
   { id: 'workspace', label: 'Team', icon: Building2 },
 ]
 
+const route = useRoute()
 const activeTab = ref<SettingsTab>('profile')
+
+watchEffect(() => {
+  const tab = route.query.tab
+  const nextTab = typeof tab === 'string' ? tab : ''
+  if (tabs.some(item => item.id === nextTab)) {
+    activeTab.value = nextTab as SettingsTab
+  }
+})
 </script>
 
 <template>
