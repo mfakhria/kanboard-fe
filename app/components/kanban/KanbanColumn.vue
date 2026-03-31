@@ -141,7 +141,7 @@ const handleDropOnColumn = (e: DragEvent) => {
     </div>
 
     <!-- Tasks -->
-    <div class="flex-1 space-y-3 px-3 pb-3 overflow-y-auto" style="max-height: calc(100vh - 360px);">
+    <div class="kanban-column-scroll flex-1 space-y-3 px-3 pb-3 overflow-y-auto" style="max-height: calc(100vh - 360px);">
       <div
         v-for="(task, idx) in filteredTasks"
         :key="task.id"
@@ -209,3 +209,14 @@ const handleDropOnColumn = (e: DragEvent) => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.kanban-column-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.kanban-column-scroll::-webkit-scrollbar {
+  display: none;
+}
+</style>

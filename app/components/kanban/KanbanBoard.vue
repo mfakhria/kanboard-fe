@@ -78,7 +78,7 @@ const handleDragEnd = () => {
     </div>
 
     <!-- Kanban Columns -->
-    <div class="flex gap-5 overflow-x-auto pb-4" style="min-height: calc(100vh - 300px);">
+    <div class="kanban-board-scroll flex gap-5 overflow-x-auto pb-4" style="min-height: calc(100vh - 300px);">
       <KanbanColumn
         v-for="column in columns"
         :key="column.id"
@@ -122,3 +122,14 @@ const handleDragEnd = () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.kanban-board-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.kanban-board-scroll::-webkit-scrollbar {
+  display: none;
+}
+</style>
