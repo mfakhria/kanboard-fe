@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowUpRight, Upload, Mail, CheckCircle2, X, FolderKanban, Zap, TrendingUp, ChevronRight, Timer } from 'lucide-vue-next'
+import { ArrowUpRight, Upload, Mail, CheckCircle2, X, FolderKanban, Zap, TrendingUp, ChevronRight, Timer, Languages } from 'lucide-vue-next'
 
 definePageMeta({
   layout: 'dashboard',
@@ -8,6 +8,49 @@ definePageMeta({
 const projectStore = useProjectStore()
 const analyticsStore = useAnalyticsStore()
 const workspaceStore = useWorkspaceStore()
+const { locale, setLocale } = useLocale()
+
+const toggleLanguage = () => {
+  setLocale(locale.value === 'id' ? 'en' : 'id')
+}
+
+const uiText = computed(() => locale.value === 'id'
+  ? {
+      dashboard: 'Dashboard',
+      descriptionStart: 'Rencanakan, prioritaskan, dan selesaikan tugas Anda',
+      descriptionAccent: 'dengan lebih mudah',
+      importData: 'Import Data',
+      totalProjects: 'Total Proyek',
+      endedProjects: 'Proyek Selesai',
+      runningProjects: 'Proyek Berjalan',
+      pendingProject: 'Proyek Menunggu',
+      increasedFromLastMonth: 'Meningkat dari bulan lalu',
+      onDiscuss: 'Dalam diskusi',
+      pendingInvitations: 'Undangan Proyek Tertunda',
+      invitedBy: 'Diundang oleh',
+      asRole: 'sebagai',
+      accept: 'Terima',
+      decline: 'Tolak',
+      switchTitle: 'Switch to English',
+    }
+  : {
+      dashboard: 'Dashboard',
+      descriptionStart: 'Plan, prioritize, and accomplish your tasks',
+      descriptionAccent: 'with ease',
+      importData: 'Import Data',
+      totalProjects: 'Total Projects',
+      endedProjects: 'Ended Projects',
+      runningProjects: 'Running Projects',
+      pendingProject: 'Pending Project',
+      increasedFromLastMonth: 'Increased from last month',
+      onDiscuss: 'On Discuss',
+      pendingInvitations: 'Pending Project Invitations',
+      invitedBy: 'Invited by',
+      asRole: 'as',
+      accept: 'Accept',
+      decline: 'Decline',
+      switchTitle: 'Ganti ke Bahasa Indonesia',
+    })
 
 onMounted(async () => {
   // Clean up old drag-and-drop widget order from localStorage
@@ -27,33 +70,33 @@ onMounted(async () => {
 
 const statsCards = computed(() => [
   {
-    title: 'Total Projects',
+    title: uiText.value.totalProjects,
     value: analyticsStore.stats.totalProjects,
-    note: 'Increased from last month',
+    note: uiText.value.increasedFromLastMonth,
     highlighted: true,
     icon: FolderKanban,
     trendIcon: TrendingUp,
   },
   {
-    title: 'Ended Projects',
+    title: uiText.value.endedProjects,
     value: analyticsStore.stats.endedProjects,
-    note: 'Increased from last month',
+    note: uiText.value.increasedFromLastMonth,
     highlighted: false,
     icon: CheckCircle2,
     trendIcon: TrendingUp,
   },
   {
-    title: 'Running Projects',
+    title: uiText.value.runningProjects,
     value: analyticsStore.stats.runningProjects,
-    note: 'Increased from last month',
+    note: uiText.value.increasedFromLastMonth,
     highlighted: false,
     icon: Zap,
     trendIcon: TrendingUp,
   },
   {
-    title: 'Pending Project',
+    title: uiText.value.pendingProject,
     value: analyticsStore.stats.pendingProjects,
-    note: 'On Discuss',
+    note: uiText.value.onDiscuss,
     highlighted: false,
     icon: Timer,
     trendIcon: ChevronRight,
@@ -104,18 +147,29 @@ const widgetsRow2 = computed(() => [
         <div class="flex items-center gap-3 mb-1">
           <div class="w-1 h-8 rounded-full bg-gradient-to-b from-[#478FC8] to-[#3570A5]" />
           <h1 class="text-[clamp(22px,3vw,30px)] font-black tracking-tight text-gray-900 dark:text-white leading-tight">
-            Dashboard
+            {{ uiText.dashboard }}
           </h1>
         </div>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 pl-4 leading-relaxed">
-          Plan, prioritize, and accomplish your tasks
-          <span class="font-semibold bg-gradient-to-r from-[#478FC8] to-[#6db3e8] bg-clip-text text-transparent">with ease</span>.
+          {{ uiText.descriptionStart }}
+          <span class="font-semibold bg-gradient-to-r from-[#478FC8] to-[#6db3e8] bg-clip-text text-transparent">{{ uiText.descriptionAccent }}</span>.
         </p>
       </div>
-      <UiButton variant="outline" class="gap-2 border-gray-200 dark:border-gray-700 hover:border-[#478FC8] hover:text-[#478FC8] bg-white dark:bg-gray-900 shadow-sm shrink-0">
-        <Upload class="h-3.5 w-3.5" />
-        Import Data
-      </UiButton>
+      <div class="flex flex-wrap items-center gap-2">
+        <UiButton
+          variant="outline"
+          class="gap-2 border-gray-200 dark:border-gray-700 hover:border-[#478FC8] hover:text-[#478FC8] bg-white dark:bg-gray-900 shadow-sm shrink-0"
+          :title="uiText.switchTitle"
+          @click="toggleLanguage"
+        >
+          <Languages class="h-3.5 w-3.5" />
+          {{ locale === 'id' ? 'ID' : 'EN' }}
+        </UiButton>
+        <UiButton variant="outline" class="gap-2 border-gray-200 dark:border-gray-700 hover:border-[#478FC8] hover:text-[#478FC8] bg-white dark:bg-gray-900 shadow-sm shrink-0">
+          <Upload class="h-3.5 w-3.5" />
+          {{ uiText.importData }}
+        </UiButton>
+      </div>
     </div>
 
     <!-- Stats Cards -->
@@ -169,7 +223,7 @@ const widgetsRow2 = computed(() => [
     <div v-if="projectStore.pendingInvitations.length > 0" class="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/10 p-4">
       <h3 class="text-sm font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-2 mb-3">
         <Mail class="h-4 w-4" />
-        Pending Project Invitations ({{ projectStore.pendingInvitations.length }})
+        {{ uiText.pendingInvitations }} ({{ projectStore.pendingInvitations.length }})
       </h3>
       <div class="space-y-2">
         <div
@@ -187,7 +241,7 @@ const widgetsRow2 = computed(() => [
             <div>
               <p class="text-sm font-medium text-gray-900 dark:text-white">{{ inv.project.name }}</p>
               <p class="text-xs text-gray-500 dark:text-gray-400">
-                Invited by {{ inv.inviter.name }} as <strong>{{ inv.role }}</strong>
+                {{ uiText.invitedBy }} {{ inv.inviter.name }} {{ uiText.asRole }} <strong>{{ inv.role }}</strong>
               </p>
             </div>
           </div>
@@ -197,14 +251,14 @@ const widgetsRow2 = computed(() => [
               @click="handleAcceptInvitation(inv.token)"
             >
               <CheckCircle2 class="h-3.5 w-3.5" />
-              Accept
+              {{ uiText.accept }}
             </button>
             <button
               class="inline-flex items-center gap-1 rounded-md border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 transition-colors"
               @click="projectStore.declineInvitation(inv.token)"
             >
               <X class="h-3.5 w-3.5" />
-              Decline
+              {{ uiText.decline }}
             </button>
           </div>
         </div>
