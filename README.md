@@ -225,4 +225,3 @@ Kalau ingin cepat memahami aplikasi ini di GitHub atau saat demo, fokus ke area 
 ## License
 
 Repository ini menggunakan lisensi yang mengikuti konfigurasi proyek saat ini. Backend package menandai lisensi sebagai `MIT`.
-M
