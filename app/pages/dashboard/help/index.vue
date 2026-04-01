@@ -9,6 +9,7 @@ import type { Component } from 'vue'
 definePageMeta({
   layout: 'dashboard',
 })
+const { locale } = useLocale()
 
 type HelpTab = 'faq' | 'guides' | 'contact'
 
@@ -18,11 +19,27 @@ interface TabItem {
   icon: Component
 }
 
-const tabItems: TabItem[] = [
-  { id: 'faq', label: 'FAQ', icon: HelpCircle },
-  { id: 'guides', label: 'Guides', icon: BookOpen },
-  { id: 'contact', label: 'Contact Us', icon: Headphones },
-]
+const uiText = computed(() => locale.value === 'id'
+  ? {
+      title: 'Pusat Bantuan',
+      description: 'Temukan jawaban untuk pertanyaan umum dan pelajari cara menggunakan Kanzon.',
+      faq: 'FAQ',
+      guides: 'Panduan',
+      contact: 'Hubungi Kami',
+    }
+  : {
+      title: 'Help Center',
+      description: 'Find answers to common questions and learn how to use Kanzon.',
+      faq: 'FAQ',
+      guides: 'Guides',
+      contact: 'Contact Us',
+    })
+
+const tabItems = computed<TabItem[]>(() => [
+  { id: 'faq', label: uiText.value.faq, icon: HelpCircle },
+  { id: 'guides', label: uiText.value.guides, icon: BookOpen },
+  { id: 'contact', label: uiText.value.contact, icon: Headphones },
+])
 
 const activeTab = ref<HelpTab>('faq')
 </script>
@@ -34,13 +51,11 @@ const activeTab = ref<HelpTab>('faq')
       <div class="flex items-center gap-3 mb-1">
         <div class="w-1 h-8 rounded-full bg-gradient-to-b from-[#478FC8] to-[#3570A5]" />
         <h1 class="text-[clamp(20px,2.5vw,28px)] font-black tracking-tight text-gray-900 dark:text-white leading-tight">
-          Help Center
+          {{ uiText.title }}
         </h1>
       </div>
       <p class="text-[13.5px] text-gray-500 dark:text-gray-400 pl-4 leading-relaxed">
-        Find answers to
-        <span class="font-semibold bg-gradient-to-r from-[#478FC8] to-[#6db3e8] bg-clip-text text-transparent">common questions</span>
-        and learn how to use Kanzon.
+        {{ uiText.description }}
       </p>
     </div>
 

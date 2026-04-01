@@ -22,6 +22,7 @@ const route = useRoute()
 const { badgeLabel, fetchTaskCount } = useTaskCount()
 const workspaceStore = useWorkspaceStore()
 const showTeamSwitcher = ref(false)
+const { t } = useLocale()
 
 const currentTeam = computed(() => workspaceStore.activeWorkspace)
 const teams = computed(() => {
@@ -67,18 +68,18 @@ watch(
 )
 
 const menuItems = computed(() => [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-  { icon: FolderKanban, label: 'Projects', href: '/project' },
-  { icon: CheckSquare, label: 'Tasks', href: '/tasks', badge: badgeLabel.value },
-  { icon: Calendar, label: 'Calendar', href: '/calendar' },
-  { icon: BarChart3, label: 'Analytics', href: '/analytics' },
-  { icon: Users, label: 'Team', href: '/team' },
+  { icon: LayoutDashboard, label: t('nav.dashboard'), href: '/dashboard' },
+  { icon: FolderKanban, label: t('nav.projects'), href: '/project' },
+  { icon: CheckSquare, label: t('nav.tasks'), href: '/tasks', badge: badgeLabel.value },
+  { icon: Calendar, label: t('nav.calendar'), href: '/calendar' },
+  { icon: BarChart3, label: t('nav.analytics'), href: '/analytics' },
+  { icon: Users, label: t('nav.team'), href: '/team' },
 ])
 
-const generalItems = [
-  { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
-  { icon: HelpCircle, label: 'Help', href: '/dashboard/help' },
-]
+const generalItems = computed(() => [
+  { icon: Settings, label: t('nav.settings'), href: '/dashboard/settings' },
+  { icon: HelpCircle, label: t('nav.help'), href: '/dashboard/help' },
+])
 
 const isActive = (href: string) => {
   if (href === '/dashboard') return route.path === '/dashboard'
@@ -147,7 +148,7 @@ const userInitials = computed(() => {
                 kanzon
               </span>
               <span class="block text-gray-400" style="font-size: 10px; font-weight: 500; margin-top: -1px;">
-                Project Management
+                {{ t('app.tagline') }}
               </span>
             </div>
           </div>
@@ -174,10 +175,10 @@ const userInitials = computed(() => {
             </div>
             <div class="flex-1 min-w-0 text-left">
               <p class="truncate" style="font-size: 12.5px; font-weight: 700; color: var(--md-team-name);">
-                {{ currentTeam?.name ?? 'Select Team' }}
+                {{ currentTeam?.name ?? t('team.select') }}
               </p>
               <p class="truncate" style="font-size: 10px; color: var(--md-team-sub);">
-                {{ teams.length }} team{{ teams.length !== 1 ? 's' : '' }}
+                {{ t('team.count', { count: teams.length }) }}
               </p>
             </div>
             <ChevronsUpDown style="width: 14px; height: 14px; color: var(--md-item-icon); flex-shrink: 0;" />
@@ -241,7 +242,7 @@ const userInitials = computed(() => {
               class="px-2 mb-2 uppercase tracking-widest"
               style="font-size: 9.5px; font-weight: 700; color: var(--md-section-label);"
             >
-              Menu
+              {{ t('nav.menu') }}
             </p>
             <ul class="flex flex-col gap-0.5">
               <li v-for="item in menuItems" :key="item.href">
@@ -321,7 +322,7 @@ const userInitials = computed(() => {
               class="px-2 mb-2 uppercase tracking-widest"
               style="font-size: 9.5px; font-weight: 700; color: var(--md-section-label);"
             >
-              General
+              {{ t('nav.general') }}
             </p>
             <ul class="flex flex-col gap-0.5">
               <li v-for="item in generalItems" :key="item.href">
@@ -353,7 +354,7 @@ const userInitials = computed(() => {
                     <LogOut class="transition-colors group-hover:!text-[#ef4444]" style="width: 14px; height: 14px; color: var(--md-item-icon);" />
                   </div>
                   <span class="transition-colors group-hover:!text-[#ef4444]" style="font-size: 13.5px; font-weight: 500; color: var(--md-item-text);">
-                    Logout
+                    {{ t('nav.logout') }}
                   </span>
                 </button>
               </li>

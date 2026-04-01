@@ -24,6 +24,107 @@ definePageMeta({ layout: 'dashboard' })
 
 const projectStore = useProjectStore()
 const workspaceStore = useWorkspaceStore()
+const { locale } = useLocale()
+
+const uiText = computed(() => locale.value === 'id'
+  ? {
+      pageTitle: 'Proyek',
+      pageDescription: 'Kelola dan pantau semua proyek Anda dalam satu tempat.',
+      addProject: 'Tambah Proyek',
+      totalProjects: 'Total Proyek',
+      allProjects: 'Semua proyek',
+      completed: 'Selesai',
+      finishedProjects: 'Proyek selesai',
+      inProgress: 'Berjalan',
+      increasedFromLastMonth: 'Meningkat dari bulan lalu',
+      pending: 'Menunggu',
+      onDiscuss: 'Dalam diskusi',
+      overdue: 'Terlambat',
+      needAttention: 'Perlu perhatian',
+      status: 'Status',
+      searchProject: 'Cari proyek...',
+      moreFilters: 'Filter lain',
+      list: 'Daftar',
+      card: 'Kartu',
+      pic: 'PIC',
+      deadline: 'Deadline',
+      tasks: 'Tugas',
+      progress: 'Progres',
+      viewDetails: 'Lihat Detail',
+      edit: 'Edit',
+      name: 'Nama',
+      showing: 'Menampilkan',
+      of: 'dari',
+      entries: 'data',
+      paginate: 'Bertahap',
+      showAll: 'Tampilkan Semua',
+      createProjectTitle: 'Buat Proyek',
+      createProjectDescription: 'Tambahkan proyek baru ke tim Anda.',
+      projectName: 'Nama Proyek',
+      projectNamePlaceholder: 'contoh: Redesign Website',
+      description: 'Deskripsi',
+      projectDescriptionPlaceholder: 'Deskripsi singkat proyek...',
+      icon: 'Ikon',
+      color: 'Warna',
+      picLabel: 'PIC (Penanggung Jawab)',
+      selectPic: '-- Pilih PIC --',
+      visibility: 'Visibilitas',
+      visibilityPublic: 'Publik - Terlihat oleh semua anggota tim',
+      visibilityPrivate: 'Privat - Hanya anggota yang diundang',
+      cancel: 'Batal',
+      creating: 'Membuat...',
+      createProject: 'Buat Proyek',
+      noTeamSelected: 'Belum ada tim yang dipilih. Buat atau pilih tim terlebih dahulu.',
+    }
+  : {
+      pageTitle: 'Projects',
+      pageDescription: 'Manage and track all your projects in one place.',
+      addProject: 'Add Project',
+      totalProjects: 'Total Projects',
+      allProjects: 'All projects',
+      completed: 'Completed',
+      finishedProjects: 'Finished projects',
+      inProgress: 'In Progress',
+      increasedFromLastMonth: 'Increased from last month',
+      pending: 'Pending',
+      onDiscuss: 'On Discuss',
+      overdue: 'Overdue',
+      needAttention: 'Need attention',
+      status: 'Status',
+      searchProject: 'Search project...',
+      moreFilters: 'More filters',
+      list: 'List',
+      card: 'Card',
+      pic: 'PIC',
+      deadline: 'Deadline',
+      tasks: 'Tasks',
+      progress: 'Progress',
+      viewDetails: 'View Details',
+      edit: 'Edit',
+      name: 'Name',
+      showing: 'Showing',
+      of: 'of',
+      entries: 'entries',
+      paginate: 'Paginate',
+      showAll: 'Show All',
+      createProjectTitle: 'Create Project',
+      createProjectDescription: 'Add a new project to your team.',
+      projectName: 'Project Name',
+      projectNamePlaceholder: 'e.g. Website Redesign',
+      description: 'Description',
+      projectDescriptionPlaceholder: 'Brief description of the project...',
+      icon: 'Icon',
+      color: 'Color',
+      picLabel: 'PIC (Person In Charge)',
+      selectPic: '-- Select PIC --',
+      visibility: 'Visibility',
+      visibilityPublic: 'Public - Visible to all team members',
+      visibilityPrivate: 'Private - Only invited members',
+      cancel: 'Cancel',
+      creating: 'Creating...',
+      createProject: 'Create Project',
+      noTeamSelected: 'No team selected. Please create or select a team first.',
+    })
 
 onMounted(async () => {
   await workspaceStore.fetchWorkspaces()
@@ -93,7 +194,7 @@ const projectCards = computed<ProjectCard[]>(() => {
       pic: { name: p.pic?.name || '-', avatar: p.pic?.avatar || '' },
       completedTasks: p.completedTasks ?? 0,
       totalTasks: p.totalTasks ?? 0,
-      deadline: p.dueDate ? new Date(p.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-',
+      deadline: p.dueDate ? new Date(p.dueDate).toLocaleDateString(locale.value === 'id' ? 'id-ID' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-',
       progress: (p.totalTasks ?? 0) > 0 ? Math.round(((p.completedTasks ?? 0) / (p.totalTasks ?? 0)) * 100) : 0,
       icon: p.icon || 'FolderKanban',
       iconBg: p.color ? '' : (iconBgOptions[idx % iconBgOptions.length] ?? 'bg-blue-100 dark:bg-blue-900/30'),
@@ -149,9 +250,9 @@ function toggleStatFilter(status: string) {
 const statCards = computed(() => [
   {
     key: '',
-    title: 'Total Projects',
+    title: uiText.value.totalProjects,
     value: stats.value.total,
-    note: 'All projects',
+    note: uiText.value.allProjects,
     highlighted: activeStatFilter.value === '',
     icon: FolderKanban,
     iconBg: 'bg-[#EDF4FF] dark:bg-[#478FC8]/10',
@@ -159,9 +260,9 @@ const statCards = computed(() => [
   },
   {
     key: 'completed',
-    title: 'Completed',
+    title: uiText.value.completed,
     value: stats.value.completed,
-    note: 'Finished projects',
+    note: uiText.value.finishedProjects,
     highlighted: activeStatFilter.value === 'completed',
     icon: CheckCircle2,
     iconBg: 'bg-emerald-50 dark:bg-emerald-900/20',
@@ -169,9 +270,9 @@ const statCards = computed(() => [
   },
   {
     key: 'in_progress',
-    title: 'In Progress',
+    title: uiText.value.inProgress,
     value: stats.value.inProgress,
-    note: 'Increased from last month',
+    note: uiText.value.increasedFromLastMonth,
     highlighted: activeStatFilter.value === 'in_progress',
     icon: Loader2,
     iconBg: 'bg-[#EDF4FF] dark:bg-[#478FC8]/10',
@@ -179,9 +280,9 @@ const statCards = computed(() => [
   },
   {
     key: 'pending',
-    title: 'Pending',
+    title: uiText.value.pending,
     value: stats.value.pending,
-    note: 'On Discuss',
+    note: uiText.value.onDiscuss,
     highlighted: activeStatFilter.value === 'pending',
     icon: Clock,
     iconBg: 'bg-gray-100 dark:bg-gray-800',
@@ -189,9 +290,9 @@ const statCards = computed(() => [
   },
   {
     key: 'overdue',
-    title: 'Overdue',
+    title: uiText.value.overdue,
     value: stats.value.overdue,
-    note: 'Need attention',
+    note: uiText.value.needAttention,
     highlighted: activeStatFilter.value === 'overdue',
     icon: AlertTriangle,
     iconBg: 'bg-red-50 dark:bg-red-900/20',
@@ -222,22 +323,22 @@ function goToPage(page: number) {
 // ─── Status helpers ───
 const statusConfig: Record<string, { label: string; class: string; dotClass: string }> = {
   completed: {
-    label: 'Completed',
+    label: uiText.value.completed,
     class: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400',
     dotClass: 'bg-emerald-500',
   },
   in_progress: {
-    label: 'In progress',
+    label: uiText.value.inProgress,
     class: 'bg-[#EDF4FF] text-[#478FC8] dark:bg-[#478FC8]/15 dark:text-[#6db3e8]',
     dotClass: 'bg-[#478FC8]',
   },
   pending: {
-    label: 'Pending',
+    label: uiText.value.pending,
     class: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
     dotClass: 'bg-gray-400',
   },
   overdue: {
-    label: 'Overdue',
+    label: uiText.value.overdue,
     class: 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400',
     dotClass: 'bg-red-500',
   },
@@ -355,10 +456,10 @@ const projectPicOptions = computed(() => wsMembers.value.map(m => ({
   label: m.user?.name || m.userId,
   value: m.userId,
 })))
-const visibilityOptions = [
-  { label: 'Public - Visible to all team members', value: 'PUBLIC' },
-  { label: 'Private - Only invited members', value: 'PRIVATE' },
-]
+const visibilityOptions = computed(() => [
+  { label: uiText.value.visibilityPublic, value: 'PUBLIC' },
+  { label: uiText.value.visibilityPrivate, value: 'PRIVATE' },
+])
 
 function resetCreateForm() {
   newProjectName.value = ''
@@ -374,7 +475,7 @@ async function handleCreateProject() {
   if (!newProjectName.value.trim()) return
   const wsId = workspaceStore.activeWorkspace?.id
   if (!wsId) {
-    alert('No team selected. Please create or select a team first.')
+    alert(uiText.value.noTeamSelected)
     return
   }
   isCreatingProject.value = true
@@ -410,10 +511,10 @@ function getInitials(name: string): string {
       <div>
         <div class="flex items-center gap-3 mb-1">
           <div class="w-1 h-8 rounded-full bg-gradient-to-b from-[#478FC8] to-[#3a7bb3]" />
-          <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-gray-900 dark:text-white">Projects</h1>
+          <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-gray-900 dark:text-white">{{ uiText.pageTitle }}</h1>
         </div>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 pl-4">
-          Manage and track <span class="font-semibold text-[#478FC8]">all</span> your projects in one place.
+          {{ uiText.pageDescription }}
         </p>
       </div>
       <UiButton
@@ -421,7 +522,7 @@ function getInitials(name: string): string {
         @click="showCreateProject = true"
       >
         <Plus class="h-4 w-4" />
-        Add Project
+        {{ uiText.addProject }}
       </UiButton>
     </div>
 
@@ -497,7 +598,7 @@ function getInitials(name: string): string {
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Search project..."
+          :placeholder="uiText.searchProject"
           class="flex-1 bg-transparent text-[13px] text-gray-700 dark:text-gray-300 outline-none placeholder:text-gray-400"
         />
       </div>
@@ -508,11 +609,11 @@ function getInitials(name: string): string {
           v-model="statusFilter"
           class="h-9 appearance-none rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 pl-3.5 pr-8 text-[13px] font-medium text-gray-600 dark:text-gray-400 focus:border-[#478FC8] focus:outline-none transition-all cursor-pointer"
         >
-          <option value="">Status</option>
-          <option value="completed">Completed</option>
-          <option value="in_progress">In Progress</option>
-          <option value="pending">Pending</option>
-          <option value="overdue">Overdue</option>
+          <option value="">{{ uiText.status }}</option>
+          <option value="completed">{{ uiText.completed }}</option>
+          <option value="in_progress">{{ uiText.inProgress }}</option>
+          <option value="pending">{{ uiText.pending }}</option>
+          <option value="overdue">{{ uiText.overdue }}</option>
         </select>
         <ChevronDown class="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
       </div>
@@ -520,7 +621,7 @@ function getInitials(name: string): string {
       <!-- More filters -->
       <button class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 text-[13px] font-medium text-gray-500 dark:text-gray-400 hover:border-[#478FC8] hover:text-[#478FC8] transition-all">
         <SlidersHorizontal class="h-3.5 w-3.5" />
-        More filters
+        {{ uiText.moreFilters }}
       </button>
 
       <!-- Spacer -->
@@ -538,7 +639,7 @@ function getInitials(name: string): string {
           @click="viewMode = 'list'"
         >
           <List class="h-3.5 w-3.5" />
-          List
+          {{ uiText.list }}
         </button>
         <button
           :class="[
@@ -550,7 +651,7 @@ function getInitials(name: string): string {
           @click="viewMode = 'card'"
         >
           <LayoutGrid class="h-3.5 w-3.5" />
-          Card
+          {{ uiText.card }}
         </button>
       </div>
     </div>
@@ -606,7 +707,7 @@ function getInitials(name: string): string {
           <!-- Meta Grid -->
           <div class="grid grid-cols-2 gap-x-4 gap-y-3">
             <div>
-              <p class="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">PIC</p>
+              <p class="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">{{ uiText.pic }}</p>
               <div class="flex items-center gap-2">
                 <div class="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-[10px] font-bold text-white shrink-0">
                   {{ getInitials(project.pic.name) }}
@@ -617,17 +718,17 @@ function getInitials(name: string): string {
               </div>
             </div>
             <div>
-              <p class="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Deadline</p>
+              <p class="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">{{ uiText.deadline }}</p>
               <span class="text-[12.5px] font-medium text-gray-700 dark:text-gray-300">{{ project.deadline }}</span>
             </div>
             <div>
-              <p class="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Tasks</p>
+              <p class="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">{{ uiText.tasks }}</p>
               <span class="text-[12.5px] font-semibold text-gray-700 dark:text-gray-300">
                 {{ project.completedTasks }}<span class="text-gray-400 dark:text-gray-500">/{{ project.totalTasks }}</span>
               </span>
             </div>
             <div>
-              <p class="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Progress</p>
+              <p class="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">{{ uiText.progress }}</p>
               <span :class="['text-[13px] font-bold', getProgressTextColor(project.progress)]">{{ project.progress }}%</span>
             </div>
           </div>
@@ -647,13 +748,13 @@ function getInitials(name: string): string {
             <NuxtLink :to="`/project/${project.id}`" class="flex-1">
               <button class="flex w-full items-center justify-center gap-1.5 rounded-lg border border-gray-200 dark:border-gray-700 py-2 text-[13px] font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
                 <ExternalLink class="h-3.5 w-3.5" />
-                View Details
+                {{ uiText.viewDetails }}
               </button>
             </NuxtLink>
             <NuxtLink :to="`/project/${project.id}`">
               <button class="flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-[13px] font-semibold text-[#478FC8] hover:bg-[#EDF4FF] dark:hover:bg-[#478FC8]/10 transition-all">
                 <Pencil class="h-3 w-3" />
-                Edit
+                {{ uiText.edit }}
               </button>
             </NuxtLink>
           </div>
@@ -666,11 +767,11 @@ function getInitials(name: string): string {
       <!-- List header -->
       <div class="flex items-center gap-4 px-5 py-2">
         <div class="w-8" />
-        <div class="flex-1 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Name</div>
-        <div class="w-28 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden lg:block">Status</div>
-        <div class="w-28 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden md:block">PIC</div>
-        <div class="w-32 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden lg:block">Progress</div>
-        <div class="w-20 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden sm:block">Deadline</div>
+        <div class="flex-1 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{{ uiText.name }}</div>
+        <div class="w-28 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden lg:block">{{ uiText.status }}</div>
+        <div class="w-28 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden md:block">{{ uiText.pic }}</div>
+        <div class="w-32 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden lg:block">{{ uiText.progress }}</div>
+        <div class="w-20 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider hidden sm:block">{{ uiText.deadline }}</div>
         <div class="w-16" />
       </div>
 
@@ -744,13 +845,13 @@ function getInitials(name: string): string {
     <!-- ═══ Pagination ═══ -->
     <div class="flex items-center justify-between pt-2">
       <p class="text-[13px] text-gray-500 dark:text-gray-400">
-        Showing
+        {{ uiText.showing }}
         <span class="font-semibold text-gray-800 dark:text-white">
           {{ showAll ? 1 : (currentPage - 1) * perPage + 1 }} to {{ showAll ? filteredOrderedProjects.length : Math.min(currentPage * perPage, filteredOrderedProjects.length) }}
         </span>
-        of
+        {{ uiText.of }}
         <span class="font-semibold text-gray-800 dark:text-white">{{ filteredOrderedProjects.length }}</span>
-        entries
+        {{ uiText.entries }}
       </p>
 
       <div class="flex items-center gap-2">
@@ -787,52 +888,52 @@ function getInitials(name: string): string {
           class="rounded-lg px-3 py-1.5 text-[13px] font-semibold text-[#478FC8] hover:bg-[#EDF4FF] dark:hover:bg-[#478FC8]/10 transition-all"
           @click="showAll = !showAll"
         >
-          {{ showAll ? 'Paginate' : 'Show All' }}
+          {{ showAll ? uiText.paginate : uiText.showAll }}
         </button>
       </div>
     </div>
   </LayoutPageContainer>
 
   <!-- Create Project Dialog -->
-  <UiDialog v-model:open="showCreateProject" title="Create Project" description="Add a new project to your team.">
+  <UiDialog v-model:open="showCreateProject" :title="uiText.createProjectTitle" :description="uiText.createProjectDescription">
     <template #default="{ close }">
       <form class="space-y-4" @submit.prevent="handleCreateProject">
         <div>
-          <UiLabel for="project-name">Project Name</UiLabel>
-          <UiInput id="project-name" v-model="newProjectName" placeholder="e.g. Website Redesign" class="mt-1.5" />
+          <UiLabel for="project-name">{{ uiText.projectName }}</UiLabel>
+          <UiInput id="project-name" v-model="newProjectName" :placeholder="uiText.projectNamePlaceholder" class="mt-1.5" />
         </div>
         <div>
-          <UiLabel for="project-desc">Description</UiLabel>
-          <UiTextarea id="project-desc" v-model="newProjectDescription" placeholder="Brief description of the project..." class="mt-1.5" rows="3" />
+          <UiLabel for="project-desc">{{ uiText.description }}</UiLabel>
+          <UiTextarea id="project-desc" v-model="newProjectDescription" :placeholder="uiText.projectDescriptionPlaceholder" class="mt-1.5" rows="3" />
         </div>
         <div>
-          <UiLabel>Icon</UiLabel>
+          <UiLabel>{{ uiText.icon }}</UiLabel>
           <div class="mt-1.5">
             <UiIconPicker v-model="newProjectIcon" />
           </div>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <UiLabel for="project-color">Color</UiLabel>
+            <UiLabel for="project-color">{{ uiText.color }}</UiLabel>
             <UiInput id="project-color" v-model="newProjectColor" type="color" class="mt-1.5 h-10" />
           </div>
           <div>
-            <UiLabel for="project-due">Deadline</UiLabel>
+            <UiLabel for="project-due">{{ uiText.deadline }}</UiLabel>
             <UiInput id="project-due" v-model="newProjectDueDate" type="date" class="mt-1.5" />
           </div>
         </div>
         <div>
-          <UiLabel for="project-pic">PIC (Person In Charge)</UiLabel>
+          <UiLabel for="project-pic">{{ uiText.picLabel }}</UiLabel>
           <UiSelect
             id="project-pic"
             v-model="newProjectPicId"
             :options="projectPicOptions"
-            placeholder="-- Select PIC --"
+            :placeholder="uiText.selectPic"
             class="mt-1.5"
           />
         </div>
         <div>
-          <UiLabel for="project-visibility">Visibility</UiLabel>
+          <UiLabel for="project-visibility">{{ uiText.visibility }}</UiLabel>
           <UiSelect
             id="project-visibility"
             v-model="newProjectVisibility"
@@ -841,9 +942,9 @@ function getInitials(name: string): string {
           />
         </div>
         <div class="flex justify-end gap-3 pt-2">
-          <UiButton variant="outline" type="button" @click="resetCreateForm(); close()">Cancel</UiButton>
+          <UiButton variant="outline" type="button" @click="resetCreateForm(); close()">{{ uiText.cancel }}</UiButton>
           <UiButton type="submit" :disabled="isCreatingProject || !newProjectName.trim()" class="bg-[#478FC8] hover:bg-[#3a7bb3] text-white">
-            {{ isCreatingProject ? 'Creating...' : 'Create Project' }}
+            {{ isCreatingProject ? uiText.creating : uiText.createProject }}
           </UiButton>
         </div>
       </form>

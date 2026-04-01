@@ -21,6 +21,7 @@ const authStore = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 const { badgeLabel, fetchTaskCount } = useTaskCount()
+const { t } = useLocale()
 
 const ready = ref(false)
 const hoveredItem = ref<string | null>(null)
@@ -88,18 +89,18 @@ onUnmounted(() => {
 })
 
 const menuItems = computed(() => [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-  { icon: FolderKanban, label: 'Projects', href: '/project' },
-  { icon: CheckSquare, label: 'Tasks', href: '/tasks', badge: badgeLabel.value },
-  { icon: Calendar, label: 'Calendar', href: '/calendar' },
-  { icon: BarChart3, label: 'Analytics', href: '/analytics' },
-  { icon: Users, label: 'Team', href: '/team' },
+  { icon: LayoutDashboard, label: t('nav.dashboard'), href: '/dashboard' },
+  { icon: FolderKanban, label: t('nav.projects'), href: '/project' },
+  { icon: CheckSquare, label: t('nav.tasks'), href: '/tasks', badge: badgeLabel.value },
+  { icon: Calendar, label: t('nav.calendar'), href: '/calendar' },
+  { icon: BarChart3, label: t('nav.analytics'), href: '/analytics' },
+  { icon: Users, label: t('nav.team'), href: '/team' },
 ])
 
-const generalItems = [
-  { icon: Settings, label: 'Settings', href: '/dashboard/settings', danger: false },
-  { icon: HelpCircle, label: 'Help', href: '/dashboard/help', danger: false },
-]
+const generalItems = computed(() => [
+  { icon: Settings, label: t('nav.settings'), href: '/dashboard/settings', danger: false },
+  { icon: HelpCircle, label: t('nav.help'), href: '/dashboard/help', danger: false },
+])
 
 const isActive = (href: string) => {
   if (href === '/dashboard') return route.path === '/dashboard'
@@ -164,7 +165,7 @@ const userInitials = computed(() => {
           class="block text-gray-400 dark:text-gray-500"
           style="font-size: 10px; font-weight: 500; margin-top: -1px;"
         >
-          Project Management
+          {{ t('app.tagline') }}
         </span>
       </div>
     </div>
@@ -197,10 +198,10 @@ const userInitials = computed(() => {
               class="truncate"
               style="font-size: 12.5px; font-weight: 700; color: var(--sb-profile-name);"
             >
-              {{ currentTeam?.name ?? 'Select Team' }}
+              {{ currentTeam?.name ?? t('team.select') }}
             </p>
             <p class="truncate" style="font-size: 10px; color: var(--sb-profile-email);">
-              {{ teams.length }} team{{ teams.length !== 1 ? 's' : '' }}
+              {{ t('team.count', { count: teams.length }) }}
             </p>
           </div>
           <ChevronsUpDown
@@ -218,7 +219,7 @@ const userInitials = computed(() => {
           class="px-2.5 py-1.5 rounded-lg shadow-xl"
           style="font-size: 12px; font-weight: 600; background: #1e293b; color: #f1f5f9;"
         >
-          {{ currentTeam?.name ?? 'Select Team' }}
+          {{ currentTeam?.name ?? t('team.select') }}
           <div
             class="absolute right-full top-1/2 -translate-y-1/2"
             style="border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-right: 5px solid #1e293b;"
@@ -245,7 +246,7 @@ const userInitials = computed(() => {
         >
           <div class="px-3 py-2 border-b border-gray-100 dark:border-gray-800">
             <p style="font-size: 10.5px; font-weight: 700; color: var(--sb-section-label);" class="uppercase tracking-wider">
-              Switch Team
+              {{ t('team.switch') }}
             </p>
           </div>
           <div class="max-h-[240px] overflow-y-auto py-1">
@@ -300,7 +301,7 @@ const userInitials = computed(() => {
           class="px-2 mb-2 uppercase tracking-widest"
           style="font-size: 9.5px; font-weight: 700; color: var(--sb-section-label);"
         >
-          Menu
+              {{ t('nav.menu') }}
         </p>
         <div v-else class="flex justify-center mb-2">
           <div class="w-4 h-px bg-gray-100 dark:bg-gray-800 rounded-full" />
@@ -414,14 +415,14 @@ const userInitials = computed(() => {
         </ul>
       </div>
 
-      <!-- GENERAL -->
+    <!-- GENERAL -->
       <div>
         <p
           v-if="!collapsed"
           class="px-2 mb-2 uppercase tracking-widest"
           style="font-size: 9.5px; font-weight: 700; color: var(--sb-section-label);"
         >
-          General
+          {{ t('nav.general') }}
         </p>
         <div v-else class="flex justify-center mb-2">
           <div class="w-4 h-px bg-gray-100 dark:bg-gray-800 rounded-full" />
@@ -526,7 +527,7 @@ const userInitials = computed(() => {
                   color: hoveredItem === 'Logout' ? 'var(--sb-logout-text)' : 'var(--sb-item-text)',
                 }"
               >
-                Logout
+                {{ t('nav.logout') }}
               </span>
 
               <!-- Collapsed tooltip -->
@@ -538,7 +539,7 @@ const userInitials = computed(() => {
                   class="px-2.5 py-1.5 rounded-lg shadow-xl"
                   style="font-size: 12px; font-weight: 600; background: #1e293b; color: #f1f5f9;"
                 >
-                  Logout
+                  {{ t('nav.logout') }}
                   <div
                     class="absolute right-full top-1/2 -translate-y-1/2"
                     style="border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-right: 5px solid #1e293b;"

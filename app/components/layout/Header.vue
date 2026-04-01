@@ -11,6 +11,7 @@ import {
   Home,
   Sun,
   Moon,
+  Languages,
   Command,
   User,
   Settings,
@@ -43,6 +44,8 @@ const router = useRouter()
 const colorMode = useColorMode()
 const isDark = computed(() => colorMode.value === 'dark')
 const toggleTheme = () => { colorMode.preference = isDark.value ? 'light' : 'dark' }
+const { locale, setLocale } = useLocale()
+const toggleLanguage = () => { setLocale(locale.value === 'id' ? 'en' : 'id') }
 
 // ── Page meta ─────────────────────────────────────────────────────────────────
 interface PageMeta { label: string; icon: Component; desc: string }
@@ -648,6 +651,14 @@ function handleLogout() {
       <!-- Mobile: compact action buttons (bell + theme) -->
       <div class="flex sm:hidden items-center gap-0.5">
         <button
+          class="relative flex min-w-[48px] h-9 items-center justify-center gap-1 rounded-xl px-2 transition-all duration-150 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+          :title="locale === 'id' ? 'Switch to English' : 'Ganti ke Bahasa Indonesia'"
+          @click="toggleLanguage"
+        >
+          <Languages style="width: 15px; height: 15px;" />
+          <span class="text-[10px] font-bold">{{ locale === 'id' ? 'ID' : 'EN' }}</span>
+        </button>
+        <button
           class="relative w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-150 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
           :title="isDark ? 'Light mode' : 'Dark mode'"
           @click="toggleTheme"
@@ -755,6 +766,14 @@ function handleLogout() {
 
       <!-- Desktop: Icon pill group -->
       <div class="hidden sm:flex items-center gap-0.5 rounded-2xl px-1 py-1" :style="{ background: isDark ? '#1f2937' : '#f6f8fa', border: isDark ? '1.5px solid #374151' : '1.5px solid #edf0f4' }">
+        <button
+          class="relative flex min-w-[50px] h-8 items-center justify-center gap-1 rounded-xl px-2 transition-all duration-150 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+          :title="locale === 'id' ? 'Switch to English' : 'Ganti ke Bahasa Indonesia'"
+          @click="toggleLanguage"
+        >
+          <Languages style="width: 14px; height: 14px;" />
+          <span class="text-[10px] font-bold leading-none">{{ locale === 'id' ? 'ID' : 'EN' }}</span>
+        </button>
         <button
           class="relative w-8 h-8 flex items-center justify-center rounded-xl transition-all duration-150 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
           :title="isDark ? 'Light mode' : 'Dark mode'"

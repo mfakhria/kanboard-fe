@@ -40,6 +40,139 @@ const kanbanStore = useKanbanStore()
 const projectStore = useProjectStore()
 const authStore = useAuthStore()
 const runtimeConfig = useRuntimeConfig()
+const { locale } = useLocale()
+
+const uiText = computed(() => locale.value === 'id'
+  ? {
+      taskTitlePlaceholder: 'Judul tugas',
+      priority: 'Prioritas',
+      dueDate: 'Deadline',
+      status: 'Status',
+      assignee: 'Assignee',
+      removeAssignee: 'Hapus assignee',
+      changeAssignee: 'Ganti assignee',
+      assignMember: 'Pilih anggota',
+      noProjectMembers: 'Belum ada anggota proyek',
+      approvalWorkflow: 'Approval Workflow',
+      approvalDescription: 'Ajukan tugas ini untuk review formal, tetapkan approver, dan simpan jejak keputusannya.',
+      reviewer: 'Reviewer',
+      selectReviewer: 'Pilih reviewer',
+      currentApprover: 'Approver saat ini',
+      reviewDueDate: 'Batas review',
+      submitted: 'Diajukan',
+      submissionNote: 'Catatan pengajuan',
+      submissionPlaceholder: 'Jelaskan apa yang sudah siap, apa yang perlu disetujui, atau checklist review.',
+      submitting: 'Mengirim...',
+      submitForReview: 'Ajukan Review',
+      resubmitReview: 'Ajukan Ulang Review',
+      cancelReview: 'Batalkan Review',
+      reviewerDecision: 'Keputusan Reviewer',
+      decisionPlaceholder: 'Tambahkan catatan approval atau revisi yang diminta.',
+      approve: 'Setujui',
+      requestChanges: 'Minta Revisi',
+      reviewTimeline: 'Timeline Review',
+      events: 'event',
+      noReviewHistory: 'Belum ada riwayat review. Ajukan tugas ini saat siap divalidasi atau disetujui.',
+      labels: 'Label',
+      removeLabel: 'Hapus label',
+      noLabels: 'Belum ada label. Tambahkan label untuk mengelompokkan tugas berdasarkan topik, stream owner, atau status workflow.',
+      newLabel: 'Label Baru',
+      newLabelPlaceholder: 'contoh: Backend, Design, Blocked',
+      color: 'Warna',
+      add: 'Tambah',
+      projectLabelCatalog: 'Katalog label proyek',
+      boardLabels: 'Label lain dari board ini',
+      attachments: 'Lampiran',
+      uploadFile: 'Upload File',
+      uploading: 'Mengunggah...',
+      loadingAttachments: 'Memuat lampiran...',
+      uploadedBy: 'diunggah oleh',
+      openAttachment: 'Buka lampiran',
+      removeAttachment: 'Hapus lampiran',
+      noAttachments: 'Belum ada file terlampir. Unggah referensi, screenshot, spesifikasi, atau dokumen pendukung untuk tugas ini.',
+      description: 'Deskripsi',
+      descriptionPlaceholder: 'Tambahkan deskripsi...',
+      comments: 'komentar',
+      delete: 'Hapus',
+      cancel: 'Batal',
+      saving: 'Menyimpan...',
+      saveChanges: 'Simpan Perubahan',
+      notSet: 'Belum diatur',
+      inReview: 'In Review',
+      changesRequested: 'Perlu Revisi',
+      approved: 'Approved',
+      draft: 'Draft',
+      submittedForReview: 'Diajukan untuk review',
+      reviewApproved: 'Disetujui',
+      reviewChangesRequested: 'Revisi diminta',
+      reviewCancelled: 'Review dibatalkan',
+      useLabelColor: 'Gunakan warna label',
+    }
+  : {
+      taskTitlePlaceholder: 'Task title',
+      priority: 'Priority',
+      dueDate: 'Due Date',
+      status: 'Status',
+      assignee: 'Assignee',
+      removeAssignee: 'Remove assignee',
+      changeAssignee: 'Change assignee',
+      assignMember: 'Assign a member',
+      noProjectMembers: 'No project members found',
+      approvalWorkflow: 'Approval Workflow',
+      approvalDescription: 'Submit this task for formal review, assign an approver, and keep the decision trail documented.',
+      reviewer: 'Reviewer',
+      selectReviewer: 'Select reviewer',
+      currentApprover: 'Current approver',
+      reviewDueDate: 'Review due date',
+      submitted: 'Submitted',
+      submissionNote: 'Submission note',
+      submissionPlaceholder: 'Explain what is ready, what needs approval, or any review checklist.',
+      submitting: 'Submitting...',
+      submitForReview: 'Submit for Review',
+      resubmitReview: 'Resubmit Review',
+      cancelReview: 'Cancel Review',
+      reviewerDecision: 'Reviewer Decision',
+      decisionPlaceholder: 'Add approval notes or requested changes.',
+      approve: 'Approve',
+      requestChanges: 'Request Changes',
+      reviewTimeline: 'Review Timeline',
+      events: 'events',
+      noReviewHistory: 'No review history yet. Submit this task when it is ready for validation or approval.',
+      labels: 'Labels',
+      removeLabel: 'Remove label',
+      noLabels: 'No labels yet. Add labels to group this task by topic, owner stream, or workflow state.',
+      newLabel: 'New Label',
+      newLabelPlaceholder: 'e.g. Backend, Design, Blocked',
+      color: 'Color',
+      add: 'Add',
+      projectLabelCatalog: 'Project label catalog',
+      boardLabels: 'Other labels from this board',
+      attachments: 'Attachments',
+      uploadFile: 'Upload File',
+      uploading: 'Uploading...',
+      loadingAttachments: 'Loading attachments...',
+      uploadedBy: 'uploaded by',
+      openAttachment: 'Open attachment',
+      removeAttachment: 'Remove attachment',
+      noAttachments: 'No files attached yet. Upload references, screenshots, specs, or supporting documents for this task.',
+      description: 'Description',
+      descriptionPlaceholder: 'Add a description...',
+      comments: 'comments',
+      delete: 'Delete',
+      cancel: 'Cancel',
+      saving: 'Saving...',
+      saveChanges: 'Save Changes',
+      notSet: 'Not set',
+      inReview: 'In Review',
+      changesRequested: 'Changes Requested',
+      approved: 'Approved',
+      draft: 'Draft',
+      submittedForReview: 'Submitted for review',
+      reviewApproved: 'Approved',
+      reviewChangesRequested: 'Changes requested',
+      reviewCancelled: 'Review cancelled',
+      useLabelColor: 'Use label color',
+    })
 
 // ─── Editable form fields ───
 const editForm = reactive({
@@ -167,25 +300,25 @@ const approvalBadge = computed(() => {
   switch (approvalStatus.value) {
     case 'IN_REVIEW':
       return {
-        label: 'In Review',
+        label: uiText.value.inReview,
         class: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
         icon: Clock3,
       }
     case 'CHANGES_REQUESTED':
       return {
-        label: 'Changes Requested',
+        label: uiText.value.changesRequested,
         class: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
         icon: ShieldAlert,
       }
     case 'APPROVED':
       return {
-        label: 'Approved',
+        label: uiText.value.approved,
         class: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
         icon: ShieldCheck,
       }
     default:
       return {
-        label: 'Draft',
+        label: uiText.value.draft,
         class: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
         icon: GitPullRequest,
       }
@@ -269,8 +402,8 @@ function formatFileSize(size: number) {
 }
 
 function formatReviewDate(value?: string) {
-  if (!value) return 'Not set'
-  return new Date(value).toLocaleString('en-US', {
+  if (!value) return uiText.value.notSet
+  return new Date(value).toLocaleString(locale.value === 'id' ? 'id-ID' : 'en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -282,13 +415,13 @@ function formatReviewDate(value?: string) {
 function reviewActionLabel(action: string) {
   switch (action) {
     case 'SUBMITTED':
-      return 'Submitted for review'
+      return uiText.value.submittedForReview
     case 'APPROVED':
-      return 'Approved'
+      return uiText.value.reviewApproved
     case 'CHANGES_REQUESTED':
-      return 'Changes requested'
+      return uiText.value.reviewChangesRequested
     case 'CANCELLED':
-      return 'Review cancelled'
+      return uiText.value.reviewCancelled
     default:
       return action
   }
@@ -440,12 +573,12 @@ const handleDelete = () => {
   emit('update:open', false)
 }
 
-const priorityOptions = [
-  { label: 'Low', value: 'low', color: 'text-gray-500' },
-  { label: 'Medium', value: 'medium', color: 'text-blue-500' },
-  { label: 'High', value: 'high', color: 'text-orange-500' },
-  { label: 'Urgent', value: 'urgent', color: 'text-red-500' },
-]
+const priorityOptions = computed(() => [
+  { label: locale.value === 'id' ? 'Rendah' : 'Low', value: 'low', color: 'text-gray-500' },
+  { label: locale.value === 'id' ? 'Sedang' : 'Medium', value: 'medium', color: 'text-blue-500' },
+  { label: locale.value === 'id' ? 'Tinggi' : 'High', value: 'high', color: 'text-orange-500' },
+  { label: locale.value === 'id' ? 'Mendesak' : 'Urgent', value: 'urgent', color: 'text-red-500' },
+])
 
 const priorityColors: Record<string, string> = {
   low: 'text-gray-500',
@@ -493,7 +626,7 @@ function handleClickOutside(e: MouseEvent) {
           <input
             v-model="editForm.title"
             class="w-full text-lg font-bold text-gray-900 dark:text-white border-none outline-none focus:ring-0 p-0 bg-transparent placeholder:text-gray-400"
-            placeholder="Task title"
+            :placeholder="uiText.taskTitlePlaceholder"
           />
         </div>
 
@@ -505,7 +638,7 @@ function handleClickOutside(e: MouseEvent) {
           <div>
             <label class="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
               <Flag :class="['h-3.5 w-3.5', priorityColors[editForm.priority]]" />
-              Priority
+              {{ uiText.priority }}
             </label>
             <select
               v-model="editForm.priority"
@@ -521,7 +654,7 @@ function handleClickOutside(e: MouseEvent) {
           <div>
             <label class="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
               <Calendar class="h-3.5 w-3.5" />
-              Due Date
+              {{ uiText.dueDate }}
             </label>
             <input
               v-model="editForm.dueDate"
@@ -534,7 +667,7 @@ function handleClickOutside(e: MouseEvent) {
           <div>
             <label class="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
               <Columns3 class="h-3.5 w-3.5" />
-              Status
+              {{ uiText.status }}
             </label>
             <select
               v-model="selectedColumnId"
@@ -552,7 +685,7 @@ function handleClickOutside(e: MouseEvent) {
           <div class="flex items-center justify-between mb-2">
             <div class="flex items-center gap-2">
               <Users class="h-4 w-4 text-gray-400 dark:text-gray-500" />
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Assignee</span>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ uiText.assignee }}</span>
             </div>
           </div>
 
@@ -569,7 +702,7 @@ function handleClickOutside(e: MouseEvent) {
                 <button
                   type="button"
                   class="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-red-500 transition-colors"
-                  title="Remove assignee"
+                  :title="uiText.removeAssignee"
                   @click.stop="removeAssignee"
                 >
                   <X class="h-3.5 w-3.5" />
@@ -578,7 +711,7 @@ function handleClickOutside(e: MouseEvent) {
               <button
                 type="button"
                 class="flex h-9 w-9 items-center justify-center rounded-lg border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 hover:border-[#478FC8] hover:text-[#478FC8] transition shrink-0"
-                title="Change assignee"
+                :title="uiText.changeAssignee"
                 @click.stop="showAssigneeDropdown = !showAssigneeDropdown"
               >
                 <UserPlus class="h-4 w-4" />
@@ -591,7 +724,7 @@ function handleClickOutside(e: MouseEvent) {
                 @click.stop="showAssigneeDropdown = !showAssigneeDropdown"
               >
                 <UserPlus class="h-4 w-4" />
-                Assign a member
+                {{ uiText.assignMember }}
               </button>
             </template>
           </div>
@@ -602,7 +735,7 @@ function handleClickOutside(e: MouseEvent) {
             class="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg max-h-48 overflow-y-auto"
           >
             <div v-if="projectMembers.length === 0" class="px-3 py-4 text-center text-xs text-gray-400">
-              No project members found
+              {{ uiText.noProjectMembers }}
             </div>
             <button
               v-for="(member, idx) in projectMembers"
@@ -634,10 +767,10 @@ function handleClickOutside(e: MouseEvent) {
             <div>
               <div class="flex items-center gap-2">
                 <GitPullRequest class="h-4 w-4 text-[#478FC8]" />
-                <span class="text-sm font-semibold text-gray-800 dark:text-gray-100">Approval Workflow</span>
+                <span class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ uiText.approvalWorkflow }}</span>
               </div>
               <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Submit this task for formal review, assign an approver, and keep the decision trail documented.
+                {{ uiText.approvalDescription }}
               </p>
             </div>
 
@@ -649,12 +782,12 @@ function handleClickOutside(e: MouseEvent) {
 
           <div class="grid gap-3 sm:grid-cols-2">
             <div>
-              <label class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Reviewer</label>
+              <label class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">{{ uiText.reviewer }}</label>
               <select
                 v-model="selectedReviewerId"
                 class="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#478FC8]"
               >
-                <option :value="null">Select reviewer</option>
+                <option :value="null">{{ uiText.selectReviewer }}</option>
                 <option
                   v-for="member in reviewerCandidates"
                   :key="member.id"
@@ -664,28 +797,28 @@ function handleClickOutside(e: MouseEvent) {
                 </option>
               </select>
               <p v-if="currentReviewer" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Current approver: {{ currentReviewer.name }}
+                {{ uiText.currentApprover }}: {{ currentReviewer.name }}
               </p>
             </div>
 
             <div>
-              <label class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Review due date</label>
+              <label class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">{{ uiText.reviewDueDate }}</label>
               <input
                 v-model="reviewDueDate"
                 type="datetime-local"
                 class="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#478FC8]"
               />
               <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Submitted: {{ formatReviewDate(reviewSubmittedAt || undefined) }}
+                {{ uiText.submitted }}: {{ formatReviewDate(reviewSubmittedAt || undefined) }}
               </p>
             </div>
           </div>
 
           <div>
-            <label class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Submission note</label>
+            <label class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">{{ uiText.submissionNote }}</label>
             <UiTextarea
               v-model="reviewComment"
-              placeholder="Explain what is ready, what needs approval, or any review checklist."
+              :placeholder="uiText.submissionPlaceholder"
               class="min-h-[84px]"
             />
           </div>
@@ -699,7 +832,7 @@ function handleClickOutside(e: MouseEvent) {
               @click="handleSubmitReview"
             >
               <Send class="h-3.5 w-3.5" />
-              {{ isSubmittingReview ? 'Submitting...' : (isReviewPending ? 'Resubmit Review' : 'Submit for Review') }}
+              {{ isSubmittingReview ? uiText.submitting : (isReviewPending ? uiText.resubmitReview : uiText.submitForReview) }}
             </UiButton>
 
             <UiButton
@@ -712,18 +845,18 @@ function handleClickOutside(e: MouseEvent) {
               @click="handleCancelReview"
             >
               <RotateCcw class="h-3.5 w-3.5" />
-              Cancel Review
+              {{ uiText.cancelReview }}
             </UiButton>
           </div>
 
           <div v-if="canDecideReview" class="space-y-3 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-900/70 p-3">
             <div class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
               <ShieldCheck class="h-4 w-4 text-emerald-500" />
-              Reviewer Decision
+              {{ uiText.reviewerDecision }}
             </div>
             <UiTextarea
               v-model="reviewDecisionComment"
-              placeholder="Add approval notes or requested changes."
+              :placeholder="uiText.decisionPlaceholder"
               class="min-h-[80px]"
             />
             <div class="flex flex-wrap gap-2">
@@ -735,7 +868,7 @@ function handleClickOutside(e: MouseEvent) {
                 @click="handleDecision('APPROVED')"
               >
                 <ShieldCheck class="h-3.5 w-3.5" />
-                Approve
+                {{ uiText.approve }}
               </UiButton>
               <UiButton
                 type="button"
@@ -746,15 +879,15 @@ function handleClickOutside(e: MouseEvent) {
                 @click="handleDecision('CHANGES_REQUESTED')"
               >
                 <ShieldAlert class="h-3.5 w-3.5" />
-                Request Changes
+                {{ uiText.requestChanges }}
               </UiButton>
             </div>
           </div>
 
           <div class="space-y-2">
             <div class="flex items-center justify-between">
-              <p class="text-xs font-medium uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Review Timeline</p>
-              <span class="text-xs text-gray-400 dark:text-gray-500">{{ reviewTimeline.length }} event{{ reviewTimeline.length === 1 ? '' : 's' }}</span>
+              <p class="text-xs font-medium uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">{{ uiText.reviewTimeline }}</p>
+              <span class="text-xs text-gray-400 dark:text-gray-500">{{ reviewTimeline.length }} {{ uiText.events }}</span>
             </div>
 
             <div v-if="reviewTimeline.length" class="space-y-2">
@@ -784,7 +917,7 @@ function handleClickOutside(e: MouseEvent) {
             </div>
 
             <p v-else class="text-xs text-gray-400 dark:text-gray-500">
-              No review history yet. Submit this task when it is ready for validation or approval.
+              {{ uiText.noReviewHistory }}
             </p>
           </div>
         </div>
@@ -793,7 +926,7 @@ function handleClickOutside(e: MouseEvent) {
         <div class="space-y-3">
           <div class="flex items-center gap-2 mb-2">
             <Tag class="h-4 w-4 text-gray-400 dark:text-gray-500" />
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Labels</span>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ uiText.labels }}</span>
           </div>
 
           <div v-if="editableLabels.length" class="flex flex-wrap gap-2">
@@ -812,7 +945,7 @@ function handleClickOutside(e: MouseEvent) {
               <button
                 type="button"
                 class="rounded-full p-0.5 transition hover:bg-black/5"
-                aria-label="Remove label"
+                :aria-label="uiText.removeLabel"
                 @click="removeLabel(label.name)"
               >
                 <X class="h-3 w-3" />
@@ -821,7 +954,7 @@ function handleClickOutside(e: MouseEvent) {
           </div>
 
           <p v-else class="text-xs text-gray-400 dark:text-gray-500">
-            No labels yet. Add labels to group this task by topic, owner stream, or workflow state.
+            {{ uiText.noLabels }}
           </p>
 
           <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/60 p-3">
@@ -829,13 +962,13 @@ function handleClickOutside(e: MouseEvent) {
               <div>
                 <label class="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
                   <Tag class="h-3.5 w-3.5" />
-                  New Label
+                  {{ uiText.newLabel }}
                 </label>
                 <input
                   v-model="newLabelName"
                   type="text"
                   class="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#478FC8]"
-                  placeholder="e.g. Backend, Design, Blocked"
+                  :placeholder="uiText.newLabelPlaceholder"
                   @keydown.enter.prevent="addLabelFromInput"
                 />
               </div>
@@ -843,7 +976,7 @@ function handleClickOutside(e: MouseEvent) {
               <div>
                 <label class="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
                   <Palette class="h-3.5 w-3.5" />
-                  Color
+                  {{ uiText.color }}
                 </label>
                 <div class="flex items-center gap-2">
                   <input
@@ -859,7 +992,7 @@ function handleClickOutside(e: MouseEvent) {
                     @click="addLabelFromInput"
                   >
                     <Plus class="h-3.5 w-3.5" />
-                    Add
+                    {{ uiText.add }}
                   </UiButton>
                 </div>
               </div>
@@ -875,14 +1008,14 @@ function handleClickOutside(e: MouseEvent) {
                   newLabelColor === color ? 'border-gray-900 dark:border-white scale-110' : 'border-white dark:border-gray-800',
                 ]"
                 :style="{ backgroundColor: color }"
-                :aria-label="`Use ${color} label color`"
+                :aria-label="`${uiText.useLabelColor} ${color}`"
                 @click="newLabelColor = color"
               />
             </div>
           </div>
 
           <div v-if="catalogLabelSuggestions.length" class="space-y-2">
-            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Project label catalog</p>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ uiText.projectLabelCatalog }}</p>
             <div class="flex flex-wrap gap-2">
               <button
                 v-for="label in catalogLabelSuggestions"
@@ -903,7 +1036,7 @@ function handleClickOutside(e: MouseEvent) {
           </div>
 
           <div v-if="boardLabelSuggestions.length" class="space-y-2">
-            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Other labels from this board</p>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ uiText.boardLabels }}</p>
             <div class="flex flex-wrap gap-2">
               <button
                 v-for="label in boardLabelSuggestions"
@@ -929,7 +1062,7 @@ function handleClickOutside(e: MouseEvent) {
           <div class="flex items-center justify-between gap-3">
             <div class="flex items-center gap-2">
               <Paperclip class="h-4 w-4 text-gray-400 dark:text-gray-500" />
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Attachments</span>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ uiText.attachments }}</span>
               <span class="rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400">
                 {{ attachments.length }}
               </span>
@@ -951,13 +1084,13 @@ function handleClickOutside(e: MouseEvent) {
             >
               <Loader2 v-if="isUploadingAttachment" class="h-3.5 w-3.5 animate-spin" />
               <Upload v-else class="h-3.5 w-3.5" />
-              {{ isUploadingAttachment ? 'Uploading...' : 'Upload File' }}
+              {{ isUploadingAttachment ? uiText.uploading : uiText.uploadFile }}
             </UiButton>
           </div>
 
           <div v-if="isLoadingAttachments" class="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-800/50 px-3 py-3 text-sm text-gray-500 dark:text-gray-400">
             <Loader2 class="h-4 w-4 animate-spin" />
-            Loading attachments...
+            {{ uiText.loadingAttachments }}
           </div>
 
           <div v-else-if="attachments.length" class="space-y-2">
@@ -980,7 +1113,7 @@ function handleClickOutside(e: MouseEvent) {
                 </a>
                 <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                   {{ formatFileSize(attachment.size) }}
-                  <span v-if="attachment.uploader"> • uploaded by {{ attachment.uploader.name }}</span>
+                  <span v-if="attachment.uploader"> • {{ uiText.uploadedBy }} {{ attachment.uploader.name }}</span>
                 </p>
               </div>
               <a
@@ -988,14 +1121,14 @@ function handleClickOutside(e: MouseEvent) {
                 target="_blank"
                 rel="noopener noreferrer"
                 class="rounded-lg p-2 text-gray-400 transition hover:bg-gray-200/70 hover:text-[#478FC8] dark:hover:bg-gray-700"
-                title="Open attachment"
+                :title="uiText.openAttachment"
               >
                 <Download class="h-4 w-4" />
               </a>
               <button
                 type="button"
                 class="rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
-                title="Remove attachment"
+                :title="uiText.removeAttachment"
                 @click="removeAttachment(attachment.id)"
               >
                 <Trash2 class="h-4 w-4" />
@@ -1004,16 +1137,16 @@ function handleClickOutside(e: MouseEvent) {
           </div>
 
           <p v-else class="text-xs text-gray-400 dark:text-gray-500">
-            No files attached yet. Upload references, screenshots, specs, or supporting documents for this task.
+            {{ uiText.noAttachments }}
           </p>
         </div>
 
         <!-- Description -->
         <div>
-          <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+          <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ uiText.description }}</label>
           <UiTextarea
             v-model="editForm.description"
-            placeholder="Add a description..."
+            :placeholder="uiText.descriptionPlaceholder"
             class="min-h-[100px]"
           />
         </div>
@@ -1021,7 +1154,7 @@ function handleClickOutside(e: MouseEvent) {
         <!-- Comments preview -->
         <div v-if="task.commentsCount > 0" class="flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500">
           <MessageSquare class="h-4 w-4" />
-          {{ task.commentsCount }} comments
+          {{ task.commentsCount }} {{ uiText.comments }}
         </div>
 
           </div>
@@ -1031,13 +1164,13 @@ function handleClickOutside(e: MouseEvent) {
         <div class="flex justify-between gap-3 border-t border-gray-100 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 px-6 py-4 backdrop-blur">
           <UiButton variant="outline" size="sm" class="gap-1.5 text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200 dark:border-red-800 dark:text-red-400" @click="handleDelete">
             <Trash2 class="h-3.5 w-3.5" />
-            Delete
+            {{ uiText.delete }}
           </UiButton>
           <div class="flex gap-2">
-            <UiButton variant="outline" size="sm" @click="close">Cancel</UiButton>
+            <UiButton variant="outline" size="sm" @click="close">{{ uiText.cancel }}</UiButton>
             <UiButton size="sm" class="gap-1.5 bg-[#478FC8] hover:bg-[#3a7bb3] text-white" :disabled="isSaving" @click="handleSave">
               <Save class="h-3.5 w-3.5" />
-              {{ isSaving ? 'Saving...' : 'Save Changes' }}
+              {{ isSaving ? uiText.saving : uiText.saveChanges }}
             </UiButton>
           </div>
         </div>

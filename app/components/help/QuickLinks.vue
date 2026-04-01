@@ -7,6 +7,7 @@ import {
   ExternalLink,
 } from 'lucide-vue-next'
 import type { Component } from 'vue'
+const { locale } = useLocale()
 
 interface QuickLink {
   icon: Component
@@ -17,12 +18,19 @@ interface QuickLink {
   darkBg: string
 }
 
-const links: QuickLink[] = [
-  { icon: Lightbulb, label: "What's New", desc: 'Latest features & updates', color: '#d97706', bg: '#fffbeb', darkBg: 'rgba(217,119,6,0.15)' },
-  { icon: BookOpen, label: 'Documentation', desc: 'Full API & feature docs', color: '#478FC8', bg: '#edf4ff', darkBg: 'rgba(71,143,200,0.15)' },
-  { icon: Zap, label: 'Keyboard Shortcuts', desc: 'Speed up your workflow', color: '#7c3aed', bg: '#f5f3ff', darkBg: 'rgba(124,58,237,0.15)' },
-  { icon: MessageSquare, label: 'Community Forum', desc: 'Connect with other users', color: '#0891b2', bg: '#ecfeff', darkBg: 'rgba(8,145,178,0.15)' },
-]
+const links = computed<QuickLink[]>(() => locale.value === 'id'
+  ? [
+      { icon: Lightbulb, label: 'Yang Baru', desc: 'Fitur dan pembaruan terbaru', color: '#d97706', bg: '#fffbeb', darkBg: 'rgba(217,119,6,0.15)' },
+      { icon: BookOpen, label: 'Dokumentasi', desc: 'Dokumen API dan fitur lengkap', color: '#478FC8', bg: '#edf4ff', darkBg: 'rgba(71,143,200,0.15)' },
+      { icon: Zap, label: 'Shortcut Keyboard', desc: 'Percepat alur kerja Anda', color: '#7c3aed', bg: '#f5f3ff', darkBg: 'rgba(124,58,237,0.15)' },
+      { icon: MessageSquare, label: 'Forum Komunitas', desc: 'Terhubung dengan pengguna lain', color: '#0891b2', bg: '#ecfeff', darkBg: 'rgba(8,145,178,0.15)' },
+    ]
+  : [
+      { icon: Lightbulb, label: "What's New", desc: 'Latest features & updates', color: '#d97706', bg: '#fffbeb', darkBg: 'rgba(217,119,6,0.15)' },
+      { icon: BookOpen, label: 'Documentation', desc: 'Full API & feature docs', color: '#478FC8', bg: '#edf4ff', darkBg: 'rgba(71,143,200,0.15)' },
+      { icon: Zap, label: 'Keyboard Shortcuts', desc: 'Speed up your workflow', color: '#7c3aed', bg: '#f5f3ff', darkBg: 'rgba(124,58,237,0.15)' },
+      { icon: MessageSquare, label: 'Community Forum', desc: 'Connect with other users', color: '#0891b2', bg: '#ecfeff', darkBg: 'rgba(8,145,178,0.15)' },
+    ])
 </script>
 
 <template>

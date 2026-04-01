@@ -11,6 +11,7 @@ import {
   ArrowRight,
 } from 'lucide-vue-next'
 import type { Component } from 'vue'
+const { locale } = useLocale()
 
 interface Guide {
   id: string
@@ -23,7 +24,68 @@ interface Guide {
   readTime: string
 }
 
-const guides: Guide[] = [
+const guides = computed<Guide[]>(() => locale.value === 'id' ? [
+  {
+    id: 'g1',
+    title: 'Panduan Mulai Cepat',
+    description: 'Mulai memakai Kanzon kurang dari 5 menit. Pelajari dasar membuat proyek dan tugas.',
+    icon: Rocket,
+    iconColor: '#478FC8',
+    iconBg: 'linear-gradient(135deg, #edf4ff, #dbeafe)',
+    type: 'Article',
+    readTime: '5 menit baca',
+  },
+  {
+    id: 'g2',
+    title: 'Menguasai Board Kanban',
+    description: 'Pelajari lebih dalam workflow drag-and-drop, kolom kustom, dan konfigurasi board tingkat lanjut.',
+    icon: LayoutDashboard,
+    iconColor: '#7c3aed',
+    iconBg: 'linear-gradient(135deg, #f5f3ff, #ede9fe)',
+    type: 'Video',
+    readTime: '8 menit tonton',
+  },
+  {
+    id: 'g3',
+    title: 'Praktik Terbaik Kolaborasi Tim',
+    description: 'Pelajari cara mengelola role, membagi tugas, dan menjaga tim tetap selaras serta produktif.',
+    icon: Users,
+    iconColor: '#0891b2',
+    iconBg: 'linear-gradient(135deg, #ecfeff, #cffafe)',
+    type: 'Article',
+    readTime: '6 menit baca',
+  },
+  {
+    id: 'g4',
+    title: 'Memakai Analitik untuk Meningkatkan Produktivitas',
+    description: 'Pahami metrik performa tim dan gunakan data untuk mengambil keputusan proyek yang lebih baik.',
+    icon: BarChart3,
+    iconColor: '#ea580c',
+    iconBg: 'linear-gradient(135deg, #fff7ed, #ffedd5)',
+    type: 'Article',
+    readTime: '4 menit baca',
+  },
+  {
+    id: 'g5',
+    title: 'Manajemen Kalender dan Deadline',
+    description: 'Kuasai tampilan kalender, atur deadline cerdas, dan jangan lewatkan milestone penting.',
+    icon: CalendarDays,
+    iconColor: '#16a34a',
+    iconBg: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
+    type: 'Video',
+    readTime: '7 menit tonton',
+  },
+  {
+    id: 'g6',
+    title: 'Pengaturan dan Kustomisasi Tim',
+    description: 'Atur tema tim, notifikasi, preferensi keamanan, dan pengaturan tim lainnya.',
+    icon: Settings,
+    iconColor: '#64748b',
+    iconBg: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
+    type: 'Article',
+    readTime: '3 menit baca',
+  },
+] : [
   {
     id: 'g1',
     title: 'Quick Start Guide',
@@ -84,7 +146,7 @@ const guides: Guide[] = [
     type: 'Article',
     readTime: '3 min read',
   },
-]
+])
 </script>
 
 <template>
@@ -116,7 +178,7 @@ const guides: Guide[] = [
                 : 'bg-[#edf4ff] dark:bg-[#478FC8]/15 text-[#478FC8] border border-[#478FC8]/20'
               "
             >
-              {{ guide.type }}
+              {{ locale === 'id' ? (guide.type === 'Video' ? 'Video' : 'Artikel') : guide.type }}
             </span>
           </div>
         </div>
@@ -137,7 +199,7 @@ const guides: Guide[] = [
             {{ guide.readTime }}
           </span>
           <span class="flex items-center gap-1 text-[#478FC8] opacity-0 group-hover:opacity-100 transition-opacity text-[12px] font-semibold">
-            Read more
+            {{ locale === 'id' ? 'Baca selengkapnya' : 'Read more' }}
             <ArrowRight style="width: 11px; height: 11px;" />
           </span>
         </div>

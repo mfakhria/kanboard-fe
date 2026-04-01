@@ -11,6 +11,7 @@ import {
   Shield,
 } from 'lucide-vue-next'
 import type { Component } from 'vue'
+const { locale } = useLocale()
 
 interface FAQItem {
   id: string
@@ -27,7 +28,84 @@ interface FAQCategory {
   items: FAQItem[]
 }
 
-const faqCategories: FAQCategory[] = [
+const faqCategories = computed<FAQCategory[]>(() => locale.value === 'id' ? [
+  {
+    id: 'getting-started',
+    label: 'Mulai',
+    icon: Rocket,
+    iconColor: '#478FC8',
+    iconBg: '#edf4ff',
+    items: [
+      { id: 'gs1', question: 'Bagaimana cara membuat proyek pertama saya?', answer: 'Buka halaman Proyek dari sidebar, lalu klik tombol tambah proyek di kanan atas. Isi nama proyek, deskripsi, dan deadline. Anda juga bisa menetapkan anggota tim saat pembuatan atau menambahkannya nanti.' },
+      { id: 'gs2', question: 'Apa itu board Kanban dan bagaimana cara memakainya?', answer: 'Board Kanban adalah alat manajemen proyek visual yang mengelompokkan tugas ke dalam kolom seperti "To Do", "In Progress", dan "Done". Anda bisa drag and drop tugas antar kolom untuk memperbarui statusnya. Klik kartu proyek untuk membuka detail board Kanban.' },
+      { id: 'gs3', question: 'Bagaimana cara mengundang anggota tim?', answer: 'Buka halaman Tim, klik "Invite Member", masukkan email mereka, lalu pilih role yang sesuai. Setelah itu mereka akan bergabung ke tim dan proyek terkait.' },
+      { id: 'gs4', question: 'Apakah saya bisa menyesuaikan layout sidebar?', answer: 'Bisa. Anda dapat mengecilkan atau membuka sidebar dengan tombol toggle di sisi panel. Preferensi ini akan diingat antar sesi dan navigasi tetap bisa diakses di kedua mode.' },
+    ],
+  },
+  {
+    id: 'projects',
+    label: 'Proyek',
+    icon: FolderKanban,
+    iconColor: '#7c3aed',
+    iconBg: '#f5f3ff',
+    items: [
+      { id: 'p1', question: 'Berapa banyak proyek yang bisa saya buat?', answer: 'Tidak ada batas jumlah proyek. Anda bisa membuat sebanyak yang tim Anda butuhkan. Setiap proyek dapat memiliki board Kanban, daftar tugas, dan anggota tim masing-masing.' },
+      { id: 'p2', question: 'Apakah proyek bisa diarsipkan atau dihapus?', answer: 'Bisa. Buka detail proyek, klik menu tiga titik di kanan atas, lalu pilih "Archive" atau "Delete". Proyek terarsip bisa dipulihkan, sedangkan proyek yang dihapus bersifat permanen.' },
+      { id: 'p3', question: 'Bagaimana cara berpindah antara tampilan kartu dan daftar?', answer: 'Di halaman Proyek ada tombol toggle tampilan dengan ikon grid dan list. Klik ikon grid untuk mode kartu atau ikon list untuk mode daftar. Preferensi tampilan Anda akan diingat.' },
+      { id: 'p4', question: 'Bagaimana cara memfilter proyek berdasarkan status?', answer: 'Gunakan dropdown filter di bagian header halaman Proyek. Anda bisa memfilter status proyek dan menyortir berdasarkan beberapa kriteria seperti nama, deadline, atau progres.' },
+    ],
+  },
+  {
+    id: 'tasks',
+    label: 'Tugas',
+    icon: CheckSquare,
+    iconColor: '#16a34a',
+    iconBg: '#f0fdf4',
+    items: [
+      { id: 't1', question: 'Bagaimana cara menugaskan task ke seseorang?', answer: 'Saat membuat atau mengedit task, klik field assignee lalu pilih anggota tim dari dropdown. Dengan begitu task akan langsung terhubung ke orang yang bertanggung jawab.' },
+      { id: 't2', question: 'Apa itu prioritas task dan bagaimana cara kerjanya?', answer: 'Task bisa diberi prioritas Rendah, Sedang, Tinggi, atau Mendesak. Prioritas tinggi akan lebih mudah terlihat di UI dan membantu tim fokus pada pekerjaan yang paling penting.' },
+      { id: 't3', question: 'Apakah saya bisa menetapkan deadline dan reminder?', answer: 'Bisa. Setiap task mendukung deadline. Saat deadline mendekat atau terlewat, task akan lebih mudah terlihat melalui indikator status dan notifikasi jika fitur tersebut aktif.' },
+      { id: 't4', question: 'Bagaimana cara memindahkan task antar kolom Kanban?', answer: 'Cukup drag and drop kartu task dari satu kolom ke kolom lain di board Kanban. Status task akan otomatis menyesuaikan dengan kolom tujuan.' },
+    ],
+  },
+  {
+    id: 'team',
+    label: 'Tim & Role',
+    icon: Users,
+    iconColor: '#0891b2',
+    iconBg: '#ecfeff',
+    items: [
+      { id: 'tm1', question: 'Apa perbedaan role di dalam tim?', answer: 'Umumnya ada role seperti Owner, Admin, dan Member. Owner memiliki kendali penuh, Admin dapat mengelola anggota serta proyek, dan Member berfokus pada pekerjaan harian di dalam proyek.' },
+      { id: 'tm2', question: 'Bagaimana cara mengubah role seseorang?', answer: 'Buka halaman Tim, cari anggota yang ingin diubah, lalu gunakan menu aksi pada kartu anggota tersebut. Hanya role tertentu seperti Owner atau Admin yang boleh melakukan perubahan ini.' },
+      { id: 'tm3', question: 'Apakah anggota tim bisa dihapus?', answer: 'Bisa. Hapus anggota dari halaman Tim melalui menu aksi pada kartu anggota. Task yang sebelumnya dimiliki anggota tersebut akan tetap ada tetapi bisa menjadi unassigned.' },
+    ],
+  },
+  {
+    id: 'analytics',
+    label: 'Analitik & Laporan',
+    icon: BarChart3,
+    iconColor: '#ea580c',
+    iconBg: '#fff7ed',
+    items: [
+      { id: 'a1', question: 'Metrik apa saja yang tampil di halaman Analitik?', answer: 'Halaman Analitik menampilkan progres penyelesaian tugas, distribusi workload tim, tren task terlambat, serta ringkasan aktivitas proyek dan anggota.' },
+      { id: 'a2', question: 'Apakah data analitik bisa diekspor?', answer: 'Ya, Anda bisa menggunakan tombol ekspor untuk menyiapkan data analitik ke format yang sesuai kebutuhan, tergantung fitur export yang aktif di aplikasi.' },
+      { id: 'a3', question: 'Seberapa sering data analitik diperbarui?', answer: 'Data analitik diperbarui mengikuti perubahan task dan proyek, sehingga saat Anda membuka halaman ini, metrik yang tampil akan mengikuti kondisi terbaru workspace.' },
+    ],
+  },
+  {
+    id: 'account',
+    label: 'Akun & Keamanan',
+    icon: Shield,
+    iconColor: '#dc2626',
+    iconBg: '#fef2f2',
+    items: [
+      { id: 'ac1', question: 'Bagaimana cara mengganti password?', answer: 'Buka Pengaturan lalu masuk ke tab keamanan. Isi password lama, password baru, dan konfirmasi password, kemudian simpan perubahan.' },
+      { id: 'ac2', question: 'Bagaimana cara mengaktifkan Two-Factor Authentication?', answer: 'Masuk ke Pengaturan > Keamanan dan aktifkan Two-Factor Authentication jika fitur ini sudah tersedia di akun Anda, lalu ikuti instruksi yang ditampilkan.' },
+      { id: 'ac3', question: 'Apakah saya bisa mengubah email atau profil?', answer: 'Bisa. Buka Pengaturan Profil untuk memperbarui nama, email, nomor telepon, bio, dan informasi profil lainnya.' },
+      { id: 'ac4', question: 'Bagaimana cara menghapus tim?', answer: 'Masuk ke Pengaturan tim dan buka bagian manajemen data. Tindakan ini permanen dan hanya bisa dilakukan oleh role dengan akses tertinggi.' },
+    ],
+  },
+] : [
   {
     id: 'getting-started',
     label: 'Getting Started',
@@ -104,7 +182,7 @@ const faqCategories: FAQCategory[] = [
       { id: 'ac4', question: 'How do I delete my team?', answer: 'Go to Settings > Team tab, scroll to Data Management, and click "Delete Team". This action is irreversible and will permanently remove all projects, tasks, and data. Only Owners can perform this action.' },
     ],
   },
-]
+])
 
 const searchQuery = ref('')
 const activeCategory = ref('getting-started')
@@ -118,7 +196,7 @@ function toggleItem(id: string) {
 }
 
 const filteredCategories = computed(() =>
-  faqCategories
+  faqCategories.value
     .map(cat => ({
       ...cat,
       items: cat.items.filter(
@@ -150,14 +228,14 @@ const totalResults = computed(() =>
       <input
         v-model="searchQuery"
         type="text"
-        placeholder="Search frequently asked questions..."
+        :placeholder="locale === 'id' ? 'Cari pertanyaan yang sering diajukan...' : 'Search frequently asked questions...'"
         class="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 outline-none transition-all focus:border-[#478FC8] focus:ring-2 focus:ring-[#478FC8]/10 shadow-sm text-[14px]"
       />
       <p
         v-if="searchQuery"
         class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-[12px]"
       >
-        {{ totalResults }} result{{ totalResults !== 1 ? 's' : '' }}
+        {{ totalResults }} {{ locale === 'id' ? 'hasil' : `result${totalResults !== 1 ? 's' : ''}` }}
       </p>
     </div>
 
@@ -215,8 +293,8 @@ const totalResults = computed(() =>
           <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 bg-gray-50 dark:bg-gray-800">
             <Search style="width: 24px; height: 24px; color: #cbd5e1;" />
           </div>
-          <p class="text-[15px] font-bold text-gray-700 dark:text-gray-300">No results found</p>
-          <p class="text-gray-400 dark:text-gray-500 mt-1 text-[13px]">Try adjusting your search terms or browse by category</p>
+          <p class="text-[15px] font-bold text-gray-700 dark:text-gray-300">{{ locale === 'id' ? 'Tidak ada hasil' : 'No results found' }}</p>
+          <p class="text-gray-400 dark:text-gray-500 mt-1 text-[13px]">{{ locale === 'id' ? 'Coba ubah kata kunci pencarian atau telusuri berdasarkan kategori' : 'Try adjusting your search terms or browse by category' }}</p>
         </div>
 
         <!-- Categories -->

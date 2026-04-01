@@ -8,6 +8,7 @@ import {
 import { kanbanApi } from '~/features/kanban/services/task.api'
 
 definePageMeta({ layout: 'dashboard' })
+const { locale } = useLocale()
 
 interface TaskItem {
   id: string
@@ -27,6 +28,125 @@ interface TaskItem {
 }
 
 const workspaceStore = useWorkspaceStore()
+const uiText = computed(() => locale.value === 'id'
+  ? {
+      pageTitle: 'Semua Tugas',
+      pageDescription: 'Kelola dan pantau semua tugas Anda lintas proyek.',
+      createTask: 'Buat Tugas',
+      totalTasks: 'Total Tugas',
+      totalTrend: '{count} total',
+      completed: 'Selesai',
+      doneTrend: '+{count} selesai',
+      inProgress: 'Berjalan',
+      todo: 'To Do',
+      overdue: 'Terlambat',
+      high: 'Tinggi',
+      medium: 'Sedang',
+      low: 'Rendah',
+      urgent: 'Mendesak',
+      searchTasks: 'Cari tugas...',
+      status: 'Status',
+      priority: 'Prioritas',
+      clearFilters: 'Hapus filter',
+      list: 'Daftar',
+      card: 'Kartu',
+      noTasksFound: 'Tidak ada tugas ditemukan',
+      view: 'Lihat',
+      edit: 'Edit',
+      delete: 'Hapus',
+      assignee: 'Assignee',
+      unassigned: 'Belum ada assignee',
+      dueDate: 'Deadline',
+      progress: 'Progres',
+      viewTask: 'Lihat Tugas',
+      showing: 'Menampilkan',
+      of: 'dari',
+      createTaskTitle: 'Buat Tugas',
+      createTaskDescription: 'Tambahkan tugas baru ke board proyek.',
+      taskTitle: 'Judul Tugas',
+      taskTitlePlaceholder: 'contoh: Implement login page',
+      description: 'Deskripsi',
+      taskDetailsPlaceholder: 'Detail tugas...',
+      project: 'Proyek',
+      selectProject: 'Pilih proyek',
+      column: 'Kolom',
+      selectColumn: 'Pilih kolom',
+      optional: '(opsional)',
+      cancel: 'Batal',
+      creating: 'Membuat...',
+      taskDetails: 'Detail Tugas',
+      taskDetailsDescription: 'Lihat informasi tugas.',
+      title: 'Judul',
+      noDescription: 'Belum ada deskripsi',
+      close: 'Tutup',
+      editTask: 'Edit Tugas',
+      updateTaskDescription: 'Perbarui informasi tugas.',
+      saving: 'Menyimpan...',
+      saveChanges: 'Simpan Perubahan',
+      deleteTask: 'Hapus Tugas',
+      deleteTaskDescription: 'Tindakan ini tidak dapat dibatalkan.',
+      deleteTaskConfirm: 'Yakin ingin menghapus "{title}"? Tindakan ini permanen dan tidak dapat dibatalkan.',
+      deleting: 'Menghapus...',
+    }
+  : {
+      pageTitle: 'All Tasks',
+      pageDescription: 'Manage and track all your tasks across projects.',
+      createTask: 'Create Task',
+      totalTasks: 'Total Tasks',
+      totalTrend: '{count} total',
+      completed: 'Completed',
+      doneTrend: '+{count} done',
+      inProgress: 'In Progress',
+      todo: 'To Do',
+      overdue: 'Overdue',
+      high: 'High',
+      medium: 'Medium',
+      low: 'Low',
+      urgent: 'Urgent',
+      searchTasks: 'Search tasks...',
+      status: 'Status',
+      priority: 'Priority',
+      clearFilters: 'Clear filters',
+      list: 'List',
+      card: 'Card',
+      noTasksFound: 'No tasks found',
+      view: 'View',
+      edit: 'Edit',
+      delete: 'Delete',
+      assignee: 'Assignee',
+      unassigned: 'Unassigned',
+      dueDate: 'Due Date',
+      progress: 'Progress',
+      viewTask: 'View Task',
+      showing: 'Showing',
+      of: 'of',
+      createTaskTitle: 'Create Task',
+      createTaskDescription: 'Add a new task to a project board.',
+      taskTitle: 'Task Title',
+      taskTitlePlaceholder: 'e.g. Implement login page',
+      description: 'Description',
+      taskDetailsPlaceholder: 'Task details...',
+      project: 'Project',
+      selectProject: 'Select project',
+      column: 'Column',
+      selectColumn: 'Select column',
+      optional: '(optional)',
+      cancel: 'Cancel',
+      creating: 'Creating...',
+      taskDetails: 'Task Details',
+      taskDetailsDescription: 'View task information.',
+      title: 'Title',
+      noDescription: 'No description',
+      close: 'Close',
+      editTask: 'Edit Task',
+      updateTaskDescription: 'Update task information.',
+      saving: 'Saving...',
+      saveChanges: 'Save Changes',
+      deleteTask: 'Delete Task',
+      deleteTaskDescription: 'This action cannot be undone.',
+      deleteTaskConfirm: 'Are you sure you want to delete "{title}"? This action is permanent and cannot be undone.',
+      deleting: 'Deleting...',
+    })
 const searchQuery = ref('')
 const filterOpen = ref(false)
 const selectedPriority = ref<string | null>(null)
@@ -126,29 +246,29 @@ const taskStats = computed(() => ({
 
 const statsCards = computed(() => [
   {
-    title: 'Total Tasks',
+    title: uiText.value.totalTasks,
     value: taskStats.value.total,
     icon: CheckSquare,
     iconBg: 'bg-[#EDF4FF] dark:bg-[#478FC8]/10',
     iconColor: 'text-blue-100',
     highlighted: true,
-    trend: `${taskStats.value.total} total`,
+    trend: uiText.value.totalTrend.replace('{count}', String(taskStats.value.total)),
     filterKey: null as string | null,
     filterType: null as string | null,
   },
   {
-    title: 'Completed',
+    title: uiText.value.completed,
     value: taskStats.value.completed,
     icon: CheckCircle2,
     iconBg: 'bg-green-50 dark:bg-green-900/20',
     iconColor: 'text-green-600',
     highlighted: false,
-    trend: taskStats.value.completed > 0 ? `+${taskStats.value.completed} done` : undefined,
+    trend: taskStats.value.completed > 0 ? uiText.value.doneTrend.replace('{count}', String(taskStats.value.completed)) : undefined,
     filterKey: 'completed',
     filterType: 'status',
   },
   {
-    title: 'In Progress',
+    title: uiText.value.inProgress,
     value: taskStats.value.inProgress,
     icon: Loader2,
     iconBg: 'bg-[#EDF4FF] dark:bg-[#478FC8]/10',
@@ -159,7 +279,7 @@ const statsCards = computed(() => [
     filterType: 'status',
   },
   {
-    title: 'To Do',
+    title: uiText.value.todo,
     value: taskStats.value.todo,
     icon: Clock,
     iconBg: 'bg-gray-50 dark:bg-gray-800',
@@ -170,7 +290,7 @@ const statsCards = computed(() => [
     filterType: 'status',
   },
   {
-    title: 'Overdue',
+    title: uiText.value.overdue,
     value: taskStats.value.overdue,
     icon: AlertTriangle,
     iconBg: 'bg-red-50 dark:bg-red-900/20',
@@ -203,23 +323,30 @@ function isStatCardActive(card: typeof statsCards.value[0]) {
 
 // ─── Config Maps ───
 const priorityMap: Record<string, { label: string; bg: string; text: string; hoverBg: string; activeBg: string; icon: string }> = {
-  high: { label: 'High', bg: 'bg-red-500', text: 'text-white', hoverBg: 'hover:bg-red-600 hover:shadow-md hover:shadow-red-500/25', activeBg: 'ring-2 ring-red-400 ring-offset-1 dark:ring-offset-gray-900', icon: 'text-red-200' },
-  medium: { label: 'Medium', bg: 'bg-amber-400', text: 'text-white', hoverBg: 'hover:bg-amber-500 hover:shadow-md hover:shadow-amber-400/25', activeBg: 'ring-2 ring-amber-300 ring-offset-1 dark:ring-offset-gray-900', icon: 'text-amber-200' },
-  low: { label: 'Low', bg: 'bg-gray-400', text: 'text-white', hoverBg: 'hover:bg-gray-500 hover:shadow-md hover:shadow-gray-400/25', activeBg: 'ring-2 ring-gray-300 ring-offset-1 dark:ring-offset-gray-900', icon: 'text-gray-200' },
+  high: { label: '', bg: 'bg-red-500', text: 'text-white', hoverBg: 'hover:bg-red-600 hover:shadow-md hover:shadow-red-500/25', activeBg: 'ring-2 ring-red-400 ring-offset-1 dark:ring-offset-gray-900', icon: 'text-red-200' },
+  medium: { label: '', bg: 'bg-amber-400', text: 'text-white', hoverBg: 'hover:bg-amber-500 hover:shadow-md hover:shadow-amber-400/25', activeBg: 'ring-2 ring-amber-300 ring-offset-1 dark:ring-offset-gray-900', icon: 'text-amber-200' },
+  low: { label: '', bg: 'bg-gray-400', text: 'text-white', hoverBg: 'hover:bg-gray-500 hover:shadow-md hover:shadow-gray-400/25', activeBg: 'ring-2 ring-gray-300 ring-offset-1 dark:ring-offset-gray-900', icon: 'text-gray-200' },
 }
 
 const statusMap: Record<string, { label: string; bg: string; text: string; dot: string; hoverBg: string; activeBg: string }> = {
-  completed: { label: 'Completed', bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400', dot: 'bg-green-500', hoverBg: 'hover:bg-green-200 dark:hover:bg-green-900/50 hover:shadow-md hover:shadow-green-500/10', activeBg: 'ring-2 ring-green-400 ring-offset-1 dark:ring-offset-gray-900' },
-  in_progress: { label: 'In Progress', bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400', dot: 'bg-blue-500', hoverBg: 'hover:bg-blue-200 dark:hover:bg-blue-900/50 hover:shadow-md hover:shadow-blue-500/10', activeBg: 'ring-2 ring-blue-400 ring-offset-1 dark:ring-offset-gray-900' },
-  not_started: { label: 'To Do', bg: 'bg-gray-100 dark:bg-gray-800/50', text: 'text-gray-600 dark:text-gray-400', dot: 'bg-gray-400', hoverBg: 'hover:bg-gray-200 dark:hover:bg-gray-700/50 hover:shadow-md hover:shadow-gray-400/10', activeBg: 'ring-2 ring-gray-400 ring-offset-1 dark:ring-offset-gray-900' },
+  completed: { label: '', bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400', dot: 'bg-green-500', hoverBg: 'hover:bg-green-200 dark:hover:bg-green-900/50 hover:shadow-md hover:shadow-green-500/10', activeBg: 'ring-2 ring-green-400 ring-offset-1 dark:ring-offset-gray-900' },
+  in_progress: { label: '', bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400', dot: 'bg-blue-500', hoverBg: 'hover:bg-blue-200 dark:hover:bg-blue-900/50 hover:shadow-md hover:shadow-blue-500/10', activeBg: 'ring-2 ring-blue-400 ring-offset-1 dark:ring-offset-gray-900' },
+  not_started: { label: '', bg: 'bg-gray-100 dark:bg-gray-800/50', text: 'text-gray-600 dark:text-gray-400', dot: 'bg-gray-400', hoverBg: 'hover:bg-gray-200 dark:hover:bg-gray-700/50 hover:shadow-md hover:shadow-gray-400/10', activeBg: 'ring-2 ring-gray-400 ring-offset-1 dark:ring-offset-gray-900' },
 }
 
 function priorityLabel(priority: string) {
-  return priorityMap[priority]?.label || priority.charAt(0).toUpperCase() + priority.slice(1)
+  if (priority === 'high') return uiText.value.high
+  if (priority === 'medium') return uiText.value.medium
+  if (priority === 'low') return uiText.value.low
+  if (priority === 'urgent') return uiText.value.urgent
+  return priority.charAt(0).toUpperCase() + priority.slice(1)
 }
 
 function statusLabel(status: string) {
-  return statusMap[status]?.label || status
+  if (status === 'completed') return uiText.value.completed
+  if (status === 'in_progress') return uiText.value.inProgress
+  if (status === 'not_started') return uiText.value.todo
+  return status
 }
 
 // ─── Badge Click Filter ───
@@ -243,11 +370,11 @@ function isStatusActive(status: string) {
 
 function formatDate(dateStr: string) {
   const date = new Date(dateStr)
-  const dateFormatted = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  const dateFormatted = date.toLocaleDateString(locale.value === 'id' ? 'id-ID' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   const hours = date.getHours()
   const minutes = date.getMinutes()
   if (hours === 0 && minutes === 0) return dateFormatted
-  const timeFormatted = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+  const timeFormatted = date.toLocaleTimeString(locale.value === 'id' ? 'id-ID' : 'en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
   return `${dateFormatted}, ${timeFormatted}`
 }
 
@@ -314,12 +441,12 @@ const columnOptions = computed(() =>
   kanbanStore.columns.map(c => ({ label: c.title, value: c.id })),
 )
 
-const priorityOptions = [
-  { label: 'Low', value: 'LOW' },
-  { label: 'Medium', value: 'MEDIUM' },
-  { label: 'High', value: 'HIGH' },
-  { label: 'Urgent', value: 'URGENT' },
-]
+const priorityOptions = computed(() => [
+  { label: uiText.value.low, value: 'LOW' },
+  { label: uiText.value.medium, value: 'MEDIUM' },
+  { label: uiText.value.high, value: 'HIGH' },
+  { label: uiText.value.urgent, value: 'URGENT' },
+])
 
 watch(newTaskProjectId, async (projectId) => {
   newTaskColumnId.value = ''
@@ -465,13 +592,11 @@ async function confirmDeleteTask() {
         <div class="flex items-center gap-3 mb-1">
           <div class="w-1 h-8 rounded-full bg-gradient-to-b from-[#478FC8] to-[#3570A5]" />
           <h1 class="text-[clamp(22px,3vw,30px)] font-black tracking-tight text-gray-900 dark:text-white leading-tight">
-            All Tasks
+            {{ uiText.pageTitle }}
           </h1>
         </div>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 pl-4 leading-relaxed">
-          Manage and track
-          <span class="font-semibold bg-gradient-to-r from-[#478FC8] to-[#6db3e8] bg-clip-text text-transparent">all</span>
-          your tasks across projects.
+          {{ uiText.pageDescription }}
         </p>
       </div>
       <button
@@ -481,7 +606,7 @@ async function confirmDeleteTask() {
         @click="openCreateTask"
       >
         <Plus class="h-[15px] w-[15px]" />
-        Create Task
+        {{ uiText.createTask }}
       </button>
     </div>
 
@@ -539,7 +664,7 @@ async function confirmDeleteTask() {
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Search tasks..."
+          :placeholder="uiText.searchTasks"
           class="bg-transparent flex-1 outline-none text-gray-700 dark:text-gray-200 placeholder:text-gray-400"
           style="font-size: 13px;"
         />
@@ -549,7 +674,7 @@ async function confirmDeleteTask() {
       <UiDropdown v-model:open="filterOpen">
         <template #trigger>
           <button class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all" style="font-size: 13px; font-weight: 500;">
-            Status
+            {{ uiText.status }}
             <ChevronDown class="h-[13px] w-[13px] text-gray-400" />
             <span
               v-if="selectedStatus"
@@ -577,7 +702,7 @@ async function confirmDeleteTask() {
       <UiDropdown>
         <template #trigger>
           <button class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all" style="font-size: 13px; font-weight: 500;">
-            Priority
+            {{ uiText.priority }}
             <ChevronDown class="h-[13px] w-[13px] text-gray-400" />
             <span
               v-if="selectedPriority"
@@ -609,7 +734,7 @@ async function confirmDeleteTask() {
         @click="clearFilters"
       >
         <SlidersHorizontal class="h-[13px] w-[13px]" />
-        Clear filters
+        {{ uiText.clearFilters }}
       </button>
 
       <!-- Active filter chips -->
@@ -652,7 +777,7 @@ async function confirmDeleteTask() {
           @click="viewMode = 'list'"
         >
           <List class="h-[14px] w-[14px]" />
-          List
+          {{ uiText.list }}
         </button>
         <button
           :class="[
@@ -663,7 +788,7 @@ async function confirmDeleteTask() {
           @click="viewMode = 'card'"
         >
           <LayoutGrid class="h-[14px] w-[14px]" />
-          Card
+          {{ uiText.card }}
         </button>
       </div>
     </div>
@@ -674,18 +799,18 @@ async function confirmDeleteTask() {
       <div class="hidden sm:grid items-center gap-4 px-5 py-2" style="grid-template-columns: 32px 1fr 140px 90px 100px 120px 130px 80px;">
         <div />
         <div class="text-gray-400 dark:text-gray-500 uppercase" style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em;">Task</div>
-        <div class="text-gray-400 dark:text-gray-500 uppercase hidden md:block" style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em;">Assignee</div>
-        <div class="text-gray-400 dark:text-gray-500 uppercase" style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em;">Priority</div>
-        <div class="text-gray-400 dark:text-gray-500 uppercase" style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em;">Status</div>
-        <div class="text-gray-400 dark:text-gray-500 uppercase hidden lg:block" style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em;">Due Date</div>
-        <div class="text-gray-400 dark:text-gray-500 uppercase hidden xl:block" style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em;">Progress</div>
+        <div class="text-gray-400 dark:text-gray-500 uppercase hidden md:block" style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em;">{{ uiText.assignee }}</div>
+        <div class="text-gray-400 dark:text-gray-500 uppercase" style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em;">{{ uiText.priority }}</div>
+        <div class="text-gray-400 dark:text-gray-500 uppercase" style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em;">{{ uiText.status }}</div>
+        <div class="text-gray-400 dark:text-gray-500 uppercase hidden lg:block" style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em;">{{ uiText.dueDate }}</div>
+        <div class="text-gray-400 dark:text-gray-500 uppercase hidden xl:block" style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em;">{{ uiText.progress }}</div>
         <div class="text-gray-400 dark:text-gray-500 uppercase" style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em;">Actions</div>
       </div>
 
       <!-- Empty state -->
       <div v-if="paginatedTasks.length === 0" class="flex flex-col items-center justify-center gap-3 py-20">
         <CheckSquare class="h-12 w-12 text-gray-200 dark:text-gray-700" />
-        <p class="text-gray-500 dark:text-gray-400" style="font-size: 14px; font-weight: 600;">No tasks found</p>
+        <p class="text-gray-500 dark:text-gray-400" style="font-size: 14px; font-weight: 600;">{{ uiText.noTasksFound }}</p>
         <p class="text-gray-400 dark:text-gray-500" style="font-size: 13px;">Try adjusting your search or filters</p>
       </div>
 
@@ -880,7 +1005,7 @@ async function confirmDeleteTask() {
       <!-- Empty state -->
       <div v-if="paginatedTasks.length === 0" class="col-span-3 flex flex-col items-center justify-center gap-3 py-20">
         <CheckSquare class="h-12 w-12 text-gray-200 dark:text-gray-700" />
-        <p class="text-gray-500 dark:text-gray-400" style="font-size: 14px; font-weight: 600;">No tasks found</p>
+        <p class="text-gray-500 dark:text-gray-400" style="font-size: 14px; font-weight: 600;">{{ uiText.noTasksFound }}</p>
       </div>
 
       <!-- Task Cards -->
@@ -954,7 +1079,7 @@ async function confirmDeleteTask() {
           <!-- Meta grid -->
           <div class="grid grid-cols-2 gap-x-4 gap-y-3">
             <div>
-              <p class="text-gray-400 dark:text-gray-500 mb-1" style="font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;">Assignee</p>
+              <p class="text-gray-400 dark:text-gray-500 mb-1" style="font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;">{{ uiText.assignee }}</p>
               <div class="flex items-center gap-2">
                 <template v-if="task.assignees.length > 0">
                   <UiAvatar v-if="task.assignees[0]?.avatar" :src="task.assignees[0]!.avatar!" :alt="task.assignees[0]!.name" size="sm" />
@@ -967,11 +1092,11 @@ async function confirmDeleteTask() {
                   </div>
                   <span class="text-gray-700 dark:text-gray-300 truncate" style="font-size: 12.5px; font-weight: 500;">{{ task.assignees[0]!.name.split(' ')[0] }}</span>
                 </template>
-                <span v-else class="text-gray-400" style="font-size: 12.5px;">Unassigned</span>
+                <span v-else class="text-gray-400" style="font-size: 12.5px;">{{ uiText.unassigned }}</span>
               </div>
             </div>
             <div>
-              <p class="text-gray-400 dark:text-gray-500 mb-1" style="font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;">Priority</p>
+              <p class="text-gray-400 dark:text-gray-500 mb-1" style="font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;">{{ uiText.priority }}</p>
               <button
                 :class="[
                   'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full cursor-pointer transition-all duration-200 select-none',
@@ -993,7 +1118,7 @@ async function confirmDeleteTask() {
               </button>
             </div>
             <div>
-              <p class="text-gray-400 dark:text-gray-500 mb-1" style="font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;">Status</p>
+              <p class="text-gray-400 dark:text-gray-500 mb-1" style="font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;">{{ uiText.status }}</p>
               <button
                 :class="[
                   'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full cursor-pointer transition-all duration-200 select-none',
@@ -1015,7 +1140,7 @@ async function confirmDeleteTask() {
               </button>
             </div>
             <div>
-              <p class="text-gray-400 dark:text-gray-500 mb-1" style="font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;">Due Date</p>
+              <p class="text-gray-400 dark:text-gray-500 mb-1" style="font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;">{{ uiText.dueDate }}</p>
               <div class="flex items-center gap-1.5">
                 <CalendarDays class="h-3 w-3 text-gray-400" />
                 <span class="text-gray-700 dark:text-gray-300" style="font-size: 12.5px; font-weight: 500;">{{ formatDate(task.dueDate) }}</span>
@@ -1026,7 +1151,7 @@ async function confirmDeleteTask() {
           <!-- Progress -->
           <div class="flex flex-col gap-1.5">
             <div class="flex items-center justify-between">
-              <span class="text-gray-500 dark:text-gray-400" style="font-size: 12px; font-weight: 500;">Progress</span>
+              <span class="text-gray-500 dark:text-gray-400" style="font-size: 12px; font-weight: 500;">{{ uiText.progress }}</span>
               <span
                 :class="[
                   task.progress === 100 ? 'text-green-600' : task.progress > 0 ? 'text-[#478FC8]' : 'text-gray-400',
@@ -1058,7 +1183,7 @@ async function confirmDeleteTask() {
               @click="handleViewDetails(task)"
             >
               <Eye class="h-[13px] w-[13px]" />
-              View Task
+              {{ uiText.viewTask }}
             </button>
             <button
               v-if="canEditTask(task)"
@@ -1067,7 +1192,7 @@ async function confirmDeleteTask() {
               @click="handleEditTask(task)"
             >
               <Pencil class="h-3 w-3" />
-              Edit
+              {{ uiText.edit }}
             </button>
           </div>
         </div>
@@ -1077,9 +1202,9 @@ async function confirmDeleteTask() {
     <!-- Pagination -->
     <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
       <p class="text-gray-500 dark:text-gray-400 text-center sm:text-left" style="font-size: 13px;">
-        Showing
+        {{ uiText.showing }}
         <span class="text-gray-800 dark:text-white" style="font-weight: 600;">{{ (currentPage - 1) * perPage + 1 }}-{{ Math.min(currentPage * perPage, filteredTasks.length) }}</span>
-        of
+        {{ uiText.of }}
         <span class="text-gray-800 dark:text-white" style="font-weight: 600;">{{ filteredTasks.length }}</span>
       </p>
       <div class="flex items-center gap-2">
@@ -1116,45 +1241,45 @@ async function confirmDeleteTask() {
   </LayoutPageContainer>
 
   <!-- Create Task Dialog -->
-  <UiDialog v-model:open="showCreateTask" title="Create Task" description="Add a new task to a project board.">
+  <UiDialog v-model:open="showCreateTask" :title="uiText.createTaskTitle" :description="uiText.createTaskDescription">
     <template #default="{ close }">
       <form class="space-y-4" @submit.prevent="handleCreateTask">
         <div>
-          <UiLabel for="task-title">Task Title</UiLabel>
-          <UiInput id="task-title" v-model="newTaskTitle" placeholder="e.g. Implement login page" class="mt-1.5" />
+          <UiLabel for="task-title">{{ uiText.taskTitle }}</UiLabel>
+          <UiInput id="task-title" v-model="newTaskTitle" :placeholder="uiText.taskTitlePlaceholder" class="mt-1.5" />
         </div>
         <div>
-          <UiLabel for="task-desc">Description</UiLabel>
-          <UiTextarea id="task-desc" v-model="newTaskDescription" placeholder="Task details..." class="mt-1.5" rows="3" />
+          <UiLabel for="task-desc">{{ uiText.description }}</UiLabel>
+          <UiTextarea id="task-desc" v-model="newTaskDescription" :placeholder="uiText.taskDetailsPlaceholder" class="mt-1.5" rows="3" />
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <UiLabel for="task-project">Project</UiLabel>
-            <UiSelect id="task-project" v-model="newTaskProjectId" :options="projectOptions" placeholder="Select project" class="mt-1.5" />
+            <UiLabel for="task-project">{{ uiText.project }}</UiLabel>
+            <UiSelect id="task-project" v-model="newTaskProjectId" :options="projectOptions" :placeholder="uiText.selectProject" class="mt-1.5" />
           </div>
           <div>
-            <UiLabel for="task-column">Column</UiLabel>
-            <UiSelect id="task-column" v-model="newTaskColumnId" :options="columnOptions" :disabled="!newTaskProjectId" placeholder="Select column" class="mt-1.5" />
+            <UiLabel for="task-column">{{ uiText.column }}</UiLabel>
+            <UiSelect id="task-column" v-model="newTaskColumnId" :options="columnOptions" :disabled="!newTaskProjectId" :placeholder="uiText.selectColumn" class="mt-1.5" />
           </div>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <UiLabel for="task-priority">Priority</UiLabel>
+            <UiLabel for="task-priority">{{ uiText.priority }}</UiLabel>
             <UiSelect id="task-priority" v-model="newTaskPriority" :options="priorityOptions" class="mt-1.5" />
           </div>
           <div>
-            <UiLabel for="task-due">Due Date</UiLabel>
+            <UiLabel for="task-due">{{ uiText.dueDate }}</UiLabel>
             <UiInput id="task-due" v-model="newTaskDueDate" type="date" class="mt-1.5" />
           </div>
         </div>
         <div>
-          <UiLabel for="task-time">Due Time <span class="text-gray-400 font-normal">(optional)</span></UiLabel>
+          <UiLabel for="task-time">{{ uiText.dueDate }} <span class="text-gray-400 font-normal">{{ uiText.optional }}</span></UiLabel>
           <UiInput id="task-time" v-model="newTaskDueTime" type="time" class="mt-1.5" />
         </div>
         <div class="flex justify-end gap-3 pt-2">
-          <UiButton variant="outline" type="button" @click="resetTaskForm(); close()">Cancel</UiButton>
+          <UiButton variant="outline" type="button" @click="resetTaskForm(); close()">{{ uiText.cancel }}</UiButton>
           <UiButton type="submit" :disabled="isCreatingTask || !newTaskTitle.trim() || !newTaskColumnId">
-            {{ isCreatingTask ? 'Creating...' : 'Create Task' }}
+            {{ isCreatingTask ? uiText.creating : uiText.createTask }}
           </UiButton>
         </div>
       </form>
@@ -1162,27 +1287,27 @@ async function confirmDeleteTask() {
   </UiDialog>
 
   <!-- View Task Details Dialog -->
-  <UiDialog v-model:open="showViewDetail" title="Task Details" description="View task information.">
+  <UiDialog v-model:open="showViewDetail" :title="uiText.taskDetails" :description="uiText.taskDetailsDescription">
     <template #default="{ close }">
       <div v-if="viewTask" class="space-y-4">
         <div>
-          <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">Title</p>
+          <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">{{ uiText.title }}</p>
           <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ viewTask.title }}</p>
         </div>
         <div>
-          <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">Description</p>
-          <p class="mt-1 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ viewTask.description || 'No description' }}</p>
+          <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">{{ uiText.description }}</p>
+          <p class="mt-1 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ viewTask.description || uiText.noDescription }}</p>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">Priority</p>
+            <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">{{ uiText.priority }}</p>
             <span :class="['mt-1 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full', priorityMap[viewTask.priority]?.bg]">
               <Flag class="h-[10px] w-[10px]" :class="priorityMap[viewTask.priority]?.text" />
               <span :class="priorityMap[viewTask.priority]?.text" style="font-size: 11.5px; font-weight: 700;">{{ priorityLabel(viewTask.priority) }}</span>
             </span>
           </div>
           <div>
-            <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">Status</p>
+            <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">{{ uiText.status }}</p>
             <span :class="['mt-1 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full', statusMap[viewTask.status]?.bg]">
               <span :class="['w-1.5 h-1.5 rounded-full shrink-0', statusMap[viewTask.status]?.dot]" />
               <span :class="statusMap[viewTask.status]?.text" style="font-size: 11.5px; font-weight: 600;">{{ statusLabel(viewTask.status) }}</span>
@@ -1191,29 +1316,29 @@ async function confirmDeleteTask() {
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">Due Date</p>
+            <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">{{ uiText.dueDate }}</p>
             <div class="mt-1 flex items-center gap-1.5">
               <CalendarDays class="h-3 w-3 text-gray-400" />
               <span class="text-sm text-gray-700 dark:text-gray-300">{{ formatDate(viewTask.dueDate) }}</span>
             </div>
           </div>
           <div>
-            <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">Column</p>
+            <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">{{ uiText.column }}</p>
             <p class="mt-1 text-sm text-gray-700 dark:text-gray-300">{{ viewTask.columnName || '-' }}</p>
           </div>
         </div>
         <div>
-          <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">Assignee</p>
+          <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">{{ uiText.assignee }}</p>
           <div class="mt-1 flex items-center gap-2">
             <template v-if="viewTask.assignees.length">
               <UiAvatar v-for="a in viewTask.assignees" :key="a.id" :alt="a.name" :src="a.avatar" size="sm" />
               <span class="text-sm text-gray-700 dark:text-gray-300">{{ viewTask.assignees.map(a => a.name).join(', ') }}</span>
             </template>
-            <span v-else class="text-sm text-gray-400 dark:text-gray-500">Unassigned</span>
+            <span v-else class="text-sm text-gray-400 dark:text-gray-500">{{ uiText.unassigned }}</span>
           </div>
         </div>
         <div>
-          <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">Progress</p>
+          <p class="text-xs font-medium uppercase text-gray-400 dark:text-gray-500">{{ uiText.progress }}</p>
           <div class="mt-1 flex items-center gap-3">
             <div class="flex-1 h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
               <div
@@ -1231,42 +1356,42 @@ async function confirmDeleteTask() {
           </div>
         </div>
         <div class="flex justify-end pt-2">
-          <UiButton variant="outline" @click="close()">Close</UiButton>
+          <UiButton variant="outline" @click="close()">{{ uiText.close }}</UiButton>
         </div>
       </div>
     </template>
   </UiDialog>
 
   <!-- Edit Task Dialog -->
-  <UiDialog v-model:open="showEditTask" title="Edit Task" description="Update task information.">
+  <UiDialog v-model:open="showEditTask" :title="uiText.editTask" :description="uiText.updateTaskDescription">
     <template #default="{ close }">
       <form class="space-y-4" @submit.prevent="submitEditTask">
         <div>
-          <UiLabel for="edit-task-title">Task Title</UiLabel>
-          <UiInput id="edit-task-title" v-model="editTaskTitle" placeholder="Task title" class="mt-1.5" />
+          <UiLabel for="edit-task-title">{{ uiText.taskTitle }}</UiLabel>
+          <UiInput id="edit-task-title" v-model="editTaskTitle" :placeholder="uiText.taskTitle" class="mt-1.5" />
         </div>
         <div>
-          <UiLabel for="edit-task-desc">Description</UiLabel>
-          <UiTextarea id="edit-task-desc" v-model="editTaskDescription" placeholder="Task details..." class="mt-1.5" rows="3" />
+          <UiLabel for="edit-task-desc">{{ uiText.description }}</UiLabel>
+          <UiTextarea id="edit-task-desc" v-model="editTaskDescription" :placeholder="uiText.taskDetailsPlaceholder" class="mt-1.5" rows="3" />
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <UiLabel for="edit-task-priority">Priority</UiLabel>
+            <UiLabel for="edit-task-priority">{{ uiText.priority }}</UiLabel>
             <UiSelect id="edit-task-priority" v-model="editTaskPriority" :options="priorityOptions" class="mt-1.5" />
           </div>
           <div>
-            <UiLabel for="edit-task-due">Due Date</UiLabel>
+            <UiLabel for="edit-task-due">{{ uiText.dueDate }}</UiLabel>
             <UiInput id="edit-task-due" v-model="editTaskDueDate" type="date" class="mt-1.5" />
           </div>
         </div>
         <div>
-          <UiLabel for="edit-task-time">Due Time <span class="text-gray-400 font-normal">(optional)</span></UiLabel>
+          <UiLabel for="edit-task-time">{{ uiText.dueDate }} <span class="text-gray-400 font-normal">{{ uiText.optional }}</span></UiLabel>
           <UiInput id="edit-task-time" v-model="editTaskDueTime" type="time" class="mt-1.5" />
         </div>
         <div class="flex justify-end gap-3 pt-2">
-          <UiButton variant="outline" type="button" @click="close()">Cancel</UiButton>
+          <UiButton variant="outline" type="button" @click="close()">{{ uiText.cancel }}</UiButton>
           <UiButton type="submit" :disabled="isEditingTask || !editTaskTitle.trim()">
-            {{ isEditingTask ? 'Saving...' : 'Save Changes' }}
+            {{ isEditingTask ? uiText.saving : uiText.saveChanges }}
           </UiButton>
         </div>
       </form>
@@ -1274,16 +1399,16 @@ async function confirmDeleteTask() {
   </UiDialog>
 
   <!-- Delete Task Confirmation Dialog -->
-  <UiDialog v-model:open="showDeleteConfirm" title="Delete Task" description="This action cannot be undone.">
+  <UiDialog v-model:open="showDeleteConfirm" :title="uiText.deleteTask" :description="uiText.deleteTaskDescription">
     <template #default="{ close }">
       <div class="space-y-4">
         <p class="text-sm text-muted-foreground">
-          Are you sure you want to delete <span class="font-semibold text-foreground">"{{ deleteTaskTarget?.title }}"</span>? This action is permanent and cannot be undone.
+          {{ uiText.deleteTaskConfirm.replace('{title}', deleteTaskTarget?.title ?? '') }}
         </p>
         <div class="flex justify-end gap-3 pt-2">
-          <UiButton variant="outline" @click="close()">Cancel</UiButton>
+          <UiButton variant="outline" @click="close()">{{ uiText.cancel }}</UiButton>
           <UiButton variant="destructive" :disabled="isDeletingTask" @click="confirmDeleteTask">
-            {{ isDeletingTask ? 'Deleting...' : 'Delete Task' }}
+            {{ isDeletingTask ? uiText.deleting : uiText.deleteTask }}
           </UiButton>
         </div>
       </div>

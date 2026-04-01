@@ -7,6 +7,7 @@ import {
   CheckSquare,
 } from 'lucide-vue-next'
 import type { Component } from 'vue'
+const { locale } = useLocale()
 
 interface ContactChannel {
   icon: Component
@@ -17,11 +18,17 @@ interface ContactChannel {
   bg: string
 }
 
-const contactChannels: ContactChannel[] = [
-  { icon: Mail, title: 'Email Support', desc: 'fakhrizon607@gmail.com', sub: 'Response within 24 hours', color: '#478FC8', bg: '#edf4ff' },
-  { icon: MessageSquare, title: 'Live Chat', desc: 'Chat with our team', sub: 'Available Mon-Fri, 9AM-7PM', color: '#16a34a', bg: '#f0fdf4' },
-  { icon: Headphones, title: 'Phone Support', desc: '+62 85723847290', sub: 'Premium plan only', color: '#7c3aed', bg: '#f5f3ff' },
-]
+const contactChannels = computed<ContactChannel[]>(() => locale.value === 'id'
+  ? [
+      { icon: Mail, title: 'Dukungan Email', desc: 'fakhrizon607@gmail.com', sub: 'Respon dalam 24 jam', color: '#478FC8', bg: '#edf4ff' },
+      { icon: MessageSquare, title: 'Live Chat', desc: 'Chat dengan tim kami', sub: 'Tersedia Sen-Jum, 09.00-19.00', color: '#16a34a', bg: '#f0fdf4' },
+      { icon: Headphones, title: 'Dukungan Telepon', desc: '+62 85723847290', sub: 'Hanya untuk paket premium', color: '#7c3aed', bg: '#f5f3ff' },
+    ]
+  : [
+      { icon: Mail, title: 'Email Support', desc: 'fakhrizon607@gmail.com', sub: 'Response within 24 hours', color: '#478FC8', bg: '#edf4ff' },
+      { icon: MessageSquare, title: 'Live Chat', desc: 'Chat with our team', sub: 'Available Mon-Fri, 9AM-7PM', color: '#16a34a', bg: '#f0fdf4' },
+      { icon: Headphones, title: 'Phone Support', desc: '+62 85723847290', sub: 'Premium plan only', color: '#7c3aed', bg: '#f5f3ff' },
+    ])
 
 const subject = ref('')
 const message = ref('')
@@ -64,45 +71,45 @@ function handleSend() {
     <!-- Contact form -->
     <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
       <div class="px-6 py-5 border-b border-gray-50 dark:border-gray-800/50">
-        <h3 class="text-[15px] font-bold text-gray-900 dark:text-white">Send us a message</h3>
+        <h3 class="text-[15px] font-bold text-gray-900 dark:text-white">{{ locale === 'id' ? 'Kirim pesan kepada kami' : 'Send us a message' }}</h3>
         <p class="mt-0.5 text-gray-400 dark:text-gray-500 text-[12.5px]">
-          Describe your issue and we'll get back to you as soon as possible.
+          {{ locale === 'id' ? 'Jelaskan kendala Anda dan kami akan segera menghubungi kembali.' : 'Describe your issue and we\'ll get back to you as soon as possible.' }}
         </p>
       </div>
       <div class="px-6 py-5 flex flex-col gap-4">
         <!-- Category -->
         <div class="flex flex-col gap-1.5">
-          <label class="text-gray-600 dark:text-gray-400 text-[12.5px] font-semibold">Category</label>
+          <label class="text-gray-600 dark:text-gray-400 text-[12.5px] font-semibold">{{ locale === 'id' ? 'Kategori' : 'Category' }}</label>
           <select
             v-model="category"
             class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 text-gray-800 dark:text-gray-200 outline-none transition-all focus:border-[#478FC8] focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-[#478FC8]/10 appearance-none text-[13.5px]"
           >
-            <option value="general">General Question</option>
-            <option value="bug">Bug Report</option>
-            <option value="feature">Feature Request</option>
-            <option value="account">Account Issue</option>
+            <option value="general">{{ locale === 'id' ? 'Pertanyaan Umum' : 'General Question' }}</option>
+            <option value="bug">{{ locale === 'id' ? 'Laporan Bug' : 'Bug Report' }}</option>
+            <option value="feature">{{ locale === 'id' ? 'Permintaan Fitur' : 'Feature Request' }}</option>
+            <option value="account">{{ locale === 'id' ? 'Masalah Akun' : 'Account Issue' }}</option>
             <option value="billing">Billing</option>
           </select>
         </div>
 
         <!-- Subject -->
         <div class="flex flex-col gap-1.5">
-          <label class="text-gray-600 dark:text-gray-400 text-[12.5px] font-semibold">Subject</label>
+          <label class="text-gray-600 dark:text-gray-400 text-[12.5px] font-semibold">{{ locale === 'id' ? 'Subjek' : 'Subject' }}</label>
           <input
             v-model="subject"
             type="text"
-            placeholder="Brief summary of your question"
+            :placeholder="locale === 'id' ? 'Ringkasan singkat pertanyaan Anda' : 'Brief summary of your question'"
             class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 text-gray-800 dark:text-gray-200 placeholder-gray-300 dark:placeholder-gray-600 outline-none transition-all focus:border-[#478FC8] focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-[#478FC8]/10 text-[13.5px]"
           />
         </div>
 
         <!-- Message -->
         <div class="flex flex-col gap-1.5">
-          <label class="text-gray-600 dark:text-gray-400 text-[12.5px] font-semibold">Message</label>
+          <label class="text-gray-600 dark:text-gray-400 text-[12.5px] font-semibold">{{ locale === 'id' ? 'Pesan' : 'Message' }}</label>
           <textarea
             v-model="message"
             :rows="5"
-            placeholder="Describe your issue in detail..."
+            :placeholder="locale === 'id' ? 'Jelaskan kendala Anda secara detail...' : 'Describe your issue in detail...'"
             class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 text-gray-800 dark:text-gray-200 placeholder-gray-300 dark:placeholder-gray-600 outline-none transition-all focus:border-[#478FC8] focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-[#478FC8]/10 resize-none text-[13.5px]"
           />
         </div>
@@ -111,7 +118,7 @@ function handleSend() {
         <div class="flex items-center justify-end gap-3">
           <span v-if="sent" class="flex items-center gap-1.5 text-green-600 dark:text-green-400 text-[12.5px] font-semibold">
             <CheckSquare style="width: 14px; height: 14px;" />
-            Message sent successfully!
+            {{ locale === 'id' ? 'Pesan berhasil dikirim!' : 'Message sent successfully!' }}
           </span>
           <button
             class="px-6 py-2.5 rounded-xl text-white transition-all hover:opacity-90 active:scale-[0.98] text-[13.5px] font-bold"
@@ -120,7 +127,7 @@ function handleSend() {
           >
             <span class="flex items-center gap-2">
               <Send style="width: 14px; height: 14px;" />
-              Send Message
+              {{ locale === 'id' ? 'Kirim Pesan' : 'Send Message' }}
             </span>
           </button>
         </div>

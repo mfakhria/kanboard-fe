@@ -19,6 +19,7 @@ definePageMeta({
 
 const analyticsStore = useAnalyticsStore()
 const workspaceStore = useWorkspaceStore()
+const { locale } = useLocale()
 
 onMounted(async () => {
   if (!workspaceStore.allWorkspaces.length) {
@@ -34,23 +35,69 @@ onMounted(async () => {
   }
 })
 
-type Period = 'Week' | 'Month' | 'Year'
-const selectedPeriod = ref<Period>('Week')
+type Period = 'week' | 'month' | 'year'
+const selectedPeriod = ref<Period>('week')
+
+const uiText = computed(() => locale.value === 'id'
+  ? {
+      overview: 'Ringkasan',
+      description: 'Pantau performa tim dan metrik proyek Anda.',
+      week: 'Minggu',
+      month: 'Bulan',
+      year: 'Tahun',
+      export: 'Ekspor',
+      tasksCompleted: 'Tugas Selesai',
+      tasksCompletedDesc: 'Total tugas yang sudah ditandai selesai pada periode ini.',
+      tasksInProgress: 'Tugas Berjalan',
+      tasksInProgressDesc: 'Jumlah tugas yang sedang dikerjakan oleh tim Anda.',
+      tasksOverdue: 'Tugas Terlambat',
+      tasksOverdueDesc: 'Tugas yang melewati deadline dan belum selesai.',
+      completionRate: 'Tingkat Penyelesaian',
+      completionRateSub: 'vs 62% periode lalu',
+      avgTaskSpeed: 'Rata-rata Kecepatan Tugas',
+      avgTaskSpeedSub: 'Hari untuk menutup satu tugas',
+      activeMembers: 'Anggota Aktif',
+      activeMembersSub: 'Berkontribusi pada periode ini',
+      activeProjects: 'Proyek Aktif',
+      activeProjectsSub: 'Di seluruh tim',
+    }
+  : {
+      overview: 'Overview',
+      description: 'Track your team\'s performance and project metrics.',
+      week: 'Week',
+      month: 'Month',
+      year: 'Year',
+      export: 'Export',
+      tasksCompleted: 'Tasks Completed',
+      tasksCompletedDesc: 'Total tasks you have marked completed in this time frame.',
+      tasksInProgress: 'Tasks In Progress',
+      tasksInProgressDesc: 'Number of tasks your team is actively working on.',
+      tasksOverdue: 'Tasks Overdue',
+      tasksOverdueDesc: 'Tasks yet to be completed that have passed their due date.',
+      completionRate: 'Completion Rate',
+      completionRateSub: 'vs 62% last period',
+      avgTaskSpeed: 'Avg. Task Speed',
+      avgTaskSpeedSub: 'Days to close a task',
+      activeMembers: 'Active Members',
+      activeMembersSub: 'Contributing this period',
+      activeProjects: 'Projects Active',
+      activeProjectsSub: 'Across all teams',
+    })
 
 const periodLabel = computed(() => {
   const now = new Date()
   const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
   switch (selectedPeriod.value) {
-    case 'Week': {
+    case 'week': {
       const start = new Date(now)
       start.setDate(now.getDate() - 13)
       return `${fmt(start)} – ${fmt(now)}`
     }
-    case 'Month': {
+    case 'month': {
       const start = new Date(now.getFullYear(), now.getMonth() - 2, 1)
       return `${start.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} – ${now.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`
     }
-    case 'Year': {
+    case 'year': {
       return `Q1 ${now.getFullYear() - 1} – Q4 ${now.getFullYear() - 1}`
     }
     default: return ''
@@ -62,8 +109,8 @@ const statsCards = computed(() => {
   return [
     {
       value: String(os?.completed ?? 0).padStart(2, '0'),
-      label: 'Tasks Completed',
-      description: 'Total tasks you have marked completed in this time frame.',
+      label: uiText.value.tasksCompleted,
+      description: uiText.value.tasksCompletedDesc,
       icon: CheckCircle2,
       iconColor: 'text-[#478FC8]',
       iconBg: 'linear-gradient(135deg,#dbeafe,#eff6ff)',
@@ -73,8 +120,8 @@ const statsCards = computed(() => {
     },
     {
       value: String(os?.inProgress ?? 0).padStart(2, '0'),
-      label: 'Tasks In Progress',
-      description: 'Number of tasks your team is actively working on.',
+      label: uiText.value.tasksInProgress,
+      description: uiText.value.tasksInProgressDesc,
       icon: Clock,
       iconColor: 'text-emerald-600',
       iconBg: 'linear-gradient(135deg,#d1fae5,#ecfdf5)',
@@ -84,8 +131,8 @@ const statsCards = computed(() => {
     },
     {
       value: String(os?.overdue ?? 0).padStart(2, '0'),
-      label: 'Tasks Overdue',
-      description: 'Tasks yet to be completed that have passed their due date.',
+      label: uiText.value.tasksOverdue,
+      description: uiText.value.tasksOverdueDesc,
       icon: AlertTriangle,
       iconColor: 'text-red-600',
       iconBg: 'linear-gradient(135deg,#fee2e2,#fff1f2)',
@@ -101,33 +148,33 @@ const quickMetrics = computed(() => [
     icon: Target,
     iconColor: 'text-[#478FC8]',
     accent: '#dbeafe',
-    label: 'Completion Rate',
+    label: uiText.value.completionRate,
     value: '79%',
-    sub: 'vs 62% last period',
+    sub: uiText.value.completionRateSub,
   },
   {
     icon: Zap,
     iconColor: 'text-amber-600',
     accent: '#fef3c7',
-    label: 'Avg. Task Speed',
+    label: uiText.value.avgTaskSpeed,
     value: '2.4d',
-    sub: 'Days to close a task',
+    sub: uiText.value.avgTaskSpeedSub,
   },
   {
     icon: Users,
     iconColor: 'text-purple-600',
     accent: '#ede9fe',
-    label: 'Active Members',
+    label: uiText.value.activeMembers,
     value: String(workspaceStore.members.length || 0),
-    sub: 'Contributing this period',
+    sub: uiText.value.activeMembersSub,
   },
   {
     icon: BarChart3,
     iconColor: 'text-emerald-600',
     accent: '#d1fae5',
-    label: 'Projects Active',
+    label: uiText.value.activeProjects,
     value: String(analyticsStore.stats.runningProjects || 0),
-    sub: 'Across all teams',
+    sub: uiText.value.activeProjectsSub,
   },
 ])
 </script>
@@ -146,15 +193,11 @@ const quickMetrics = computed(() => [
             <h1
               style="font-size: clamp(20px, 2.5vw, 28px); font-weight: 900; letter-spacing: -0.8px; color: var(--analytics-title); line-height: 1.15"
             >
-              Overview
+              {{ uiText.overview }}
             </h1>
           </div>
           <p class="pl-4" style="font-size: 13.5px; line-height: 1.6; color: var(--analytics-subtitle)">
-            Track your team's
-            <span
-              style="font-weight: 600; background: linear-gradient(90deg, #478FC8, #5BA3D9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text"
-            >performance</span>
-            and project metrics.
+            {{ uiText.description }}
           </p>
         </div>
 
@@ -163,7 +206,7 @@ const quickMetrics = computed(() => [
           <!-- Period toggle -->
           <div class="flex items-center gap-1 p-1 rounded-xl shadow-sm border" style="background: var(--analytics-control-bg); border-color: var(--analytics-control-border)">
             <button
-              v-for="p in (['Week', 'Month', 'Year'] as Period[])"
+              v-for="p in (['week', 'month', 'year'] as Period[])"
               :key="p"
               :class="[
                 'px-3.5 py-1.5 rounded-lg transition-all',
@@ -174,7 +217,7 @@ const quickMetrics = computed(() => [
               :style="{ fontSize: '13px', fontWeight: selectedPeriod === p ? 700 : 500, color: selectedPeriod === p ? '#fff' : 'var(--analytics-control-text)' }"
               @click="selectedPeriod = p"
             >
-              {{ p }}
+              {{ p === 'week' ? uiText.week : p === 'month' ? uiText.month : uiText.year }}
             </button>
           </div>
 
@@ -190,7 +233,7 @@ const quickMetrics = computed(() => [
             style="background: linear-gradient(135deg, #3570A5, #478FC8); font-size: 13.5px; font-weight: 700; box-shadow: 0 4px 16px rgba(71,143,200,0.30)"
           >
             <Download :size="14" />
-            Export
+            {{ uiText.export }}
           </button>
         </div>
       </div>
