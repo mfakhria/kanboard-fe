@@ -358,7 +358,7 @@ const filterTabs = [
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 pl-4 leading-relaxed">
           View and manage your
           <span class="font-semibold bg-gradient-to-r from-[#478FC8] to-[#6db3e8] bg-clip-text text-transparent">schedule</span>
-          across all projects.
+          across all projects in this workspace.
         </p>
       </div>
     </div>
