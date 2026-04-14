@@ -25,7 +25,7 @@ const uiText = computed(() => locale.value === 'id'
       description: 'Temukan jawaban untuk pertanyaan umum dan pelajari cara menggunakan Kanzon.',
       faq: 'FAQ',
       guides: 'Panduan',
-      contact: 'Hubungi Kami',
+      contact: 'Hubungi Kami di sini',
     }
   : {
       title: 'Help Center',
